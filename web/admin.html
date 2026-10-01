@@ -182,15 +182,6 @@
             padding-bottom: 8px;
         }
 
-        .search-box {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d9d9d9;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
         .channels-container {
             display: grid;
             grid-template-columns: 200px 1fr;
@@ -2690,6 +2681,31 @@
             font-weight: 600;
         }
         .my-playlist-section-title button:hover { border-color: var(--ui-accent); background: #fff; }
+        /* 分组栏里的频道搜索框（issue #159）：压到和分组行一样高，只占一行分组的位置 */
+        .my-playlist-search { position: relative; flex: 0 0 auto; padding: 10px 10px 0; }
+        .my-playlist-search input[type="text"] {
+            width: 100%;
+            min-height: 34px;
+            padding: 5px 30px 5px 11px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+        .my-playlist-search button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 34px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--ui-muted);
+            font-size: 17px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .my-playlist-search button:hover { color: var(--ui-text); }
+        .my-playlist-search button[hidden] { display: none; }
         .my-playlist-group-list { padding: 10px; }
         .my-playlist-group-item {
             min-height: 34px;
@@ -2732,6 +2748,20 @@
             box-shadow: none;
         }
         .my-playlist-detail-title { color: var(--ui-text); font-size: 18px; }
+        /* 按钮一行放不下时（窗口窄、批量模式）整齐换行：行间留缝、靠右对齐。
+           先让按钮换行，分组名不跟着被挤成两行；分组名太长（超过四成宽）才自己折行。
+           1180 以下中间栏本来就窄，分组名和按钮一起让（见下方 @media） */
+        .my-playlist-detail-header { gap: 12px; }
+        .my-playlist-detail-title { flex: 0 0 auto; max-width: 40%; }
+        .my-playlist-detail-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 6px;
+        }
+        /* 按钮收窄一点：加了置顶 / 置底后，1366 宽的窗口里仍能排成一行 */
+        .my-playlist-detail-actions button { margin-left: 0; padding-inline: 9px; }
         .ch-status-legend {
             min-height: 38px;
             margin-bottom: 13px;
@@ -2783,6 +2813,27 @@
             border-radius: 999px;
             background: var(--ui-violet-soft);
         }
+        /* 搜索结果行（issue #159）：只读、整行可点，右侧标出所在分组 */
+        .my-playlist-channel.search-result { gap: 10px; cursor: pointer; }
+        .channel-group-tag {
+            flex: 0 0 auto;
+            max-width: 45%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px 9px;
+            border: 1px solid var(--ui-accent-line);
+            border-radius: 999px;
+            background: var(--ui-accent-soft);
+            color: var(--ui-accent);
+            font-size: 12px;
+        }
+        .channel-group-tag.in-hidden {
+            border-color: var(--ui-line-strong);
+            background: var(--ui-surface-strong);
+            color: var(--ui-text-secondary);
+        }
+        .channel-search-note { grid-column: 1 / -1; padding: 4px 2px; color: var(--ui-muted); font-size: 13px; }
         .my-playlist-channel-actions { opacity: 1; gap: 5px; }
         .my-playlist-channel-actions button:not(.channel-play-btn) { opacity: 0; transition: opacity .18s ease; }
         .my-playlist-channel:hover .my-playlist-channel-actions button:not(.channel-play-btn),
@@ -3167,6 +3218,7 @@
             .my-playlist-left { width: 216px; }
             .my-playlist-right { width: 202px; }
             .my-playlist-channels { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+            .my-playlist-detail-title { flex: 0 1 auto; max-width: none; }
             .external-detail-wrap { grid-template-columns: 1fr 250px; }
         }
         @media (max-width: 900px) {
@@ -3223,6 +3275,9 @@
             .my-playlist-left .my-playlist-section,
             .my-playlist-right .my-playlist-section { max-height: 340px; }
             .my-playlist-groups { max-height: none; overflow: visible; }
+            .my-playlist-detail-header { flex-wrap: wrap; }
+            .my-playlist-detail-title { max-width: 100%; }
+            .my-playlist-detail-actions { flex: 1 1 100%; justify-content: flex-start; }
             .source-grid { grid-template-columns: minmax(0, 1fr); }
             .source-card, .external-nav-item, .source-card-add { min-height: 0; }
             .settings-editor-card { padding: 17px; }
@@ -3613,6 +3668,11 @@
                             <div class="my-playlist-section-title">
                                 <span>📂 频道分组</span>
                                 <button onclick="addGroup()">+ 添加分组</button>
+                            </div>
+                            <div class="my-playlist-search">
+                                <input type="text" id="channelSearchInput" placeholder="搜索频道名" autocomplete="off" spellcheck="false"
+                                       oninput="onChannelSearchInput(event)" onkeydown="onChannelSearchKey(event)">
+                                <button type="button" id="channelSearchClear" onclick="clearChannelSearch(true)" title="清空搜索" aria-label="清空搜索" hidden>×</button>
                             </div>
                             <div class="my-playlist-group-list" id="activeGroupList"></div>
                         </div>
@@ -6038,25 +6098,6 @@
             }
         }
 
-        // 搜索频道
-        function filterChannels() {
-            const keyword = document.getElementById('searchBox').value.toLowerCase();
-            const items = document.querySelectorAll('.channel-item');
-            
-            if (!keyword) {
-                // 没有搜索关键词，显示当前分组的所有频道
-                items.forEach(item => {
-                    item.style.display = 'block';
-                });
-            } else {
-                // 有搜索关键词，筛选匹配的频道
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(keyword) ? 'block' : 'none';
-                });
-            }
-        }
-
         /**
          * 用服务端数据整份替换页面副本。**所有** `externalConfig = ...` 都该走这里。
          *
@@ -8077,6 +8118,8 @@ if(success){
         let draggedChannelId = null; // 拖拽排序中被拖动的频道ID
         let lastEditedChannelId = null; // 最近编辑过的频道ID（重命名/移动后），用于重渲染后临时高亮定位 (issue #50)
         let editHighlightTimer = null;  // 临时高亮自动消退的定时器句柄
+        let channelSearchQuery = '';    // 频道搜索关键字；非空时中间栏换成跨分组的搜索结果（issue #159）
+        let channelSearchResults = [];  // 当前渲染出来的搜索结果，点击时按下标取（不把名字/ID 拼进 onclick）
         const SYSTEM_ANNOUNCEMENT_ID = 'iptv-announcement';
         // 系统频道：公告 + 央视频登录教程 + 「来源于网络」添加教程，都在「公告」分组、可逐条隐藏、不能删/移/改名/改序。
         // 与服务端 utils/announcement.js 的 SYSTEM_CHANNELS 对应。
@@ -8446,6 +8489,7 @@ if(success){
                     if (resetView) {
                         selectedGroupIndex = 0;
                         isViewingDeleted = false;
+                        resetChannelSearch();   // 切档 / 切回本页 / 重置：搜索框里的字不带到新视图
                     }
                     
                     renderMyPlaylist();
@@ -8576,7 +8620,7 @@ if(success){
                 activeList.innerHTML = myPlaylistData.map((group, originalIndex) => {
                     const mergedCount = mergedSourceGroupCount(group);
                     return `
-                    <div class="my-playlist-group-item ${!isViewingDeleted && selectedGroupIndex === originalIndex ? 'active' : ''}" 
+                    <div class="my-playlist-group-item ${!channelSearchQuery && !isViewingDeleted && selectedGroupIndex === originalIndex ? 'active' : ''}"
                          onclick="selectGroup(${originalIndex}, false)">
                         <span>${group.name}${mergedCount ? ` <span style="color:#faad14;" title="和订阅源里的同名分组合并显示了，点开看详情">⚠</span>` : ''}</span>
                         <span style="color: #999; font-size: 12px;">${group.channels.length}</span>
@@ -8609,7 +8653,7 @@ if(success){
                         ? `<span title="被规则 ${escapeHtml(pattern)} 自动隐藏" style="font-size:11px;color:#fa8c16;border:1px solid #ffd591;border-radius:3px;padding:0 3px;margin-left:5px;">${escapeHtml(pattern)}</span>`
                         : '';
                     return `
-                    <div class="my-playlist-group-item deleted ${isViewingDeleted && selectedGroupIndex === index ? 'active' : ''}"
+                    <div class="my-playlist-group-item deleted ${!channelSearchQuery && isViewingDeleted && selectedGroupIndex === index ? 'active' : ''}"
                          onclick="selectGroup(${index}, true)">
                         <span>${escapeHtml(group.name)}${group.isPartialDelete ? ' (隐藏频道)' : ''}${badge}</span>
                         <span style="color: #999; font-size: 12px;">${group.channels.length}</span>
@@ -8619,10 +8663,156 @@ if(success){
         }
 
         function selectGroup(index, isDeleted) {
+            resetChannelSearch();   // 点了分组就是要看这个分组，退出搜索
             selectedGroupIndex = index;
             isViewingDeleted = isDeleted;
             renderGroupLists();
             renderGroupDetail();
+        }
+
+        // 把左 / 右栏里当前选中的分组滚进可见范围。只动列表自己的滚动条，不用 scrollIntoView——
+        // 手机上三栏是上下叠的，scrollIntoView 会把整页也带着滚走。
+        function revealActiveGroupItem() {
+            const list = document.getElementById(isViewingDeleted ? 'deletedGroupList' : 'activeGroupList');
+            const item = list && list.querySelector('.my-playlist-group-item.active');
+            if (!item) return;
+            const listRect = list.getBoundingClientRect();
+            const itemRect = item.getBoundingClientRect();
+            if (itemRect.top < listRect.top) list.scrollTop -= listRect.top - itemRect.top + 10;
+            else if (itemRect.bottom > listRect.bottom) list.scrollTop += itemRect.bottom - listRect.bottom + 10;
+        }
+
+        // ========== 频道搜索（issue #159）==========
+        // 分组多了以后，想知道某个台在哪个分组只能挨个点开找。搜索框在左栏分组列表上方，
+        // 输入后中间栏换成跨分组的命中列表，点一条就跳到它所在的分组并高亮那一行。
+        // 结果是只读的：隐藏、屏蔽、拖拽这些操作都按「当前选中的分组」定位频道，放进跨分组列表会改错分组。
+
+        // 搜索用的名字规整：不分大小写，忽略空格和连字符——「cctv 5」「CCTV-5」都能搜到「CCTV5体育」
+        function channelSearchKey(text) {
+            return String(text || '').toLowerCase().replace(/[\s\-_]+/g, '');
+        }
+
+        // 只清状态和输入框，不重渲染（调用方接下来自己会渲染）
+        function resetChannelSearch() {
+            channelSearchQuery = '';
+            channelSearchResults = [];
+            const input = document.getElementById('channelSearchInput');
+            if (input) input.value = '';
+            const clearBtn = document.getElementById('channelSearchClear');
+            if (clearBtn) clearBtn.hidden = true;
+        }
+
+        function clearChannelSearch(refocus) {
+            const wasSearching = !!channelSearchQuery;
+            resetChannelSearch();
+            if (wasSearching) {
+                renderGroupLists();
+                renderGroupDetail();
+            }
+            if (refocus) {
+                const input = document.getElementById('channelSearchInput');
+                if (input) input.focus();
+            }
+        }
+
+        function onChannelSearchInput(event) {
+            // 中文输入法还在拼音阶段时框里是没上屏的字母，等 compositionend 再搜，免得结果来回闪
+            if (event && event.isComposing) return;
+            const input = document.getElementById('channelSearchInput');
+            if (!input) return;
+            const clearBtn = document.getElementById('channelSearchClear');
+            if (clearBtn) clearBtn.hidden = !input.value;
+            const text = input.value.trim();
+            const next = channelSearchKey(text) ? text : '';
+            if (next === channelSearchQuery) return;
+            if (!channelSearchQuery) {
+                // 进入搜索：批量模式的选中是按分组算的，带进跨分组视图再跳走会选错频道，先退出
+                isBatchMode = false;
+                selectedChannels.clear();
+            }
+            channelSearchQuery = next;
+            renderGroupLists();
+            renderGroupDetail();
+            // 换了关键字就从头看：中间栏沿用的是之前那个分组的滚动位置，不归零的话结果会从半截开始显示
+            const box = document.getElementById('myPlaylistGroups');
+            if (box) box.scrollTop = 0;
+        }
+
+        // compositionend 没有对应的 on* 属性，只能在这里挂
+        document.getElementById('channelSearchInput')?.addEventListener('compositionend', onChannelSearchInput);
+
+        function onChannelSearchKey(event) {
+            // 输入法选字时按 Esc 是取消选字，不是退出搜索。Safari 在这一下按键上 isComposing 已经是 false，要靠 keyCode 229 认
+            if (event.isComposing || event.keyCode === 229) return;
+            if (event.key === 'Escape') clearChannelSearch(true);
+        }
+
+        // 按名字找频道：可见分组在前，「已隐藏」区的在后。同一频道在两个分组里各出现一次是预期的。
+        function findChannelsByName(query) {
+            const key = channelSearchKey(query);
+            const results = [];
+            const visibleKeys = new Set();
+            myPlaylistData.forEach((group, groupIndex) => {
+                (group.channels || []).forEach(channel => {
+                    visibleKeys.add(`${channel.originalGroup}::${channel.id}`);
+                    if (channelSearchKey(channel.name).includes(key)) {
+                        results.push({ groupIndex, hidden: false, groupName: group.name, channel });
+                    }
+                });
+            });
+            hiddenAreaGroups().forEach((group, groupIndex) => {
+                (group.channels || []).forEach(channel => {
+                    // 整组隐藏的分组里，被单独移到可见分组的频道已经在上面列过，不再重复
+                    if (visibleKeys.has(`${group.name}::${channel.id}`)) return;
+                    if (channelSearchKey(channel.name).includes(key)) {
+                        results.push({ groupIndex, hidden: true, groupName: group.name, channel });
+                    }
+                });
+            });
+            return results;
+        }
+
+        const CHANNEL_SEARCH_LIMIT = 300;   // 只打一个字时可能命中上千条，全渲染出来也没法看
+
+        function renderChannelSearchResults(container, header, title, actions) {
+            channelSearchResults = findChannelsByName(channelSearchQuery);
+            const total = channelSearchResults.length;
+            header.style.display = 'flex';
+            title.textContent = `搜索「${channelSearchQuery}」：${total} 个频道`;
+            // 整个替换掉分组的操作按钮：它们的下标是按「当前选中的分组」写死的，留着会改到别的分组
+            actions.innerHTML = `<button class="btn btn-sm" onclick="clearChannelSearch(false)">退出搜索</button>`;
+
+            if (total === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 40px; color: #999;">没有名字里带「${escapeHtml(channelSearchQuery)}」的频道</div>`;
+                return;
+            }
+            const shown = channelSearchResults.slice(0, CHANNEL_SEARCH_LIMIT);
+            container.innerHTML = `
+                <div class="my-playlist-channels">
+                    ${shown.map((result, i) => `
+                        <div class="my-playlist-channel search-result" onclick="jumpToSearchResult(${i})" title="${escapeHtml(result.channel.name)} —— 点击跳到「${escapeHtml(result.groupName)}」分组${result.hidden ? '（已隐藏）' : ''}">
+                            <div class="my-playlist-channel-name">${escapeHtml(result.channel.name)}</div>
+                            <span class="channel-group-tag ${result.hidden ? 'in-hidden' : ''}">${escapeHtml(result.groupName)}${result.hidden ? ' · 已隐藏' : ''}</span>
+                        </div>
+                    `).join('')}
+                    ${total > shown.length ? `<div class="channel-search-note">只列出前 ${shown.length} 个，多输几个字可以缩小范围</div>` : ''}
+                </div>
+            `;
+        }
+
+        // 点搜索结果：退出搜索，切到频道所在的分组，并用「刚编辑过」的高亮（issue #50）定位到那一行
+        function jumpToSearchResult(i) {
+            const result = channelSearchResults[i];
+            if (!result) return;
+            lastEditedChannelId = result.channel.id;
+            selectGroup(result.groupIndex, result.hidden);
+            revealActiveGroupItem();
+            // 习惯双击的人第二下会落在刚换上来的分组频道行上（同一位置可能正好是「隐藏」按钮），短暂不接收点击
+            const box = document.getElementById('myPlaylistGroups');
+            if (box) {
+                box.style.pointerEvents = 'none';
+                setTimeout(() => { box.style.pointerEvents = ''; }, 400);
+            }
         }
 
         function renderGroupDetail() {
@@ -8632,6 +8822,18 @@ if(success){
             const actions = document.getElementById('detailActions');
             
             if (!container || !header || !title || !actions) return;
+
+            // 搜索结果行不带节目单/台标圆点，图例跟着收起
+            const legend = document.querySelector('.my-playlist-middle .ch-status-legend');
+            if (legend) legend.style.display = channelSearchQuery ? 'none' : '';
+
+            if (channelSearchQuery) {
+                // 搜索分支放在这里而不是输入事件里：隐藏、改名、切源等几十处保存后都会重渲染本区域，
+                // 这样每次都按最新数据重算结果，不会被冲掉，也不会留着过期的下标。
+                // 必须在末尾的「刚编辑过」高亮定位之前返回，否则待定位的频道会被结果行吃掉。
+                renderChannelSearchResults(container, header, title, actions);
+                return;
+            }
 
             let group, groupIndex;
 
@@ -8757,11 +8959,16 @@ if(success){
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">退出批量</button>
                     `;
                 } else {
+                    // 「公告」固定在第一位，别的分组最高只能到它后面
+                    const atTop = isUngrouped || groupIndex <= groupOrderFloor();
+                    const atBottom = isUngrouped || groupIndex === myPlaylistData.length - 1;
                     actions.innerHTML = `
                         ${isCustomGroup ? `<button class="btn btn-danger btn-sm" onclick="removeGroup(${groupIndex})">删除分组</button>` : ''}
                         <button class="btn btn-sm" onclick="renameGroup(${groupIndex})" ${isUngrouped ? 'disabled' : ''}>重命名</button>
-                        <button class="btn btn-sm" onclick="moveGroupUp(${groupIndex})" ${isUngrouped || groupIndex === 0 ? 'disabled' : ''}>↑ 上移</button>
-                        <button class="btn btn-sm" onclick="moveGroupDown(${groupIndex})" ${isUngrouped || groupIndex === myPlaylistData.length - 1 ? 'disabled' : ''}>↓ 下移</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'top')" ${atTop ? 'disabled' : ''} title="把这个分组移到所有分组最前">⤒ 置顶</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'up')" ${atTop ? 'disabled' : ''}>↑ 上移</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'down')" ${atBottom ? 'disabled' : ''}>↓ 下移</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'bottom')" ${atBottom ? 'disabled' : ''} title="把这个分组移到所有分组最后">⤓ 置底</button>
                         <button class="btn btn-sm" onclick="toggleGroupSort()" title="点击切换：手动拖拽 ⇄ 按名称自动排序（中文按拼音、含数字按数值）">📑 排序：${isNameSorted ? '名称' : '手动'}</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteGroup(${groupIndex})" ${isUngrouped || isCustomGroup ? 'disabled' : ''} title="${isCustomGroup ? '自定义分组无需隐藏：「删除分组」即彻底移除；想隐藏其中的频道请用「批量管理 → 隐藏」' : isUngrouped ? '「未分组」不可隐藏' : '隐藏整个分组，可在右侧「已隐藏」里恢复'}">隐藏分组</button>
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量管理</button>
@@ -8828,70 +9035,71 @@ if(success){
             }
         }
 
-        async function moveGroupUp(index) {
-            if (isSystemAnnouncementGroup(myPlaylistData[index])) {
-                showStatus('系统公告固定在第一位', 'error');
-                return;
-            }
-            if (myPlaylistData[index]?.name === '未分组') {
-                showStatus('未分组不支持调整顺序', 'error');
-                return;
-            }
-            if (index === 0) return;
-            [myPlaylistData[index], myPlaylistData[index - 1]] = [myPlaylistData[index - 1], myPlaylistData[index]];
-            selectedGroupIndex = index - 1; // 选中跟随被移动的分组，便于连续移动
-            updateGroupOrder();
-            
-            // 自动保存配置
-            try {
-                const response = await fetch(mpConfigUrl(), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(myPlaylistConfig)
-                });
-                const result = await response.json();
-                if (result.success) {
-                    renderMyPlaylist();
-                    showStatus('已上移分组', 'success');
-                } else {
-                    showStatus('保存失败', 'error');
-                }
-            } catch (error) {
-                showStatus('保存失败: ' + error.message, 'error');
-            }
+        // 分组顺序的下界：服务端 applyConfig 按名字把「公告」固定在第一位，别的分组最高只能排到它后面
+        function groupOrderFloor() {
+            return myPlaylistData[0]?.name === '公告' ? 1 : 0;
         }
 
-        async function moveGroupDown(index) {
-            if (isSystemAnnouncementGroup(myPlaylistData[index])) {
+        let groupMoveSeq = 0; // 每次调整分组顺序 +1，保存失败时用来判断「之后有没有又挪过」
+
+        // 调整分组顺序：上移 / 下移一位，或直接置顶 / 置底（issue #159：分组多时从末尾挪到最前要点几十次）
+        async function moveGroup(index, where) {
+            if (isViewingDeleted) return;
+            const data = myPlaylistData;
+            const config = myPlaylistConfig;
+            const group = data[index];
+            if (!group) return;
+            const floor = groupOrderFloor();
+            if (isSystemAnnouncementGroup(group) || index < floor) {
                 showStatus('系统公告固定在第一位', 'error');
                 return;
             }
-            if (myPlaylistData[index]?.name === '未分组') {
+            if (group.name === '未分组') {
                 showStatus('未分组不支持调整顺序', 'error');
                 return;
             }
-            if (index === myPlaylistData.length - 1) return;
-            [myPlaylistData[index], myPlaylistData[index + 1]] = [myPlaylistData[index + 1], myPlaylistData[index]];
-            selectedGroupIndex = index + 1; // 选中跟随被移动的分组，便于连续移动
+            const last = data.length - 1;
+            const target = { top: floor, up: index - 1, down: index + 1, bottom: last }[where];
+            if (target === undefined || target === index || target < floor || target > last) return;
+
+            const previousGroups = data.slice();
+            const previousOrder = config.groupOrder;
+            const seq = ++groupMoveSeq;
+            data.splice(index, 1);
+            data.splice(target, 0, group);
+            selectedGroupIndex = target; // 选中跟随被移动的分组，便于连续移动
             updateGroupOrder();
-            
-            // 自动保存配置
+            // 先重画再保存：按钮上的下标是渲染时写死的，等保存返回才重画的话，这期间再点一下会挪到别的分组
+            renderMyPlaylist();
+            revealActiveGroupItem();
+
+            let failure = null;
             try {
                 const response = await fetch(mpConfigUrl(), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(myPlaylistConfig)
+                    body: JSON.stringify(config)
                 });
                 const result = await response.json();
-                if (result.success) {
-                    renderMyPlaylist();
-                    showStatus('已下移分组', 'success');
-                } else {
-                    showStatus('保存失败', 'error');
-                }
+                if (!result.success) failure = '保存失败';
             } catch (error) {
-                showStatus('保存失败: ' + error.message, 'error');
+                failure = '保存失败: ' + error.message;
             }
+            if (!failure) {
+                showStatus({ top: '已置顶分组', up: '已上移分组', down: '已下移分组', bottom: '已置底分组' }[where], 'success');
+                return;
+            }
+            // 没存上：把顺序退回去，免得界面显示的和实际存的不一样。
+            // 之后又挪过（由后一次的保存结果说了算）或数据已整份重载（切档等）时不动。
+            if (seq === groupMoveSeq && myPlaylistData === data && myPlaylistConfig === config) {
+                const selected = isViewingDeleted ? null : data[selectedGroupIndex];
+                config.groupOrder = previousOrder;
+                data.splice(0, data.length, ...previousGroups);
+                if (selected) selectedGroupIndex = Math.max(0, data.indexOf(selected));
+                renderMyPlaylist();
+                revealActiveGroupItem();
+            }
+            showStatus(failure, 'error');
         }
 
         function updateGroupOrder() {
@@ -9048,9 +9256,11 @@ if(success){
                     await loadMyPlaylist(false);
                     const newGroupIndex = myPlaylistData.findIndex(group => group.name === trimmed);
                     if (newGroupIndex !== -1) {
+                        resetChannelSearch();   // 正在搜索时新建分组：退出搜索，让新分组显示出来
                         selectedGroupIndex = newGroupIndex;
                         isViewingDeleted = false;
                         renderMyPlaylist();
+                        revealActiveGroupItem();
                     }
                     showStatus(`已新增分组 "${trimmed}"`, 'success');
                 } else {

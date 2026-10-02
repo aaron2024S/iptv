@@ -79,7 +79,7 @@ function tierTable(list) {
  * 电视端那条流——游客探 4K 场次时 ottMediaFiles 里列着 rateType 8「超清4K (投屏专享)」
  * usageCode 221416，只给大屏权益。含电视端权益的账号按 rateType 9 带 ott 要到的仍是手机
  * 编码，10M 就成了天花板（issue #117 用户开通四屏后实测）。所以成功回应里若列着投屏档，
- * 再按它要一次。只认档位表里真有的，不硬编码 8：档位表没有就什么都不做。
+ * 再按它要一次。表里列着的优先；大屏表整张没给时见 blindCastTier。
  *
  * 必须同时带「投屏」字样和 4K 字样（或 rateType 8）：档位表是升序的，只按「投屏」匹配
  * 会先撞上将来可能出现的「蓝光 (投屏)」之类的低档。多项命中取表末尾的那项。
@@ -97,6 +97,22 @@ function castTier(respData) {
     if (hit) return { rateType: parseInt(hit.rateType), rateDesc: hit.rateDesc || rateLabel(parseInt(hit.rateType)) }
   }
   return null
+}
+
+/**
+ * 大屏表整张没给时，要不要盲要一次投屏档。
+ *
+ * castTier 靠的档位表形状是游客不带 ott 探出来的，四屏账号带 ott 成功的回应未必带大屏表：
+ * issue #117 用户 10-02 那场（游客看得到投屏专享）首次取流一行黄字都没有，投屏档从没被
+ * 要过（据日志推断，手头没有四屏账号）。所以大屏表为空、而拿到的是原画 / 4K（只有赛事流
+ * 才有这两档）时，直接按 rateType 8 试一次，给不给由 castAccepted 把关。咪咕给了大屏表而
+ * 表里没有投屏档的，信表，不试；普通频道顶档是蓝光，也不试，免得四屏账号换一圈台多一倍请求。
+ */
+function blindCastTier(respData) {
+  const ott = respData?.body?.ottMediaFiles
+  if (Array.isArray(ott) && ott.length > 0) return null
+  const got = parseInt(respData?.body?.urlInfo?.rateType)
+  return got === 7 || got === 9 ? { rateType: 8, rateDesc: rateLabel(8), blind: true } : null
 }
 
 /**
@@ -184,18 +200,20 @@ async function getAndroidURL(userId, token, pid, rateType, opts = {}) {
     respData = await requestPlayurl(9, false)
     if (!respData) return miguFetchFail(respData)
   } else if (rateType == 9 && respData.rid == 'SUCCESS' && respData.body?.urlInfo?.url) {
-    // 大屏策略走通（含电视端权益的账号）。只有这类账号看得到大屏档位表，所以有表就打
-    // 出来——再有「码率不对」的反馈，靠这一行就能对出咪咕列了哪些档、我们要了哪一档。
+    // 大屏策略走通（含电视端权益的账号）。有大屏表、或者要去试投屏档时把两张表打出来——
+    // 再有「码率不对」的反馈，靠这一行就能对出咪咕列了哪些档、我们要了哪一档。
     // 普通频道（CCTV1 之类）大屏表是空的、也没什么可要的，只进 debug，免得换一圈台刷一屏黄字。
     const got = respData.body.urlInfo
     const gotDesc = got.rateDesc || rateLabel(parseInt(got.rateType))
     const ottTable = tierTable(respData.body.ottMediaFiles)
     const tables = `大屏档位表：${ottTable || '（空）'}；手机档位表：${tierTable(respData.body.mediaFiles) || '（空）'}`
-    const cast = castTier(respData)
+    const cast = castTier(respData) || blindCastTier(respData)
     if (ottTable || cast) printYellow(`4K 按大屏策略取到 ${gotDesc}；${tables}`)
     else printDebug(`4K 按大屏策略取到 ${gotDesc}；${tables}`)
     if (cast) {
-      printYellow(`档位表里另有「${cast.rateDesc}」，按 rateType ${cast.rateType} 带大屏策略再要一次`)
+      printYellow(cast.blind
+        ? `咪咕没给大屏档位表，按 rateType ${cast.rateType}「${cast.rateDesc}」带大屏策略试要一次`
+        : `档位表里另有「${cast.rateDesc}」，按 rateType ${cast.rateType} 带大屏策略再要一次`)
       const castResp = await requestPlayurl(cast.rateType, true)
       const verdict = castAccepted(castResp, cast)
       if (verdict.ok) {

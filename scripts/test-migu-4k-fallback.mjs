@@ -99,8 +99,40 @@ try {
     assert.equal(res.rateType, 3)
   })
 
-  await check('含大屏权益的账号：第一次带 ott 就成功，路径不变', async () => {
-    const { fn, calls } = fakeFetch({ '9+ott': ok(9) })
+  await check('含大屏权益的账号：第一次带 ott 就成功，不再走手机策略', async () => {
+    const { fn, calls } = fakeFetch({ '9+ott': ok(9), '8+ott': needMember(9) })
+    const res = await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: fn })
+    assert.deepEqual(calls, ['9+ott', '8+ott'])
+    assert.equal(res.rateType, 9)
+  })
+
+  // 10-02 用户实况：四屏账号带 ott 成功，回应里没有大屏表，首次取流只有一行「咪咕取流：原画 HDR」
+  const NO_OTT_TABLE = { mediaFiles: [tier(3, 54), tier(4, 55), tier(7, 221306)], ottMediaFiles: null }
+
+  await check('★ 咪咕没给大屏表、拿到的是原画 / 4K：盲要一次投屏档，拿到 rateType 8', async () => {
+    for (const first of [7, 9]) {
+      const { fn, calls } = fakeFetch({ '9+ott': ok(first, NO_OTT_TABLE), '8+ott': ok(8) })
+      const res = await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: fn })
+      assert.deepEqual(calls, ['9+ott', '8+ott'])
+      assert.equal(res.rateType, 8)
+      assert.ok(logs.some(l => l.includes('\x1B[33m') && l.includes('大屏档位表：（空）')), '没有大屏表也要把档位表打成黄字')
+      assert.ok(logs.some(l => l.includes('咪咕没给大屏档位表，按 rateType 8「超清4K (投屏专享)」带大屏策略试要一次')))
+    }
+    const empty = fakeFetch({ '9+ott': ok(9, { ottMediaFiles: [] }), '8+ott': ok(8) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: empty.fn })).rateType, 8, '空数组同样算没给')
+  })
+
+  await check('★ 盲要的投屏档没给（被拒 / 静默回原画）：沿用第一次拿到的，日志带咪咕原话', async () => {
+    const a = fakeFetch({ '9+ott': ok(7, NO_OTT_TABLE), '8+ott': ok(7) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: a.fn })).rateType, 7)
+    assert.ok(logs.some(l => l.includes('「超清4K (投屏专享)」没拿到（咪咕实际给的是 原画 HDR），沿用 原画 HDR')))
+    const b = fakeFetch({ '9+ott': ok(7, NO_OTT_TABLE), '8+ott': needMember(7, '开通钻石会员即可免费畅看哦~') })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: b.fn })).rateType, 7)
+    assert.ok(logs.some(l => l.includes('没拿到（咪咕：开通钻石会员即可免费畅看哦~），沿用 原画 HDR')))
+  })
+
+  await check('咪咕给了大屏表而表里没有投屏档：信表，不盲要', async () => {
+    const { fn, calls } = fakeFetch({ '9+ott': ok(9, { ottMediaFiles: [tier(4, 55)] }) })
     const res = await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: fn })
     assert.deepEqual(calls, ['9+ott'])
     assert.equal(res.rateType, 9)

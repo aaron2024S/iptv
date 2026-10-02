@@ -2,14 +2,15 @@ import { CHANNEL_BY_REF } from './channels.js'
 import { MANIFEST_TIMEOUT_MS, requestPlayUrls, selectWorkingManifest, UPSTREAM_HEADERS } from './api.js'
 import { FILLER_PATH, LIBVLC_UA, libvlcPlaylist } from './libvlc-view.js'
 import { printYellow } from '../../utils/colorOut.js'
+import { createPlaylistHistory } from './playlist-history.js'
 
 /**
  * 只缓存官方主备入口，绝不把清单正文按取票 TTL 缓存。
  *
  * 直播媒体清单里只有 3 个分片、每 3 秒滚动一次，缓存正文等于让播放器在整个 TTL 内
  * 反复拿到同一批分片：播完这十几秒就没有下一片，画面直接卡死，且那批分片早已被
- * CDN 回收，重取只会 403。每次解析都实时取清单，并直接交给代理层下发，
- * 避免「选线探测成功后立即再取一次」触发 CDN 403。只合并同频道正在进行的请求。
+ * CDN 回收，重取只会 403。正在观看的频道每 5 秒共享刷新一次，并直接交给代理层下发，
+ * 避免多客户端重复刷新触发 CDN 403，也避免播放器刷新较慢漏掉短片。停播后停止刷新。
  * （取不到新清单时拿上一份顶一下是另一回事，见 STALE_AFTER_MS。）
  *
  * 5 分钟远短于接口自报的 vkey_renew_interval（实测 14400 秒）；但 CDN 仍可能
@@ -17,6 +18,8 @@ import { printYellow } from '../../utils/colorOut.js'
  * 相比原先 20 秒又把取票请求降到 1/15，60 路同放也不会打爆官方接口。
  */
 export const CACHE_MS = 5 * 60 * 1000
+export const LIVE_REFRESH_MS = 5_000
+export const LIVE_IDLE_MS = 15_000
 
 /**
  * 换票后主备 CDN 仍全部 403 = 本机出口正被官方限流。此后该频道 30 秒内直接回失败、
@@ -156,12 +159,19 @@ export function createResolver({
   select = selectWorkingManifest,
   staleAfterMs = STALE_AFTER_MS,
   staleRecheckMs = STALE_RECHECK_MS,
+  // The singleton enables shared polling; injected one-shot resolvers can opt in.
+  refreshIntervalMs = 0,
+  idleMs = LIVE_IDLE_MS,
   log = printYellow,
 } = {}) {
   const cache = new Map()
   const pending = new Map()
   const cooling = new Map()
   const pins = new Map()
+  const histories = new Map()
+  const segmentProbes = new Map()
+  const refreshers = new Map()
+  let generation = 0
   // 频道 -> 最近一份成功取回的清单 { text, plain, url, at, tail, stale, sent }；
   // stale = 已经拿它顶过至少一次，sent = 发给过播放器（没等到、后台才取回的那份一开始是没发过的）
   const latest = new Map()
@@ -183,13 +193,21 @@ export function createResolver({
   async function acquire(ref, channel, ctx) {
     let current = pending.get(ref)
     if (current) return current
+    const epoch = generation
     current = (async () => {
+      if (!segmentProbes.has(ref)) segmentProbes.set(ref, new Map())
+      const selection = {
+        ...ctx, segmentProbeState: segmentProbes.get(ref),
+        onSegmentProbe: ({ host, ok, reason }) => {
+          if (!ok) log(`[央视频] ${channel.name} ${host} 服务端分片探测未通过（${reason}），尝试备用线路；若主备均未通过仍保留有效清单，播放器直连不受阻断`)
+        },
+      }
       let lastError
       const cached = cache.get(ref)
       if (cached && Number(ctx.now ?? Date.now()) < cached.expiresAt) {
         try {
-          const manifest = await select(cached.urls, ctx)
-          remember(ref, cached.urls, manifest, cached.expiresAt)
+          const manifest = await select(cached.urls, selection)
+          if (epoch === generation) remember(ref, cached.urls, manifest, cached.expiresAt)
           return manifest
         } catch (error) {
           lastError = error
@@ -199,8 +217,8 @@ export function createResolver({
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const { urls } = await request(channel, ctx)
-          const manifest = await select(urls, ctx)
-          remember(ref, urls, manifest, Number(ctx.now ?? Date.now()) + CACHE_MS)
+          const manifest = await select(urls, selection)
+          if (epoch === generation) remember(ref, urls, manifest, Number(ctx.now ?? Date.now()) + CACHE_MS)
           return manifest
         } catch (error) {
           lastError = error
@@ -224,9 +242,13 @@ export function createResolver({
     if (!pins.has(key)) pins.set(key, new Map())
     const at = Number(ctx.now ?? Date.now())
     const filled = backfillSkipped(manifest.text, served.get(key))
-    const text = pinSegmentUrls(filled, manifest.url, pins.get(key))
-    // plain = 没接回跳片的那份，给 libVLC 视图用：它的序号和声明时长另有讲究（见 libvlc-view.js），不动它
-    const plain = filled === manifest.text ? text : pinSegmentUrls(manifest.text, manifest.url, pins.get(key))
+    const pinned = pinSegmentUrls(manifest.text, manifest.url, pins.get(key))
+    if (!histories.has(key)) histories.set(key, createPlaylistHistory())
+    // History only contains genuinely observed segments with exact durations.
+    // The existing estimated gap repair remains separate, for native players.
+    const plain = histories.get(key).extend(pinned, at)
+    const text = filled === manifest.text ? plain : pinSegmentUrls(filled, manifest.url, pins.get(key))
+      .replace(/^#EXT-X-TARGETDURATION:\s*(\d+)/m, (_, n) => `#EXT-X-TARGETDURATION:${Math.max(Number(n), Number(plain.match(/^#EXT-X-TARGETDURATION:\s*(\d+)/m)?.[1]) || 0)}`)
     const tail = tailOf(manifest.text)
     if (previous?.stale) log(`[央视频] ${channel.name} 官方入口恢复，隔了 ${Math.round((at - previous.at) / 1000)} 秒拿到新清单`)
     if (filled !== manifest.text) log(`[央视频] ${channel.name} 新清单跳过了 ${firstSeq(manifest.text) - firstSeq(filled)} 片，已接回`)
@@ -236,6 +258,7 @@ export function createResolver({
   }
 
   function answer(key, entry, ctx, desc) {
+    touch(key, CHANNEL_BY_REF.get(key), ctx)
     served.set(key, entry.tail)
     entry.sent = true
     // libVLC 另拿一份清单视图（见 libvlc-view.js）。垫片由本机提供，所以只在外壳给了
@@ -250,10 +273,59 @@ export function createResolver({
     }
   }
 
+  function fetchFresh(key, channel, ctx) {
+    const epoch = generation
+    return acquire(key, channel, ctx)
+      .then(manifest => epoch === generation
+        ? { entry: keep(key, channel, manifest, ctx) }
+        : { error: new Error('解析缓存已重置') })
+      .catch(error => {
+        if (epoch === generation && error?.allForbidden) {
+          cooling.set(key, { until: Number(ctx.now ?? Date.now()) + FORBIDDEN_COOLDOWN_MS })
+        }
+        return { error }
+      })
+  }
+
+  function touch(key, channel, ctx) {
+    if (!(refreshIntervalMs > 0) || !latest.has(key)) return
+    let state = refreshers.get(key)
+    if (state) { state.touched = Date.now(); state.ctx = ctx; return }
+    state = { touched: Date.now(), ctx, timer: null }
+    refreshers.set(key, state)
+    const tick = async () => {
+      if (refreshers.get(key) !== state) return
+      if (Date.now() - state.touched >= idleMs) { refreshers.delete(key); return }
+      const cooled = cooling.get(key)
+      if (!cooled || Date.now() >= cooled.until) {
+        // Fresh wall time: do not carry a foreground request's timestamp into
+        // a later poll. Pending acquisition still coalesces with client requests.
+        const pollContext = { ...state.ctx }
+        delete pollContext.now
+        const outcome = await fetchFresh(key, channel, pollContext)
+        if (refreshers.get(key) !== state) return
+        if (outcome.error) {
+          const previous = latest.get(key)
+          if (previous && !previous.stale) {
+            previous.stale = true
+            log(`[央视频] ${channel.name} 后台清单刷新失败（${reasonOf(outcome.error)}），先把上一份清单回给播放器`)
+          }
+        }
+      }
+      if (refreshers.get(key) === state) {
+        state.timer = setTimeout(tick, refreshIntervalMs)
+        state.timer.unref?.()
+      }
+    }
+    state.timer = setTimeout(tick, refreshIntervalMs)
+    state.timer.unref?.()
+  }
+
   async function resolve(ref, ctx = {}) {
     const key = String(ref || '')
     const channel = CHANNEL_BY_REF.get(key)
     if (!channel) return { url: '', desc: '央视频频道引用格式错误' }
+    touch(key, channel, ctx)
     const now = Number(ctx.now ?? Date.now())
     const held = latest.get(key)
     const spare = held && now - held.at <= STALE_MAX_MS ? held : null
@@ -267,17 +339,15 @@ export function createResolver({
     cooling.delete(key)
     // 没等到、在后台才取回的清单还没发给过播放器：直接给它，不让播放器再陪着取一次
     if (spare && !spare.sent) return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
+    if (refreshIntervalMs > 0 && spare && !spare.stale && now - spare.at < refreshIntervalMs) {
+      return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
+    }
     // 结果统一收成 { entry } 或 { error }：后台跑完没人等的那一次也得把冷却记上，且不留未处理的拒绝
-    const fresh = acquire(key, channel, ctx)
-      .then(manifest => ({ entry: keep(key, channel, manifest, ctx) }))
-      .catch(error => {
-        if (error?.allForbidden) cooling.set(key, { until: now + FORBIDDEN_COOLDOWN_MS })
-        return { error }
-      })
+    const fresh = fetchFresh(key, channel, ctx)
     const patient = LIBVLC_UA.test(String(ctx.client?.ua || ''))
     const wait = !spare ? Infinity : !spare.stale ? staleAfterMs : patient ? staleRecheckMs : 0
     const outcome = wait === Infinity ? await fresh : wait ? await within(fresh, wait) : null
-    // 只返回本次请求刚取回的正文；缓存条目里没有正文，下次轮询会重新拉取。
+    // 新取得的正文立即交给播放器；正常时复用最多一个共享刷新周期。
     if (outcome?.entry) return answer(key, outcome.entry, ctx, `${channel.name} H.264 播放地址获取成功`)
     if (spare) {
       if (!spare.stale) {
@@ -296,17 +366,22 @@ export function createResolver({
   }
 
   function clear() {
+    generation++
+    for (const state of refreshers.values()) clearTimeout(state.timer)
+    refreshers.clear()
     cache.clear()
     pending.clear()
     cooling.clear()
     pins.clear()
     latest.clear()
     served.clear()
+    histories.clear()
+    segmentProbes.clear()
   }
 
   return { resolve, clear, cache, pending, cooling, pins, latest }
 }
 
-const resolver = createResolver()
+const resolver = createResolver({ refreshIntervalMs: LIVE_REFRESH_MS })
 export const resolveChannel = resolver.resolve
 export const clearCache = resolver.clear

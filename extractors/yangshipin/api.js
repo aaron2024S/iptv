@@ -140,21 +140,77 @@ async function fetchManifest(url, fetchImpl, signal) {
 /**
  * 逐一检查官方主/备 CDN，取回能拍平成媒体清单的那一条。
  *
- * 只验证清单本身，不去试拉分片：官方 CDN 对短间隔的重复请求会直接回 403，
- * 而一次换票本就已经打了取票和清单两枪，再补一枪分片正好撞上限速——那样探活会在
- * CDN 完全正常时失败，把主备两条都误判成不可用，最终整个频道播不了。分片能否取到
- * 由播放器在真正播放时决定，它自己会重试，不需要这里替它预判。
+ * 解析层传入 segmentProbeState 时，每频道、每 CDN 至多一分钟探测一次 TS 的前 188 字节。
+ * 清单正常、分片却 403 的线路可让位给分片验证成功的备用线路。服务端出口不等于播放器出口，
+ * 且额外请求可能遇限频：主备都未通过分片探测时仍保留第一条有效清单，不把频道判死或触发冷却。
  *
  * 每个入口最多等 MANIFEST_TIMEOUT_MS。官方入口偶尔会挂住不回应，原先等满 10 秒才换备用入口，
  * 而播放器手里只有十几秒内容，这一等画面必停（libVLC 实测晚到 5～8 秒，主备都挂时等了 20 秒）。
  * 正常取清单很快：经 NAS 实例统计 205 次，中位 0.15 秒、95% 在 0.7 秒内、最慢的正常响应不到 1 秒。
  */
 export const MANIFEST_TIMEOUT_MS = 3_000
+export const SEGMENT_PROBE_INTERVAL_MS = 60_000
+export const SEGMENT_PROBE_TIMEOUT_MS = 1_000
+
+async function probeSegment(url, options) {
+  const state = options.segmentProbeState
+  if (!state) return { ok: true }
+  const now = Number(options.now ?? Date.now())
+  const parsed = new URL(url)
+  // Ticket paths and sequence numbers change; probe at most once per CDN/stream.
+  const key = `${parsed.origin}/${parsed.pathname.split('/').pop().replace(/-\d+\.ts$/, '')}`
+  const cached = state.get(key)
+  if (cached && now - cached.at < SEGMENT_PROBE_INTERVAL_MS) return cached
+  const timeout = withTimeout(Number(options.segmentProbeTimeoutMs || SEGMENT_PROBE_TIMEOUT_MS))
+  let result
+  try {
+    let current = url, response
+    for (let redirects = 0; redirects <= 3; redirects++) {
+      const target = new URL(current)
+      if (!isOfficialMediaUrl(current) || (target.port && target.port !== '443')) throw new Error('分片重定向不是官方 HTTPS 地址')
+      response = await (options.fetchImpl || fetch)(current, {
+        redirect: 'manual', signal: timeout.signal,
+        headers: { ...UPSTREAM_HEADERS, Range: 'bytes=0-187' },
+      })
+      if (![301, 302, 303, 307, 308].includes(response.status)) break
+      const location = response.headers.get('location')
+      await response.body?.cancel()
+      if (!location || redirects === 3) throw new Error('分片重定向异常')
+      current = new URL(location, current).href
+    }
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new Error(`分片 HTTP ${response.status}`)
+    }
+    // Some nodes ignore Range. Read just one TS packet, then cancel the body.
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('分片没有正文')
+    let count = 0, sync = false
+    try {
+      while (count < 188) {
+        const chunk = await reader.read()
+        if (chunk.done) break
+        if (!count && chunk.value.length) sync = chunk.value[0] === 0x47
+        count += chunk.value.length
+      }
+    } finally { await reader.cancel() }
+    if (count < 188 || !sync) throw new Error('分片不是有效 TS 包')
+    result = { at: now, ok: true }
+  } catch (error) {
+    result = { at: now, ok: false, reason: error?.name === 'AbortError' ? '分片超时' : error.message }
+  } finally { timeout.done() }
+  state.delete(key)
+  state.set(key, result)
+  while (state.size > 8) state.delete(state.keys().next().value)
+  options.onSegmentProbe?.({ host: parsed.hostname, ...result })
+  return result
+}
 
 export async function selectWorkingManifest(urls, options = {}) {
   const fetchImpl = options.fetchImpl || fetch
   const errors = []
   let forbidden = 0
+  let fallback
   for (const url of urls) {
     const timeout = withTimeout(Number(options.timeoutMs || MANIFEST_TIMEOUT_MS))
     try {
@@ -163,7 +219,11 @@ export async function selectWorkingManifest(urls, options = {}) {
       if (variant && isOfficialMediaUrl(variant)) manifest = await fetchManifest(variant, fetchImpl, timeout.signal)
       const segments = mediaSegments(manifest.text, manifest.url)
       if (!segments.length) throw new Error('媒体清单没有分片')
-      return { ...manifest, sourceUrl: url }
+      const candidate = { ...manifest, sourceUrl: url }
+      // The newest fragment may still be publishing. Probe the penultimate one.
+      const probe = await probeSegment(segments[Math.max(0, segments.length - 2)], options)
+      if (probe.ok) return candidate
+      fallback ||= candidate
     } catch (error) {
       if (error?.status === 403) forbidden++
       let host = '未知节点'
@@ -173,6 +233,7 @@ export async function selectWorkingManifest(urls, options = {}) {
       timeout.done()
     }
   }
+  if (fallback) return fallback
   // allForbidden：主备全是 403，即本机出口被 CDN 限流的特征，由解析层据此冷却
   throw Object.assign(new Error(`主、备用 CDN 均不可用（${errors.join('；')}）`), {
     allForbidden: urls.length > 0 && forbidden === urls.length,

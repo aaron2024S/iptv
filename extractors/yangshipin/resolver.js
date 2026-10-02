@@ -1,6 +1,7 @@
 import { CHANNEL_BY_REF } from './channels.js'
-import { requestPlayUrls, selectWorkingManifest, UPSTREAM_HEADERS } from './api.js'
+import { MANIFEST_TIMEOUT_MS, requestPlayUrls, selectWorkingManifest, UPSTREAM_HEADERS } from './api.js'
 import { FILLER_PATH, LIBVLC_UA, libvlcPlaylist } from './libvlc-view.js'
+import { printYellow } from '../../utils/colorOut.js'
 
 /**
  * 只缓存官方主备入口，绝不把清单正文按取票 TTL 缓存。
@@ -9,6 +10,7 @@ import { FILLER_PATH, LIBVLC_UA, libvlcPlaylist } from './libvlc-view.js'
  * 反复拿到同一批分片：播完这十几秒就没有下一片，画面直接卡死，且那批分片早已被
  * CDN 回收，重取只会 403。每次解析都实时取清单，并直接交给代理层下发，
  * 避免「选线探测成功后立即再取一次」触发 CDN 403。只合并同频道正在进行的请求。
+ * （取不到新清单时拿上一份顶一下是另一回事，见 STALE_AFTER_MS。）
  *
  * 5 分钟远短于接口自报的 vkey_renew_interval（实测 14400 秒）；但 CDN 仍可能
  * 提前拒绝旧地址，因此每次取清单都能换备用入口，全部失败时提前换票。
@@ -27,6 +29,88 @@ export const CACHE_MS = 5 * 60 * 1000
  * 只认「全部 403」：超时、版权停播等失败照旧每次实打，不因一次抖动封掉一个台。
  */
 export const FORBIDDEN_COOLDOWN_MS = 30 * 1000
+
+/**
+ * 官方入口一时取不到新清单，先把上一份清单回给播放器（issue #158）。
+ *
+ * 入口偶尔会挂住十几秒不回应。原先这次请求要陪着等完整轮（缓存入口 + 两次换票，每次主入口
+ * 等满 3 秒，共约 9.5 秒），最后回一段失败说明。用录下来的真实分片按原节奏回放实测：APTV
+ * （系统播放内核）的清单请求被挂这么久，就再也不发请求、停在最后一帧，只能手动切台，这时回
+ * 什么内容都一样；裸的 AVPlayer 能熬过这一挂，但缓冲见底时拿到失败说明会直接报错停播。
+ * 改成三四秒内回上一份清单，APTV 只是等几秒，官方恢复后自己续上。清单没变对播放器是正常情况
+ * （还没出新片），各家都是过一会儿再来取。
+ *
+ * STALE_AFTER_MS：有上一份清单可回时，一次请求最多等这么久。比一个入口的超时多半秒——主入口
+ * 挂住、备用入口正常时照样等得到新清单，不白白晚一轮。取新清单的事接着在后台做。
+ * 已经回过旧清单之后的请求，两类播放器实测要的正好相反，只能分开对待：
+ *   - APTV：断流期间只要有一次清单请求被多留了 1 秒，就停在原地不再恢复（4 轮里 3 轮，剩下
+ *     那轮它缓冲还没用完）；一律立刻回、跳片也接回的 3 轮都自己续上。所以默认不等，立刻回旧清单，
+ *     新清单在后台取，取到后下一次请求直接给（见 resolve 里「还没发过」那一条），全程不让它的请求等。
+ *   - libVLC（Ceau Player）：它是上一次响应后 5 秒才再来取。立刻回旧的会让它在官方已经恢复的
+ *     那一轮白拿一份旧清单，晚 5 秒续上、还多跳过一片，比不改之前更卡。所以给它等 STALE_RECHECK_MS：
+ *     官方正常时取清单最慢不到 1 秒（见 api.js），等得到就是恢复了，当场给新清单。
+ * STALE_MAX_MS：上一份清单最多顶这么久。再久播放器手里的内容早就播完，官方也只留一分钟左右的
+ * 分片，继续回旧清单只会让人以为还在播；到点照旧回失败说明。
+ */
+export const STALE_AFTER_MS = MANIFEST_TIMEOUT_MS + 500
+export const STALE_RECHECK_MS = 1000
+export const STALE_MAX_MS = 30 * 1000
+
+/**
+ * 断流恢复后，把清单跳过去的分片接回来（issue #158）。
+ *
+ * 官方清单只列最新 3 片。断了十几秒再取到时窗口已经滚过去，播放器手里最后一片和新清单第一片
+ * 之间缺一两片。同一套回放实测：APTV 遇到这种跳片会停在原地不动（它其实还在取清单、下分片），
+ * 把缺的片接回清单前面就自己续上了；跟清单里带不带时间标签无关。
+ *
+ * 缺的片官方还留着：清单头的 EXT-QQHLS-SEGMENT_RANGE 是 CDN 上现存的序号范围（约 11 片），
+ * 同一主机同一令牌只换文件名里的序号就能取。时长清单里没有，用两头的 EXT-QQHLS-START-TIME 相减
+ * 再平摊；这个标签只精确到秒，所以每片可能差一两秒（回放里差零点几秒，APTV 和 AVPlayer 照常续播）。
+ * 认不出这些标签、缺的片已不在 CDN 留存范围、或算出来的时长离谱时原样返回，不硬补。
+ */
+const SEGMENT_TAG = /^#(?:EXT-QQHLS-MACHINEID|EXT-QQHLS-START-TIME|EXT-SID|EXT-X-PROGRAM-DATE-TIME|EXTINF)\b/
+const firstSeq = text => Number(String(text).match(/^#EXT-X-MEDIA-SEQUENCE:\s*(\d+)/m)?.[1])
+
+// 清单最后一片的序号、开始时刻（秒）和时长：下一份清单拿它判断中间缺了几片、缺了多久
+export function tailOf(text) {
+  const lines = String(text).replace(/\r/g, '').split('\n')
+  const count = lines.filter(line => line.trim() && !line.startsWith('#')).length
+  const pick = prefix => Number(lines.findLast(line => line.startsWith(prefix))?.slice(prefix.length).split(',')[0])
+  return {
+    seq: firstSeq(text) + count - 1,
+    start: pick('#EXT-QQHLS-START-TIME:'),
+    duration: pick('#EXTINF:'),
+  }
+}
+
+export function backfillSkipped(text, tail) {
+  const first = firstSeq(text)
+  const kept = Number(String(text).match(/^#EXT-QQHLS-SEGMENT_RANGE:\s*(\d+)-/m)?.[1])
+  const missing = first - tail?.seq - 1
+  if (!(missing >= 1) || !(tail.seq + 1 >= kept)) return text
+  const lines = String(text).replace(/\r/g, '').split('\n')
+  const urlAt = lines.findIndex(line => line.trim() && !line.startsWith('#'))
+  const tagAt = lines.findIndex(line => SEGMENT_TAG.test(line))
+  if (urlAt < 0 || tagAt < 0 || tagAt > urlAt) return text
+  const url = lines[urlAt].trim()
+  const start = Number(lines.slice(tagAt, urlAt).find(line => line.startsWith('#EXT-QQHLS-START-TIME:'))?.split(':')[1])
+  const each = (start - tail.start - tail.duration) / missing
+  if (!url.includes(`-${first}.ts`) || !(each >= 1 && each <= 15)) return text
+  const skipped = []
+  for (let seq = tail.seq + 1; seq < first; seq++) skipped.push(`#EXTINF:${each.toFixed(3)},`, url.replace(`-${first}.ts`, `-${seq}.ts`))
+  lines.splice(tagAt, 0, ...skipped)
+  return lines.join('\n')
+    .replace(/^#EXT-X-MEDIA-SEQUENCE:.*$/m, `#EXT-X-MEDIA-SEQUENCE:${tail.seq + 1}`)
+    .replace(/^#EXT-X-TARGETDURATION:\s*(\d+)/m, (_, declared) => `#EXT-X-TARGETDURATION:${Math.max(Number(declared), Math.ceil(each))}`)
+}
+
+// 等 promise 出结果，最多等 ms；没等到回 null
+function within(promise, ms) {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve(null), ms)
+    promise.then(value => { clearTimeout(timer); resolve(value) })
+  })
+}
 
 /**
  * 同一媒体序号只下发第一次见到的分片地址（issue #142 / #143）。
@@ -67,11 +151,23 @@ export function pinSegmentUrls(text, baseUrl, pins) {
   return pinned.join('\n')
 }
 
-export function createResolver({ request = requestPlayUrls, select = selectWorkingManifest } = {}) {
+export function createResolver({
+  request = requestPlayUrls,
+  select = selectWorkingManifest,
+  staleAfterMs = STALE_AFTER_MS,
+  staleRecheckMs = STALE_RECHECK_MS,
+  log = printYellow,
+} = {}) {
   const cache = new Map()
   const pending = new Map()
   const cooling = new Map()
   const pins = new Map()
+  // 频道 -> 最近一份成功取回的清单 { text, plain, url, at, tail, stale, sent }；
+  // stale = 已经拿它顶过至少一次，sent = 发给过播放器（没等到、后台才取回的那份一开始是没发过的）
+  const latest = new Map()
+  // 频道 -> 最近一次真正发给播放器的清单的最后一片。跳片要对着它算：没等到、在后台才取回的清单
+  // 没发出去过，拿它当「上一份」会以为不缺片
+  const served = new Map()
 
   function remember(ref, urls, manifest, expiresAt) {
     // 保存取票接口给的入口；CDN 重定向后的临时媒体地址可能很快失效，不能
@@ -118,41 +214,85 @@ export function createResolver({ request = requestPlayUrls, select = selectWorki
     return current
   }
 
+  // AbortError 的原生文案是英文的 This operation was aborted，直接抛进日志没人看得懂
+  const reasonOf = error => error?.name === 'AbortError' ? '请求超时' : (error?.message || String(error))
+
+  function keep(key, channel, manifest, ctx) {
+    const previous = latest.get(key)
+    // 同一次取回的清单会被每个在等它的请求各交来一次，只处理第一次
+    if (previous?.source === manifest) return previous
+    if (!pins.has(key)) pins.set(key, new Map())
+    const at = Number(ctx.now ?? Date.now())
+    const filled = backfillSkipped(manifest.text, served.get(key))
+    const text = pinSegmentUrls(filled, manifest.url, pins.get(key))
+    // plain = 没接回跳片的那份，给 libVLC 视图用：它的序号和声明时长另有讲究（见 libvlc-view.js），不动它
+    const plain = filled === manifest.text ? text : pinSegmentUrls(manifest.text, manifest.url, pins.get(key))
+    const tail = tailOf(manifest.text)
+    if (previous?.stale) log(`[央视频] ${channel.name} 官方入口恢复，隔了 ${Math.round((at - previous.at) / 1000)} 秒拿到新清单`)
+    if (filled !== manifest.text) log(`[央视频] ${channel.name} 新清单跳过了 ${firstSeq(manifest.text) - firstSeq(filled)} 片，已接回`)
+    const entry = { source: manifest, text, plain, url: manifest.url, at, stale: false, tail }
+    latest.set(key, entry)
+    return entry
+  }
+
+  function answer(key, entry, ctx, desc) {
+    served.set(key, entry.tail)
+    entry.sent = true
+    // libVLC 另拿一份清单视图（见 libvlc-view.js）。垫片由本机提供，所以只在外壳给了
+    // selfBase（清单直出）时才换；改写不了的清单 libvlcPlaylist 回 null，照旧下发原样。
+    const forLibvlc = ctx.selfBase && LIBVLC_UA.test(String(ctx.client?.ua || ''))
+    return {
+      url: entry.url,
+      manifestText: (forLibvlc && libvlcPlaylist(entry.plain, `${ctx.selfBase}${FILLER_PATH}`)) || entry.text,
+      manifestUrl: entry.url,
+      upstreamHeaders: UPSTREAM_HEADERS,
+      desc,
+    }
+  }
+
   async function resolve(ref, ctx = {}) {
     const key = String(ref || '')
     const channel = CHANNEL_BY_REF.get(key)
     if (!channel) return { url: '', desc: '央视频频道引用格式错误' }
     const now = Number(ctx.now ?? Date.now())
+    const held = latest.get(key)
+    const spare = held && now - held.at <= STALE_MAX_MS ? held : null
+    const standIn = () => answer(key, spare, ctx, `${channel.name} 暂时取不到新清单，先回上一份`)
     const cooled = cooling.get(key)
     if (cooled && now < cooled.until) {
+      if (spare) { spare.stale = true; return standIn() }
       const seconds = Math.ceil((cooled.until - now) / 1000)
       return { url: '', desc: `${channel.name}链接请求失败：官方 CDN 刚回 403（疑似限流），冷却中，${seconds} 秒后再向官方请求` }
     }
     cooling.delete(key)
-    try {
-      const manifest = await acquire(key, channel, ctx)
-      if (!pins.has(key)) pins.set(key, new Map())
-      const text = pinSegmentUrls(manifest.text, manifest.url, pins.get(key))
-      // libVLC 另拿一份清单视图（见 libvlc-view.js）。垫片由本机提供，所以只在外壳给了
-      // selfBase（清单直出）时才换；改写不了的清单 libvlcPlaylist 回 null，照旧下发原样。
-      const forLibvlc = ctx.selfBase && LIBVLC_UA.test(String(ctx.client?.ua || ''))
-      // 只返回本次请求刚取回的正文；缓存条目里没有正文，下次轮询会重新拉取。
-      return {
-        url: manifest.url,
-        manifestText: (forLibvlc && libvlcPlaylist(text, `${ctx.selfBase}${FILLER_PATH}`)) || text,
-        manifestUrl: manifest.url,
-        upstreamHeaders: UPSTREAM_HEADERS,
-        desc: `${channel.name} H.264 播放地址获取成功`,
+    // 没等到、在后台才取回的清单还没发给过播放器：直接给它，不让播放器再陪着取一次
+    if (spare && !spare.sent) return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
+    // 结果统一收成 { entry } 或 { error }：后台跑完没人等的那一次也得把冷却记上，且不留未处理的拒绝
+    const fresh = acquire(key, channel, ctx)
+      .then(manifest => ({ entry: keep(key, channel, manifest, ctx) }))
+      .catch(error => {
+        if (error?.allForbidden) cooling.set(key, { until: now + FORBIDDEN_COOLDOWN_MS })
+        return { error }
+      })
+    const patient = LIBVLC_UA.test(String(ctx.client?.ua || ''))
+    const wait = !spare ? Infinity : !spare.stale ? staleAfterMs : patient ? staleRecheckMs : 0
+    const outcome = wait === Infinity ? await fresh : wait ? await within(fresh, wait) : null
+    // 只返回本次请求刚取回的正文；缓存条目里没有正文，下次轮询会重新拉取。
+    if (outcome?.entry) return answer(key, outcome.entry, ctx, `${channel.name} H.264 播放地址获取成功`)
+    if (spare) {
+      if (!spare.stale) {
+        spare.stale = true
+        const why = outcome ? reasonOf(outcome.error) : `${staleAfterMs / 1000} 秒没取到新清单（还在取）`
+        log(`[央视频] ${channel.name} ${why}，先把上一份清单回给播放器`)
+        if (!outcome) fresh.then(late => { if (late.error) log(`[央视频] ${channel.name}链接请求失败：${reasonOf(late.error)}`) })
       }
-    } catch (error) {
-      // AbortError 的原生文案是英文的 This operation was aborted，直接抛进日志没人看得懂
-      const reason = error?.name === 'AbortError' ? '请求超时' : (error?.message || String(error))
-      if (error?.allForbidden) {
-        cooling.set(key, { until: now + FORBIDDEN_COOLDOWN_MS })
-        return { url: '', desc: `${channel.name}链接请求失败：${reason}，${FORBIDDEN_COOLDOWN_MS / 1000} 秒内暂停向官方请求` }
-      }
-      return { url: '', desc: `${channel.name}链接请求失败：${reason}` }
+      return standIn()
     }
+    const reason = reasonOf(outcome.error)
+    if (outcome.error?.allForbidden) {
+      return { url: '', desc: `${channel.name}链接请求失败：${reason}，${FORBIDDEN_COOLDOWN_MS / 1000} 秒内暂停向官方请求` }
+    }
+    return { url: '', desc: `${channel.name}链接请求失败：${reason}` }
   }
 
   function clear() {
@@ -160,9 +300,11 @@ export function createResolver({ request = requestPlayUrls, select = selectWorki
     pending.clear()
     cooling.clear()
     pins.clear()
+    latest.clear()
+    served.clear()
   }
 
-  return { resolve, clear, cache, pending, cooling, pins }
+  return { resolve, clear, cache, pending, cooling, pins, latest }
 }
 
 const resolver = createResolver()

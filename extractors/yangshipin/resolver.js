@@ -3,6 +3,7 @@ import { MANIFEST_TIMEOUT_MS, requestPlayUrls, selectWorkingManifest, UPSTREAM_H
 import { FILLER_PATH, LIBVLC_UA, libvlcPlaylist } from './libvlc-view.js'
 import { printYellow } from '../../utils/colorOut.js'
 import { createPlaylistHistory } from './playlist-history.js'
+import epg from './epg.js'
 
 /**
  * 只缓存官方主备入口，绝不把清单正文按取票 TTL 缓存。
@@ -55,9 +56,29 @@ export const TICKET_BUDGET_WINDOW_MS = 60 * 1000
  * 30 秒取自共享实例的真实日志（两天 1487 次 403）：同频道相邻两次失败 54% 间隔不到
  * 1 秒，30~60 秒的只占 1%。按日志回放，冷却 5/15/30/60/120 秒分别挡掉 54/59/65/65/66%
  * 的上游请求——30 秒之后再加长几乎不再多挡，只会让官方恢复后观众白等。
- * 只认「全部 403」：超时、版权停播等失败照旧每次实打，不因一次抖动封掉一个台。
+ * 只认「全部 403」：超时等失败照旧每次实打，不因一次抖动封掉一个台（版权停播另有冷却，见下）。
  */
 export const FORBIDDEN_COOLDOWN_MS = 30 * 1000
+
+/**
+ * 官方回「应版权方要求，暂停提供直播信号」后，这个台冷却到当前节目结束（最多 5 分钟）再向官方请求。
+ *
+ * 版权停播按节目走：一档节目没有版权，整档都是这句话，换了节目才可能恢复。此前它和超时一样每次
+ * 实打，播放器失败后约每秒重试一次、每次还换两张票：issue #158 的日志里 CCTV10 停播 3 分钟失败
+ * 184 次，6 分钟后那台服务器的出口就被官方全线 403 了（不能证明是它触发的，但这种重试毫无意义）。
+ * 现在第一次就记下，冷却到官方节目单上当前节目的结束时刻，期间本地回同一句话、一枪不打官方。
+ *   - 节目单查不到当前节目，冷却 BLACKOUT_FALLBACK_MS。
+ *   - 不管节目多长，最多 BLACKOUT_RECHECK_MS 就再问一次官方：官方偶尔误报、节目单的结束时刻也不一定准，
+ *     误判最多挡这么久；真停播时每隔这么久多取一张票，对出口风控可以忽略。
+ * 冷却期间的拒绝不刷红字，开始时打一行黄字，写明节目和到几点。
+ */
+export const BLACKOUT_FALLBACK_MS = 3 * 60 * 1000
+export const BLACKOUT_RECHECK_MS = 5 * 60 * 1000
+const BLACKOUT = /版权/
+// 上海时间的日期 YYYYMMDD 与时分 HH:MM
+const shanghai = ms => new Date(ms + 8 * 3600 * 1000).toISOString()
+const shanghaiDay = ms => shanghai(ms).slice(0, 10).replaceAll('-', '')
+const shanghaiClock = ms => shanghai(ms).slice(11, 16)
 
 /**
  * 官方入口一时取不到新清单，先把上一份清单回给播放器（issue #158）。
@@ -193,11 +214,17 @@ export function createResolver({
   // 0 = 不限；单例按 TICKET_BUDGET 启用
   ticketBudget = 0,
   ticketBudgetWindowMs = TICKET_BUDGET_WINDOW_MS,
+  // 频道当天的官方节目单 [{ title, start, stop }]（毫秒），版权停播冷却用
+  programmesOf = (channel, day) => epg.programmes(channel.livePid, day, { timeoutMs: 5000 }),
+  blackoutFallbackMs = BLACKOUT_FALLBACK_MS,
+  blackoutRecheckMs = BLACKOUT_RECHECK_MS,
   log = printYellow,
 } = {}) {
   const cache = new Map()
   const pending = new Map()
   const cooling = new Map()
+  // 频道 -> 版权停播冷却 { reason, until }
+  const blackouts = new Map()
   const pins = new Map()
   const histories = new Map()
   const refreshers = new Map()
@@ -250,6 +277,7 @@ export function createResolver({
           return manifest
         } catch (error) {
           lastError = error
+          if (BLACKOUT.test(error?.message || '')) break
         }
       }
       throw lastError
@@ -311,7 +339,24 @@ export function createResolver({
         if (epoch === generation && error?.allForbidden) {
           cooling.set(key, { until: Number(ctx.now ?? Date.now()) + FORBIDDEN_COOLDOWN_MS })
         }
+        if (epoch === generation && BLACKOUT.test(reasonOf(error))) startBlackout(key, channel, reasonOf(error), Number(ctx.now ?? Date.now()))
         return { error }
+      })
+  }
+
+  function startBlackout(key, channel, reason, now) {
+    const current = blackouts.get(key)
+    if (current && now < current.until) return
+    const entry = { reason, until: now + blackoutFallbackMs }
+    blackouts.set(key, entry)
+    Promise.resolve()
+      .then(() => programmesOf(channel, shanghaiDay(now)))
+      .then(list => (list || []).find(show => show.start <= now && now < show.stop), () => null)
+      .then(show => {
+        if (blackouts.get(key) !== entry) return
+        if (show) entry.until = Math.min(show.stop, now + blackoutRecheckMs)
+        const title = show ? `（当前节目《${show.title}》）` : '（节目单里查不到当前节目）'
+        log(`[央视频] ${channel.name} 版权停播${title}，${shanghaiClock(entry.until)} 前不再向官方请求`)
       })
   }
 
@@ -330,7 +375,8 @@ export function createResolver({
       if (refreshers.get(key) !== state) return
       if (Date.now() - state.touched >= idleMs) { refreshers.delete(key); return }
       const cooled = cooling.get(key)
-      if (!cooled || Date.now() >= cooled.until) {
+      const blackout = blackouts.get(key)
+      if ((!cooled || Date.now() >= cooled.until) && (!blackout || Date.now() >= blackout.until)) {
         // Fresh wall time: do not carry a foreground request's timestamp into
         // a later poll. Pending acquisition still coalesces with client requests.
         const pollContext = { ...state.ctx }
@@ -388,6 +434,11 @@ export function createResolver({
       return { url: '', desc: `${channel.name}链接请求失败：官方 CDN 刚回 403（疑似限流），冷却中，${seconds} 秒后再向官方请求` }
     }
     cooling.delete(key)
+    const blackout = blackouts.get(key)
+    if (blackout && now < blackout.until) {
+      return { url: '', silent: true, desc: `${channel.name}链接请求失败：${blackout.reason}（版权停播，${shanghaiClock(blackout.until)} 前不再向官方请求）` }
+    }
+    blackouts.delete(key)
     // 没等到、在后台才取回的清单还没发给过播放器：直接给它，不让播放器再陪着取一次
     if (spare && !spare.sent) return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
     if (refreshIntervalMs > 0 && spare && !spare.stale && now - spare.at < refreshIntervalMs) {
@@ -435,6 +486,7 @@ export function createResolver({
     cache.clear()
     pending.clear()
     cooling.clear()
+    blackouts.clear()
     pins.clear()
     latest.clear()
     served.clear()
@@ -443,7 +495,7 @@ export function createResolver({
     // 取票预算不随缓存清空重置：它量的是出口 IP 最近一分钟的消耗，不是缓存
   }
 
-  return { resolve, clear, cache, pending, cooling, pins, latest }
+  return { resolve, clear, cache, pending, cooling, blackouts, pins, latest }
 }
 
 const resolver = createResolver({ refreshIntervalMs: LIVE_REFRESH_MS, ticketBudget: TICKET_BUDGET })

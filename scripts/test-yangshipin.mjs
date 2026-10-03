@@ -1018,15 +1018,93 @@ await checkAsync('换票后仍全部 403 时同频道冷却 30 秒，期间不�
 await checkAsync('超时、接口报错等非 403 失败不冷却，下一次请求照常实打', async () => {
   let requests = 0
   const resolver = createResolver({
-    request: async () => { requests++; throw new Error('应版权方要求，暂停提供直播信号') },
+    request: async () => { requests++; throw new Error('官方接口 HTTP 502') },
     select: async () => ({}),
+    programmesOf: async () => { throw new Error('不该查节目单') },
   })
   await resolver.resolve('ysp-cctv10', { now: 0 })
   const before = requests
   const again = await resolver.resolve('ysp-cctv10', { now: 100 })
-  assert.match(again.desc, /版权方要求/)
+  assert.match(again.desc, /HTTP 502/)
   assert.ok(requests > before)
   assert.equal(resolver.cooling.size, 0)
+  assert.equal(resolver.blackouts.size, 0)
+})
+
+// 版权停播：官方原话；节目单时刻按上海时间给（毫秒）
+const COPYRIGHT = '应版权方要求，暂停提供直播信号，请点击观看其他精彩节目'
+const at = hhmm => Date.parse(`2026-10-03T${hhmm}:00+08:00`)
+const tick = () => new Promise(resolve => setTimeout(resolve, 0))
+
+await checkAsync('版权停播冷却到当前节目结束、最多 5 分钟：期间本地回同一句话、不刷红字、一枪不打官方（issue #158）', async () => {
+  let tickets = 0
+  let blocked = true
+  const lookups = []
+  const logs = []
+  const resolver = createResolver({
+    log: line => logs.push(line),
+    request: async () => { tickets++; if (blocked) throw new Error(COPYRIGHT); return { urls: ['https://entry.ysp.cctv.cn/live.m3u8'] } },
+    select: async () => ({ url: 'https://entry.ysp.cctv.cn/live.m3u8', text: '#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:500\n#EXT-X-TARGETDURATION:5\n#EXTINF:5.000,\nhttps://a.ysp.cctv.cn/T/2024078203-500.ts\n' }),
+    programmesOf: async (channel, day) => {
+      lookups.push([channel.livePid, day])
+      return [
+        { title: '透视新科技', start: at('19:20'), stop: at('19:52') },
+        { title: '自然传奇', start: at('19:52'), stop: at('20:52') },
+        { title: '探索·发现', start: at('20:52'), stop: at('21:40') },
+      ]
+    },
+  })
+  const first = await resolver.resolve('ysp-cctv10', { now: at('20:45') })
+  assert.equal(first.url, '')
+  assert.match(first.desc, /版权方要求/)
+  assert.equal(first.silent, undefined, '第一次照常打红字')
+  assert.equal(tickets, 1, '版权停播换一张票也一样，不再要第二张')
+  await tick()
+  assert.deepEqual(lookups, [[CHANNEL_BY_REF.get('ysp-cctv10').livePid, '20261003']], '按上海日期查当天节目单')
+  // 《自然传奇》20:52 才结束，但最多 5 分钟就再问一次官方
+  assert.match(logs.at(-1), /CCTV10.*版权停播（当前节目《自然传奇》），20:50 前不再向官方请求/)
+  for (const hhmm of ['20:46', '20:48', '20:49']) {
+    const retry = await resolver.resolve('ysp-cctv10', { now: at(hhmm) + 30_000 })
+    assert.equal(retry.url, '')
+    assert.equal(retry.silent, true, '冷却期内的拒绝不刷红字')
+    assert.match(retry.desc, /版权方要求.*20:50 前不再向官方请求/)
+  }
+  assert.equal(tickets, 1, '冷却期内一张票都不取')
+  assert.equal(lookups.length, 1, '节目单也只查一次')
+  // 5 分钟到了再问一次，还是停播：这回节目两分钟内结束，就冷却到节目结束
+  await resolver.resolve('ysp-cctv10', { now: at('20:50') + 30_000 })
+  assert.equal(tickets, 2)
+  await tick()
+  assert.match(logs.at(-1), /20:52 前不再向官方请求/)
+  const other = await resolver.resolve('ysp-cctv1', { now: at('20:51') })
+  assert.match(other.desc, /版权方要求/, '别的台照常向官方请求')
+  assert.equal(tickets, 3)
+  blocked = false
+  const back = await resolver.resolve('ysp-cctv10', { now: at('20:52') })
+  assert.match(back.desc, /H\.264/, '换了节目就重新向官方请求')
+})
+
+await checkAsync('版权停播查不到节目单时冷却 3 分钟；节目马上结束就冷却到节目结束', async () => {
+  const cases = [
+    ['节目单查不到', async () => { throw new Error('节目单 404') }, '20:48', /节目单里查不到当前节目/],
+    ['节目单是空的', async () => [], '20:48', /节目单里查不到当前节目/],
+    ['几个小时的长条目', async () => [{ title: '精彩节目', start: at('18:00'), stop: at('23:59') }], '20:50', /《精彩节目》/],
+    ['节目马上结束', async () => [{ title: '自然传奇', start: at('19:52'), stop: at('20:46') }], '20:46', /《自然传奇》/],
+  ]
+  for (const [name, programmesOf, until, title] of cases) {
+    const logs = []
+    const resolver = createResolver({
+      log: line => logs.push(line),
+      request: async () => { throw new Error(COPYRIGHT) },
+      select: async () => ({}),
+      programmesOf,
+    })
+    await resolver.resolve('ysp-cctv10', { now: at('20:45') })
+    await tick()
+    assert.match(logs.at(-1), title, name)
+    assert.match(logs.at(-1), new RegExp(`${until} 前不再向官方请求`), name)
+    assert.match((await resolver.resolve('ysp-cctv10', { now: at('20:45') + 30_000 })).desc, new RegExp(`${until} 前`), name)
+  }
 })
 
 // issue #158：以下几项的播放器表现来自录制回放实测，见 resolver.js STALE_AFTER_MS 的注释

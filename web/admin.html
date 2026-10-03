@@ -651,7 +651,7 @@
             text-overflow: ellipsis;
         }
 
-        /* 卡片上的启用开关。放在卡片而不是展开区里：有可编辑项的展开区底部有「💾 保存配置」，
+        /* 卡片上的启用开关。放在卡片而不是展开区里：有可编辑项的展开区底部有「保存配置」，
            一个「点了就生效」的勾选框混在一堆「要按保存」的字段中间，外观一样、
            语义相反，是全站最容易让人误判的一处。内置源卡片本来就是这个形态。
            stopPropagation 是必须的，否则点开关会连带触发卡片的展开/收起。 */
@@ -2275,22 +2275,22 @@
         .sb-copy.sb-copy-muted:hover { background: #f5f5f5; }
 
 
-        /* ===== 2026 管理台视觉系统：浅色、冷调、扁平、舒展 ===== */
+        /* ===== 2026 管理台视觉系统：薄荷、暖白、细玻璃边缘 ===== */
         :root {
             color-scheme: light;
-            --ui-bg: #f3f6fb;
-            --ui-surface: #ffffff;
-            --ui-surface-soft: #f8fafd;
-            --ui-surface-strong: #eef2f8;
-            --ui-line: #e2e8f0;
-            --ui-line-strong: #cbd5e1;
-            --ui-text: #172033;
-            --ui-text-secondary: #5f6b7c;
-            --ui-muted: #8792a4;
-            --ui-accent: #4f63e9;
-            --ui-accent-hover: #4054d4;
-            --ui-accent-soft: #eef1ff;
-            --ui-accent-line: #cdd5ff;
+            --ui-bg: #f3f5f1;
+            --ui-surface: #fdfefb;
+            --ui-surface-soft: #f5f8f3;
+            --ui-surface-strong: #eaf0e8;
+            --ui-line: #dfe7dd;
+            --ui-line-strong: #c8d6ca;
+            --ui-text: #183b2d;
+            --ui-text-secondary: #53675c;
+            --ui-muted: #607365;
+            --ui-accent: #356c50;
+            --ui-accent-hover: #28563d;
+            --ui-accent-soft: #e7f2e8;
+            --ui-accent-line: #bad6c1;
             --ui-cyan: #087e86;
             --ui-cyan-soft: #ecf9fa;
             --ui-cyan-line: #bce7e9;
@@ -2309,12 +2309,12 @@
             --ui-danger: #bc3443;
             --ui-danger-soft: #fff0f1;
             --ui-danger-line: #f0c4c9;
-            --ui-radius-panel: 20px;
-            --ui-radius-card: 16px;
-            --ui-radius-control: 10px;
-            --ui-shadow-header: 0 12px 34px rgba(31, 45, 78, 0.08);
-            --ui-shadow-float: 0 24px 70px rgba(31, 45, 78, 0.18);
-            --ui-ring: 0 0 0 3px rgba(79, 99, 233, 0.12);
+            --ui-radius-panel: 24px;
+            --ui-radius-card: 18px;
+            --ui-radius-control: 12px;
+            --ui-shadow-header: 0 10px 32px rgba(35, 61, 43, .06), inset 0 1px 0 rgba(255, 255, 255, .9);
+            --ui-shadow-float: 0 24px 70px rgba(35, 61, 43, .16), inset 0 1px 0 rgba(255, 255, 255, .9);
+            --ui-ring: 0 0 0 3px rgba(65, 133, 106, .16);
         }
 
         html { background: var(--ui-bg); }
@@ -2336,9 +2336,9 @@
             top: 16px;
             padding: 12px 14px;
             margin-bottom: 14px;
-            border: 1px solid rgba(203, 213, 225, 0.86);
+            border: 1px solid rgba(255, 255, 255, .9);
             border-radius: var(--ui-radius-panel);
-            background: rgba(255, 255, 255, 0.92);
+            background: linear-gradient(150deg, rgba(255, 255, 255, .86), rgba(247, 251, 246, .76));
             box-shadow: var(--ui-shadow-header);
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
@@ -2366,7 +2366,7 @@
             font-size: 13px;
             font-weight: 800;
             letter-spacing: 0.05em;
-            box-shadow: 0 8px 18px rgba(79, 99, 233, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 5px 14px rgba(35, 61, 43, .08);
         }
         .brand-copy { display: flex; flex-direction: column; line-height: 1.2; }
         .brand-copy strong { color: var(--ui-text); font-size: 15px; letter-spacing: 0.01em; }
@@ -2404,7 +2404,7 @@
             color: var(--ui-accent);
             border-bottom-color: transparent;
             background: var(--ui-surface);
-            box-shadow: 0 1px 4px rgba(31, 45, 78, 0.08);
+            box-shadow: 0 2px 8px rgba(35, 61, 43, .06);
         }
         .tabs-right { padding-right: 0; }
         .restart-btn {
@@ -2425,7 +2425,7 @@
             border: 1px solid var(--ui-line);
             border-radius: var(--ui-radius-panel);
             background: var(--ui-surface);
-            box-shadow: 0 1px 2px rgba(31, 45, 78, 0.025);
+            box-shadow: 0 14px 40px rgba(35, 61, 43, .055), inset 0 1px 0 rgba(255, 255, 255, .9);
         }
         .panel h2 { padding-bottom: 0; border-bottom: 0; color: var(--ui-text); }
         .page-intro {
@@ -2927,7 +2927,7 @@
             background: var(--ui-accent-soft);
             color: var(--ui-accent);
         }
-        .source-card-add:hover { border-color: var(--ui-accent); background: #e7ebff; }
+        .source-card-add:hover { border-color: var(--ui-accent); background: var(--ui-accent-soft); }
         .source-card-add .plus { font-size: 28px; font-weight: 300; }
         .source-badge, .status-badge, .external-mode-badge, .mode-badge,
         .instant-badge, .login-state-badge, .channel-tag {
@@ -3014,12 +3014,12 @@
         .external-usage-side,
         .external-usage {
             padding: 18px;
-            border: 1px solid var(--ui-violet-line);
+            border: 1px solid var(--ui-line);
             border-radius: var(--ui-radius-card);
-            background: var(--ui-violet-soft);
+            background: var(--ui-surface-soft);
             color: var(--ui-text-secondary);
         }
-        .external-usage-side h4, .external-usage h4 { color: var(--ui-violet); }
+        .external-usage-side h4, .external-usage h4 { color: var(--ui-accent); }
         .external-usage-side ol, .external-usage ol { color: var(--ui-text-secondary); }
         .xt-cols { gap: 16px; }
         .xt-col {
@@ -3116,7 +3116,7 @@
             border-left: 1px solid var(--ui-accent-line);
             border-radius: 12px;
             background: var(--ui-accent-soft);
-            color: #34439a;
+            color: var(--ui-accent);
         }
         .moved-notice a { color: var(--ui-accent); }
         .moved-notice-close { color: var(--ui-accent); border-color: var(--ui-accent-line); border-radius: 8px; }
@@ -3322,6 +3322,46 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
         }
+
+        /* Satin finishing: management density and interaction geometry stay intact. */
+        body { isolation: isolate; -webkit-font-smoothing: antialiased; }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 5% 0%, rgba(177, 216, 188, .28), transparent 55%),
+                radial-gradient(ellipse at 96% 40%, rgba(177, 216, 188, .16), transparent 54%);
+        }
+        .brand-mark {
+            border: 1px solid rgba(255, 255, 255, .95);
+            border-radius: 14px;
+            background: linear-gradient(145deg, #fafff8, #deefdf);
+            color: var(--ui-accent);
+        }
+        .panel { border-color: rgba(255, 255, 255, .95); background: rgba(255, 255, 255, .78); }
+        .tabs-left { background: rgba(229, 237, 226, .66); }
+        .btn-primary, .confirm-btn-confirm, .mode-switch-btn.active {
+            border-color: #bad6c1;
+            background: #d4ebdb;
+            color: #214f37;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65);
+        }
+        .btn-primary:hover:not(:disabled), .confirm-btn-confirm:hover:not(:disabled),
+        .mode-switch-btn.active:hover { border-color: #a7cbb1; background: #c5e2ce; color: #214f37; }
+        .restart-btn { background: var(--ui-surface); color: var(--ui-text-secondary); border-color: var(--ui-line-strong); }
+        .restart-btn:hover { color: var(--ui-accent); border-color: var(--ui-accent-line); background: var(--ui-accent-soft); }
+        .subscribe-bar { background: #edf6ee; border-color: var(--ui-accent-line); }
+        .subscribe-bar .sb-label { color: var(--ui-accent); }
+        .subscribe-bar code { color: var(--ui-text-secondary); }
+        code { color: var(--ui-text-secondary); }
+        /* Older detail templates still set their label color inline. */
+        #channelDetailModal strong[style*="#667eea"] { color: var(--ui-accent) !important; }
+        input::placeholder, textarea::placeholder { color: #607365; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -3349,7 +3389,7 @@
     <!-- 重置选项弹窗 -->
     <div class="modal" id="resetModal">
         <div class="modal-content" style="width: 420px; max-width: 90%;">
-            <h3 id="resetModalTitle">🔄 重置配置</h3>
+            <h3 id="resetModalTitle">重置配置</h3>
             <p style="color: #666; font-size: 13px; margin-bottom: 16px;" id="resetModalHint">选择要重置的配置项，未选中的配置将保留不变。</p>
             <div class="reset-options">
                 <label class="reset-option">
@@ -3421,7 +3461,7 @@
     <!-- 缺台标的频道清单（issue #124） -->
     <div class="modal" id="missingLogoModal">
         <div class="modal-content" style="width: 560px; max-width: 92%;">
-            <h3>🖼 缺台标的频道 <span style="font-size:13px;font-weight:normal;color:#888;">共 <span id="missingLogoCount">0</span> 个</span></h3>
+            <h3>缺台标的频道 <span style="font-size:13px;font-weight:normal;color:#888;">共 <span id="missingLogoCount">0</span> 个</span></h3>
             <p style="color:#666;font-size:13px;margin-bottom:4px;">这些台的源没带台标，或带的已失效，订阅里留了空、播放器会画自己的占位图。想补的话：</p>
             <p style="color:#999;font-size:12px;margin-bottom:12px;">① 点「补台标」进频道详情上传；② 直接把 <code>&lt;频道名&gt;.png</code> 放进数据目录的 <code>logos/</code>；③ 想整批按名兜底，自己设 <code>mexternalLogoBase</code> 接一个公共台标库（默认不配，见 README）。景观 / 慢直播这类本来就不是台名的，留空即可。</p>
             <div id="missingLogoList" style="max-height:380px;overflow-y:auto;"></div>
@@ -3434,7 +3474,7 @@
     <!-- 多套配置档管理弹窗 -->
     <div class="modal" id="profileModal">
         <div class="modal-content" style="width: 580px; max-width: 92%;">
-            <h3>📺 多套配置档（大分组）</h3>
+            <h3>多套配置档（大分组）</h3>
             <p style="color: #666; font-size: 13px; line-height: 1.7; margin-bottom: 16px;">
                 给家里不同电视各维护<strong>一套独立的频道编排</strong>——大厅给老人、卧室给年轻人、茶室……
                 每套档单独保存隐藏 / 分组 / 排序 / 重命名，<strong>用各自的地址访问、互不影响</strong>。
@@ -3460,7 +3500,7 @@
             <label style="display:block; font-size:13px; color:#333; margin-bottom:6px;">访问地址短名（选填，英文/数字）</label>
             <input type="text" id="newProfileId" placeholder="woshi　→　/interface.m3u?profile=woshi" autocomplete="off"
                    onkeydown="if(event.key==='Enter'){confirmCreateProfile();}">
-            <p style="color:#8a8a8a; font-size:12px; margin: -6px 0 4px;">💡 留空会自动生成短名（中文无法转拼音）。</p>
+            <p style="color:#8a8a8a; font-size:12px; margin: -6px 0 4px;">留空会自动生成短名（中文无法转拼音）。</p>
             <div class="modal-actions" style="margin-top: 20px;">
                 <button class="btn" onclick="closeCreateProfileModal()">取消</button>
                 <button class="btn btn-primary" onclick="confirmCreateProfile()">确定新建</button>
@@ -3493,7 +3533,7 @@
             <div class="modal-actions" style="margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="closeSourceProbe()">关闭</button>
                 <button class="btn btn-danger" id="sourceProbeCancelBtn" style="display: none;" onclick="cancelSourceProbe()">⏹ 停止检测</button>
-                <button class="btn btn-primary" id="sourceProbeHideBtn" style="display: none;" onclick="hideProbeDeadChannels()">🙈 一键隐藏失效频道（当前档）</button>
+                <button class="btn btn-primary" id="sourceProbeHideBtn" style="display: none;" onclick="hideProbeDeadChannels()">一键隐藏失效频道（当前档）</button>
             </div>
         </div>
     </div>
@@ -3520,7 +3560,7 @@
                 登录凭据由服务端直接保存，不经过这个页面。<br>二维码约 3 分钟失效，过期点「重新获取」即可。
             </div>
             <div class="modal-actions" style="margin-top:16px;">
-                <button class="btn btn-sm" onclick="startBiliQrLogin()">🔄 重新获取</button>
+                <button class="btn btn-sm" onclick="startBiliQrLogin()">重新获取</button>
                 <button class="btn btn-secondary btn-sm" onclick="closeBiliQrLogin()">关闭</button>
             </div>
         </div>
@@ -3529,7 +3569,7 @@
     <!-- 手动获取 SESSDATA 的图文步骤：不想扫码、或手机不在身边时的备用方案 -->
     <div class="modal" id="biliSessdataGuideModal">
         <div class="modal-content" style="width: 560px; max-width: 92%;">
-            <h3 style="margin-bottom: 14px;">🔑 手动获取 SESSDATA</h3>
+            <h3 style="margin-bottom: 14px;">手动获取 SESSDATA</h3>
             <div style="background:#e6f7ff; border:1px solid #91d5ff; padding:12px 14px; border-radius:6px; margin-bottom:14px; font-size:13px; color:#003a8c; line-height:1.8;">
                 推荐直接用「📱 扫码登录」，这一页是给<strong>不想扫码、或手机不在身边</strong>的情况准备的。
             </div>
@@ -3554,7 +3594,7 @@
 
     <div class="modal" id="bookmarkletGuideModal">
         <div class="modal-content" style="width: 700px; max-width: 90%;">
-            <h3 style="margin-bottom: 20px;">📖 如何添加咪咕账号获取工具</h3>
+            <h3 style="margin-bottom: 20px;">如何添加咪咕账号获取工具</h3>
             
             <div style="background: #e6f7ff; border: 1px solid #91d5ff; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
                 <h4 style="color: #1890ff; margin-bottom: 12px;">方法一：拖拽添加（推荐）</h4>
@@ -3574,7 +3614,7 @@
                 </ol>
                 <div style="margin-top: 12px;">
                     <button class="btn btn-primary" onclick="copyBookmarkletCode()" style="width: 100%;">
-                        📋 复制 Bookmarklet 代码
+                        复制 Bookmarklet 代码
                     </button>
                 </div>
             </div>
@@ -3592,14 +3632,14 @@
     <!-- 非咪咕源播放选项弹窗 -->
     <div class="modal" id="nonMiguPlayModal">
         <div class="modal-content" style="width: 460px; max-width: 90%;">
-            <h3 id="nonMiguPlayTitle" style="margin-bottom: 20px;">📺 播放选项</h3>
+            <h3 id="nonMiguPlayTitle" style="margin-bottom: 20px;">播放选项</h3>
             <div style="background: #e6f7ff; border: 1px solid #91d5ff; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
                 <p style="line-height: 1.8; margin: 0; font-size: 14px; color: #666;">
                     该频道来自外部源，浏览器可能无法直接播放。<br>请选择以下方式使用本地播放器（如 VLC、IINA、PotPlayer）打开：
                 </p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-                <button class="btn btn-primary" id="nonMiguCopyBtn" style="width: 100%; padding: 12px; font-size: 15px;">📋 复制频道链接</button>
+                <button class="btn btn-primary" id="nonMiguCopyBtn" style="width: 100%; padding: 12px; font-size: 15px;">复制频道链接</button>
                 <button class="btn" id="nonMiguDownloadBtn" style="width: 100%; padding: 12px; font-size: 15px; background: #ff6600; color: white; border: none; border-radius: 4px; cursor: pointer;">⬇️ 下载为 .m3u 文件</button>
             </div>
             <div style="display: flex; justify-content: flex-end;">
@@ -3619,13 +3659,13 @@
                     </span>
                 </div>
                 <div class="tabs-left">
-                    <button class="tab active" onclick="switchTab(0)">📺 我的频道</button>
-                    <button class="tab" onclick="switchTab(1)">🌐 源管理</button>
-                    <button class="tab" onclick="switchTab(2)">⚙️ 设置</button>
-                    <button class="tab" onclick="switchTab(3)">ℹ️ 关于我们</button>
+                    <button class="tab active" onclick="switchTab(0)">我的频道</button>
+                    <button class="tab" onclick="switchTab(1)">源管理</button>
+                    <button class="tab" onclick="switchTab(2)">设置</button>
+                    <button class="tab" onclick="switchTab(3)">关于我们</button>
                 </div>
                 <div class="tabs-right">
-                    <button class="restart-btn" onclick="restartService()">🔄 重启服务</button>
+                    <button class="restart-btn" onclick="restartService()">重启服务</button>
                 </div>
             </div>
 
@@ -3637,8 +3677,8 @@
                  dismissMovedNotice()、以及 loadData 里的那次调用一起摘掉，别让它长住。 -->
             <div class="moved-notice" id="movedNotice" style="display:none;">
                 <span class="moved-notice-text">
-                    📦 <strong>咪咕账号 / 画质</strong>、<strong>内容开关</strong>、<strong>源模块</strong>已从「设置」移到
-                    <a href="javascript:void(0)" onclick="switchTab(1)">🌐 源管理</a> 页。
+                    <strong>咪咕账号 / 画质</strong>、<strong>内容开关</strong>、<strong>源模块</strong>已从「设置」移到
+                    <a href="javascript:void(0)" onclick="switchTab(1)">源管理</a> 页。
                 </span>
                 <button class="moved-notice-close" onclick="dismissMovedNotice()" title="不再显示">知道了</button>
             </div>
@@ -3652,13 +3692,13 @@
                     <div class="my-playlist-header">
                         <div class="my-playlist-header-row">
                             <div class="my-playlist-info">
-                                <h3>📺 我的频道 <span id="myChannelTotal" style="font-size: 14px; font-weight: normal; color: #1890ff;"></span></h3>
+                                <h3>我的频道 <span id="myChannelTotal" style="font-size: 14px; font-weight: normal; color: #1890ff;"></span></h3>
                             </div>
                             <div class="my-playlist-actions" style="flex-wrap: wrap; align-items: center;">
                                 <span style="font-size: 14px; color: #333;">当前档：<strong id="currentProfileLabel">默认</strong></span>
-                                <button class="btn btn-primary" onclick="openProfileModal()" title="管理多套配置档：切换 / 新建 / 改名 / 删除 / 重置">✏️ 编辑</button>
+                                <button class="btn btn-primary" onclick="openProfileModal()" title="管理多套配置档：切换 / 新建 / 改名 / 删除 / 重置">编辑</button>
                                 <button class="btn" onclick="openHiddenRuleModal()" title="按名字长期屏蔽频道：源换地址、频道每天重建都照样生效">🚫 屏蔽规则</button>
-                                <button class="btn" onclick="openMissingLogoModal()" title="列出当前档里没有台标的频道，点进去就能上传">🖼 缺台标</button>
+                                <button class="btn" onclick="openMissingLogoModal()" title="列出当前档里没有台标的频道，点进去就能上传">缺台标</button>
                             </div>
                         </div>
                         <div class="subscribe-bar" id="subscribeBar"></div>
@@ -3666,7 +3706,7 @@
                     <div class="my-playlist-left">
                         <div class="my-playlist-section">
                             <div class="my-playlist-section-title">
-                                <span>📂 频道分组</span>
+                                <span>频道分组</span>
                                 <button onclick="addGroup()">+ 添加分组</button>
                             </div>
                             <div class="my-playlist-search">
@@ -3687,7 +3727,7 @@
                             <span class="seg"><span class="dot ok"></span><span class="dot ok"></span> 左=节目单　右=台标</span>
                             <span class="seg"><span class="dot ok"></span> 绿 已匹配</span>
                             <span class="seg"><span class="dot no"></span> 红 未匹配（点开频道详情可设别名修正）</span>
-                            <span class="seg ch-status-legend-tip" title="点击频道名称可查看详情，并一键用 VLC / IINA / PotPlayer 打开播放">💡 点频道名看详情</span>
+                            <span class="seg ch-status-legend-tip" title="点击频道名称可查看详情，并一键用 VLC / IINA / PotPlayer 打开播放">点频道名看详情</span>
                         </div>
                         <div class="my-playlist-groups" id="myPlaylistGroups"></div>
                     </div>
@@ -3711,9 +3751,9 @@
                     </div>
                 </div>
                 <div class="source-subtabs" role="tablist" aria-label="源管理分类">
-                    <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub0" onclick="switchSourceTab(0)">👤 自定义源 <span class="source-tab-count" id="sourceTabExternalCount"></span></button>
-                    <button type="button" class="mode-switch-btn active" role="tab" aria-selected="true" aria-controls="sourceSub1" onclick="switchSourceTab(1)">🧩 内置抓取模块 <span class="source-tab-count" id="sourceTabExtractorCount"></span></button>
-                    <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub2" onclick="switchSourceTab(2)">📦 内置源 <span class="source-tab-count" id="sourceTabBuiltInCount"></span></button>
+                    <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub0" onclick="switchSourceTab(0)">自定义源 <span class="source-tab-count" id="sourceTabExternalCount"></span></button>
+                    <button type="button" class="mode-switch-btn active" role="tab" aria-selected="true" aria-controls="sourceSub1" onclick="switchSourceTab(1)">内置抓取模块 <span class="source-tab-count" id="sourceTabExtractorCount"></span></button>
+                    <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub2" onclick="switchSourceTab(2)">内置源 <span class="source-tab-count" id="sourceTabBuiltInCount"></span></button>
                 </div>
 
                 <!-- ① 自定义源 ------------------------------------------------ -->
@@ -3734,12 +3774,12 @@
                     <div class="external-detail-wrap hidden" id="externalDetailWrap">
                         <div class="external-detail" id="externalDetail"></div>
                         <div class="external-usage-side">
-                            <h4>📖 使用说明</h4>
+                            <h4>使用说明</h4>
                             <div style="background: #f6ffed; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
-                                <strong style="color: #52c41a;">👤 自定义源配置</strong>
+                                <strong style="color: #52c41a;">自定义源配置</strong>
                                 <ol style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; color: #666; line-height: 1.8;">
                                     <li>点击"添加自定义源"选择模式：<strong>直连模式</strong>、<strong>抓取模式</strong>或<strong>订阅模式</strong></li>
-                                    <li>想加回港澳台等网络第三方频道：点「🌏 添加「来源于网络」列表」，再点"导入并保存"</li>
+                                    <li>想加回港澳台等网络第三方频道：点「添加「来源于网络」列表」，再点"导入并保存"</li>
                                     <li><strong>抓取模式</strong>：填写频道名、分组和网页地址，点击"抓取并保存"</li>
                                     <li><strong>直连模式</strong>：填写频道名、分组和m3u8链接，点击"保存"</li>
                                     <li>可编辑、删除、启用/禁用</li>
@@ -3827,11 +3867,11 @@
                 </div>
                 <!-- 设置页二级标签（issue #72）：功能卡片分区，免长页滚动 -->
                 <div class="settings-subtabs">
-                    <button class="mode-switch-btn active" onclick="switchSettingsTab(0)">⚙️ 系统配置</button>
-                    <button class="mode-switch-btn" onclick="switchSettingsTab(1)">🔤 频道别名</button>
-                    <button class="mode-switch-btn" onclick="switchSettingsTab(2)">🗂️ 自动分组</button>
-                    <button class="mode-switch-btn" onclick="switchSettingsTab(3)">📅 EPG 聚合</button>
-                    <button class="mode-switch-btn" onclick="switchSettingsTab(4)">👤 用户管理</button>
+                    <button class="mode-switch-btn active" onclick="switchSettingsTab(0)">系统配置</button>
+                    <button class="mode-switch-btn" onclick="switchSettingsTab(1)">频道别名</button>
+                    <button class="mode-switch-btn" onclick="switchSettingsTab(2)">自动分组</button>
+                    <button class="mode-switch-btn" onclick="switchSettingsTab(3)">EPG 聚合</button>
+                    <button class="mode-switch-btn" onclick="switchSettingsTab(4)">用户管理</button>
                 </div>
 
                 <div class="settings-subpanel active" id="settingsSub0">
@@ -3868,22 +3908,22 @@
                             <input type="checkbox" id="sysEnableDisplayNameUnify" onchange="setSaveDirty('sysconfig')">
                             统一频道显示名（合并不同源的同台命名）
                         </label>
-                        <div class="system-config-hint">开启后，把不同订阅源里同一个台的不同写法（如 <code>CCTV1</code> / <code>CCTV-1</code> / <code>CCTV1综合</code>）<strong>按内置规则自动统一成同一个显示名</strong>（CCTV 系列、清晰度后缀等已内置）。默认关；手动重命名优先级更高；规则兜不住的写法可在下方「🔤 频道别名」里加规则。保存后即时生效。</div>
+                        <div class="system-config-hint">开启后，把不同订阅源里同一个台的不同写法（如 <code>CCTV1</code> / <code>CCTV-1</code> / <code>CCTV1综合</code>）<strong>按内置规则自动统一成同一个显示名</strong>（CCTV 系列、清晰度后缀等已内置）。默认关；手动重命名优先级更高；规则兜不住的写法可在下方「频道别名」里加规则。保存后即时生效。</div>
                     </div>
                 </div>
                 <div class="system-config-actions">
-                    <button class="btn btn-success" data-save-scope="sysconfig" onclick="saveSystemConfig()">💾 保存系统配置</button>
-                    <button class="btn btn-primary" data-save-scope="sysconfig" onclick="saveAndRestartService()" title="保存成功后自动重启服务，让需重启的配置一步生效">💾🔄 保存并重启</button>
+                    <button class="btn btn-success" data-save-scope="sysconfig" onclick="saveSystemConfig()">保存系统配置</button>
+                    <button class="btn btn-primary" data-save-scope="sysconfig" onclick="saveAndRestartService()" title="保存成功后自动重启服务，让需重启的配置一步生效">保存并重启</button>
                 </div>
 
                 <!-- 配置备份 / 迁移（issue #99） -->
                 <div class="settings-backup" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee;">
-                    <div style="font-size:16px; font-weight:600; color:#333;">🧳 配置备份 / 迁移</div>
+                    <div style="font-size:16px; font-weight:600; color:#333;">配置备份 / 迁移</div>
                     <div class="system-config-hint">一键把全部配置（系统配置、外部源、我的频道与各配置档、EPG 源、别名 / 分组规则、用户令牌）导出为单个备份文件；换机 / 重装后导入即可恢复。<strong>⚠️ 导出文件包含咪咕账号与访问密码，请勿随意发给他人</strong>；自定义台标 <code>logos/</code> 文件夹不在包内，如有请单独拷贝。</div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;">
-                        <button class="btn btn-primary" onclick="exportConfigBackup()">📤 导出配置</button>
+                        <button class="btn btn-primary" onclick="exportConfigBackup()">导出配置</button>
                         <input type="file" id="configImportFile" accept=".json,application/json" style="max-width: 260px;">
-                        <button class="btn btn-warning" onclick="importConfigBackup()">📥 导入配置</button>
+                        <button class="btn btn-warning" onclick="importConfigBackup()">导入配置</button>
                     </div>
                     <div class="system-config-hint" style="margin-top:6px;">导入会<strong>覆盖当前同名配置</strong>（导入前会自动把当前配置备份到数据目录 <code>config-pre-import-backup.json</code>，写坏可手动恢复）；导入后多数配置即时生效，端口修改需重启。</div>
                 </div>
@@ -3892,7 +3932,7 @@
                 <!-- 频道别名（issue #56）：自定义批量统一规则 -->
                 <div class="settings-editor-card" style="margin-top: 4px;">
                     <div>
-                        <div style="font-size:16px; font-weight:600; color:#333;">🔤 频道别名（统一命名规则）</div>
+                        <div style="font-size:16px; font-weight:600; color:#333;">频道别名（统一命名规则）</div>
                         <div class="system-config-hint">给上面的「统一频道显示名」加自定义规则：把若干<strong>别名</strong>都归到一个<strong>规范名</strong>下（如 规范名 <code>CCTV5体育</code>，别名 <code>央视5套, 体育频道</code>）。内置规则（CCTV 系列、清晰度后缀等）已覆盖大部分，这里只补兜不住的写法。保存后下次刷新播放列表即生效。</div>
                     </div>
                     <div id="aliasList" style="margin-top:14px; max-height:320px; overflow-y:auto;"></div>
@@ -3913,7 +3953,7 @@
                 <!-- 关键字自动分组（issue #69）：按频道名关键字把「未分组」频道自动归类 -->
                 <div class="settings-editor-card" style="margin-top: 4px;">
                     <div>
-                        <div style="font-size:16px; font-weight:600; color:#333;">🗂️ 关键字自动分组</div>
+                        <div style="font-size:16px; font-weight:600; color:#333;">关键字自动分组</div>
                         <div class="system-config-hint">自定义订阅源里没写分组的频道会落到「未分组」，每次刷新又回到未分组。这里按<strong>频道名关键字</strong>配规则，名字含关键字的<strong>未分组</strong>频道会自动归到对应分组（多条规则按从上到下、首条命中生效）——刷新也不丢，且<strong>不影响源已分好的分组、手动移动优先</strong>。如 分组 <code>央视</code> ← 关键字 <code>CCTV, 央视</code>。保存后下次刷新播放列表即生效。</div>
                     </div>
                     <div id="groupRuleList" style="margin-top:14px; max-height:320px; overflow-y:auto;"></div>
@@ -3935,7 +3975,7 @@
                 <div class="settings-editor-card" style="margin-top: 4px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                         <div>
-                            <div style="font-size:16px; font-weight:600; color:#333;">📅 EPG 节目单源（聚合）</div>
+                            <div style="font-size:16px; font-weight:600; color:#333;">EPG 节目单源（聚合）</div>
                             <div class="system-config-hint">把外部 XMLTV 源的节目单归一后合并进 <code>/playback.xml</code>，给咪咕和各模块官方节目单都没覆盖的频道补节目单。默认已开启，但不带内置外部源，需要更广覆盖时在下面自己加。勾了「优先于官方节目单」的源，对它当前有节目的频道会覆盖咪咕和各模块的官方节目单（源停更只剩旧数据时自动让回官方）。改动即时保存、无需重启，下次更新生效（或点「立即刷新」）。</div>
                         </div>
                         <label style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
@@ -3970,7 +4010,7 @@
                     </div>
 
                     <div style="margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <button class="btn btn-sm" onclick="refreshEpgNow()">🔄 立即刷新并应用</button>
+                        <button class="btn btn-sm" onclick="refreshEpgNow()">立即刷新并应用</button>
                         <span class="system-config-hint" style="margin:0;">优先级数字小者优先；多源命中同一频道取高优先级，勾了「优先于官方节目单」的排在最前。没勾的源只补咪咕与各模块官方节目单都没有的频道。</span>
                     </div>
                 </div>
@@ -3979,20 +4019,20 @@
                 <!-- 用户访问令牌（一人一源）-->
                 <div class="settings-editor-card" style="margin-top: 4px;">
                     <div>
-                        <div style="font-size:16px; font-weight:600; color:#333;">👤 用户管理（一人一源）</div>
+                        <div style="font-size:16px; font-weight:600; color:#333;">用户管理（一人一源）</div>
                         <div class="system-config-hint">给每个家人 / 朋友生成独立的源地址 <code>/u/&lt;令牌&gt;/m3u</code>，可单独停用、泄露可追溯，且<strong>令牌进不了本后台</strong>。不新增用户则对现有链接零影响。</div>
                     </div>
 
                     <!-- 没设访问密码时裸地址对所有人开放，令牌挡不住任何人（issue #141）；由 /api/users 的 passSet 决定显隐 -->
                     <div id="userPassWarning" style="display:none; margin-top:10px; padding:12px 14px; background:#fff7e6; border:1px solid #ffd591; border-left:4px solid #fa8c16; border-radius:6px; color:#874d00; font-size:13px; line-height:1.7;">
-                        ⚠️ <strong>还没设访问密码，一人一源等于没生效</strong>：去掉令牌的地址（如 <code>http://ip:端口/m3u</code>）谁都能直接用，后台也没上锁。请先到 <a href="javascript:void(0)" onclick="switchSettingsTab(0)">⚙️ 系统配置</a> 设置「访问密码」；已发出去的 <code>/u/&lt;令牌&gt;/…</code> 链接不受影响。
+                        ⚠️ <strong>还没设访问密码，一人一源等于没生效</strong>：去掉令牌的地址（如 <code>http://ip:端口/m3u</code>）谁都能直接用，后台也没上锁。请先到 <a href="javascript:void(0)" onclick="switchSettingsTab(0)">系统配置</a> 设置「访问密码」；已发出去的 <code>/u/&lt;令牌&gt;/…</code> 链接不受影响。
                     </div>
 
                     <div class="user-guide-card" style="margin-top:10px; padding:12px 14px; background:#f7f9fc; border:1px solid #eef1f6; border-radius:6px; font-size:13px; color:#555; line-height:1.7;">
                         <div style="font-weight:600; color:#333; margin-bottom:4px;">怎么用</div>
                         <div>① 点「➕ 新增用户」，给每个人起个名（如「客厅电视」「老王」）；</div>
-                        <div>② 用每行的「📋 复制 m3u」把各自的源地址发给对应的人；</div>
-                        <div>③ 谁的链接泄露 / 不想给了 → 关掉那一行的开关（或「🔁 重置令牌」），<strong>只影响他一个</strong>，其他人照常。</div>
+                        <div>② 用每行的「复制 m3u」把各自的源地址发给对应的人；</div>
+                        <div>③ 谁的链接泄露 / 不想给了 → 关掉那一行的开关（或「重置令牌」），<strong>只影响他一个</strong>，其他人照常。</div>
                         <div style="font-weight:600; color:#333; margin:8px 0 4px;">注意</div>
                         <div>• 这是「<strong>可追溯 + 可单独吊销</strong>」，不是「漏了也用不了」——发现异常停掉即可；</div>
                         <div>• 你自己的<strong>站长密码不要外发</strong>（它能进后台）；发出去的只该是 <code>/u/&lt;令牌&gt;/…</code>；</div>
@@ -4020,14 +4060,14 @@
             <div class="panel about-panel">
                 <div class="about-page" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
                     <div class="about-hero" style="text-align: center; margin-bottom: 40px;">
-                        <h2 style="color: #1890ff; font-size: 32px; margin-bottom: 10px;">📡 IPTV 管理系统</h2>
+                        <h2 style="color: #1890ff; font-size: 32px; margin-bottom: 10px;">IPTV 管理系统</h2>
                         <p style="color: #666; font-size: 16px;">基于 Node.js 的 IPTV 直播源管理和分发系统</p>
                     </div>
                     
                     <div class="about-info-card" style="background: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
                         <div style="margin-bottom: 25px;">
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <span style="color: #1890ff; font-size: 20px; margin-right: 10px;">📦</span>
+
                                 <strong style="color: #333; font-size: 16px;">当前版本</strong>
                             </div>
                             <div style="padding-left: 30px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
@@ -4039,7 +4079,7 @@
 
                         <div style="margin-bottom: 25px;">
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <span style="color: #1890ff; font-size: 20px; margin-right: 10px;">🔗</span>
+
                                 <strong style="color: #333; font-size: 16px;">项目地址</strong>
                             </div>
                             <div style="padding-left: 30px;">
@@ -4065,7 +4105,7 @@
                         
                         <div style="margin-bottom: 25px;">
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <span style="color: #1890ff; font-size: 20px; margin-right: 10px;">🌐</span>
+
                                 <strong style="color: #333; font-size: 16px;">了解更多</strong>
                             </div>
                             <div style="padding-left: 30px;">
@@ -4078,7 +4118,7 @@
                         
                         <div>
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <span style="color: #1890ff; font-size: 20px; margin-right: 10px;">📧</span>
+
                                 <strong style="color: #333; font-size: 16px;">联系邮箱</strong>
                             </div>
                             <div style="padding-left: 30px;">
@@ -4304,7 +4344,7 @@
                 // 否则每次保存都会把用户看不见的凭据抹掉）。
                 const ph = secretsSet[field.key] ? '已设置，留空则不修改' : '未设置';
                 const clearBtn = secretsSet[field.key]
-                    ? `<button class="btn btn-sm" type="button" onclick="markSecretCleared('${moduleId}','${field.key}')" title="清空已保存的凭据（点「保存配置」生效）">🗑️ 清除</button>`
+                    ? `<button class="btn btn-sm" type="button" onclick="markSecretCleared('${moduleId}','${field.key}')" title="清空已保存的凭据（点「保存配置」生效）">清除</button>`
                     : '';
                 return `<div style="margin-bottom:12px;">
                     <label style="display:block; font-size:12px; color:#888;">${label}</label>
@@ -4422,7 +4462,7 @@
             if (key === 'fengshows-bookmarklet') {
                 const configured = !!secretsSet.token;
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
-                    <div class="bookmarklet-title"><span>🔑</span><span>凤凰秀账号</span>
+                    <div class="bookmarklet-title"><span>凤凰秀账号</span>
                         <span class="login-state-badge ${configured ? 'on' : 'off'}">${configured ? '已配置 Token · 自动请求 720p' : '访客模式 · 480p'}</span>
                     </div>
                     <div class="bookmarklet-actions"><a id="fengshowsBookmarklet" class="bookmarklet-link" draggable="true">获取凤凰秀 Token</a>
@@ -4437,11 +4477,11 @@
                 const miguLoggedIn = !!(config && config.userId) && !!(secretsSet && secretsSet.token);
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
-                        <span>📖</span><span>咪咕账号</span>
+                        <span>咪咕账号</span>
                         <span class="login-state-badge ${miguLoggedIn ? 'on' : 'off'}">${miguLoggedIn ? '✅ 已登录（按账号档位解锁画质）' : '未登录（游客最高 540p）'}</span>
                     </div>
                     <div class="bookmarklet-actions">
-                        <a id="miguBookmarklet" class="bookmarklet-link" draggable="true">📖 获取咪咕账号</a>
+                        <a id="miguBookmarklet" class="bookmarklet-link" draggable="true">获取咪咕账号</a>
                         <button class="bookmarklet-help-btn" onclick="openBookmarkletGuide()" title="查看使用说明">?</button>
                     </div>
                 </div>`;
@@ -4456,7 +4496,7 @@
                 // 咪咕那种「书签读 document.cookie」的招读不到，只能扫码或手动翻 DevTools。
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
-                        <span>🔑</span><span>B 站登录态</span>
+                        <span>B 站登录态</span>
                         <span id="biliLoginState" class="login-state-badge ${loggedIn ? 'on' : 'off'}">${loggedIn ? '✅ 已登录（画质可达原画）' : '未登录（画质封顶超清）'}</span>
                     </div>
                     <div class="bookmarklet-actions">
@@ -4469,7 +4509,7 @@
             if (key === 'yangshipin-login') {
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
-                        <span>🔑</span><span>央视频账号</span>
+                        <span>央视频账号</span>
                         <span id="yspLoginState" class="login-state-badge off">正在检查登录态…</span>
                     </div>
                     <div class="bookmarklet-actions">
@@ -4493,7 +4533,7 @@
                 const loggedIn = !!(secretsSet && secretsSet.cookie);
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
-                        <span>🔑</span><span>北京时间登录态</span>
+                        <span>北京时间登录态</span>
                         <span class="login-state-badge ${loggedIn ? 'on' : 'off'}">${loggedIn ? '✅ 已导入 Cookie（启用 9 个电视台）' : '未登录（仍可看公开直播）'}</span>
                     </div>
                     <div class="bookmarklet-actions">
@@ -4510,7 +4550,7 @@
                 const badge = rejected ? '⚠️ Token 已失效（请重新获取）' : (loggedIn ? '✅ 已配置 Token（启用 9 个频道）' : '未登录（频道暂不加入）');
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
-                        <span>🔑</span><span>四川广电登录态</span>
+                        <span>四川广电登录态</span>
                         <span class="login-state-badge ${loggedIn && !rejected ? 'on' : 'off'}">${badge}</span>
                     </div>
                     <div class="bookmarklet-actions">
@@ -4621,13 +4661,13 @@
                 },
                 {
                     id: 'live',
-                    title: '🎮 网络直播平台',
+                    title: '网络直播平台',
                     badge: '网络直播',
                     description: '抓取直播间或平台热门内容，播放地址通常为短效链接。',
                 },
                 {
                     id: 'standard',
-                    title: '📺 免账号模块',
+                    title: '免账号模块',
                     badge: '免账号',
                     description: '无需填写账号凭据，启用后即可自动抓取官方公开频道。',
                 },
@@ -4652,7 +4692,7 @@
                     <div class="source-card-desc">${escapeHtml(m.description || '')}</div>
                     <div class="source-card-foot">
                         <span title="上次成功抓取：${escapeHtml(when)}">${extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>
-                        <span class="card-open-hint">${hasEditableConfig ? '⚙️ 配置 ›' : '详情 ›'}</span>
+                        <span class="card-open-hint">${hasEditableConfig ? '配置 ›' : '详情 ›'}</span>
                     </div>
                 </div>`;
             };
@@ -4757,7 +4797,7 @@
                         <strong id="extractorDetailTitle" style="font-size:17px;">${escapeHtml(m.name)}</strong>
                         ${m.enabledEnv ? `<span style="font-size:12px; color:#888;">（启用开关也可用环境变量 <code>${escapeHtml(m.enabledEnv)}</code> 控制）</span>` : ''}
                     </div>
-                    ${canManualRefresh ? `<button class="btn btn-sm" onclick="refreshExtractorNow('${escapeHtml(m.id)}')">🔄 立即刷新</button>` : ''}
+                    ${canManualRefresh ? `<button class="btn btn-sm" onclick="refreshExtractorNow('${escapeHtml(m.id)}')">立即刷新</button>` : ''}
                 </div>
                 <div style="font-size:12px; margin-bottom:12px;">${extractorHealthHtml(m.health || {})}</div>
                 <div style="border-top:1px solid #f5f5f5; padding-top:12px;">
@@ -4773,7 +4813,7 @@
                         <input type="number" min="${m.minRefreshMinutes || 1}" max="${m.maxRefreshMinutes || 1440}" id="xf-${escapeHtml(m.id)}-__refresh" oninput="setSaveDirty('xt:${escapeHtml(m.id)}')" value="${m.refreshMinutes}" style="width:140px;">
                         <div style="font-size:12px; color:#888; margin-top:3px;">允许范围 ${m.minRefreshMinutes || 1}–${m.maxRefreshMinutes || 1440} 分钟，默认 ${m.defaultRefreshMinutes} 分钟。${m.id === 'bilibili-live' ? '只决定多久重新挑一次直播间（热门榜换人、主播下播）；播放地址在播放时实时换取，与此无关。过短容易触发风控。' : m.id === 'douyin-live' ? '只决定多久重新选一次房间；播放器刷新订阅不会强制重抓。播放时会获取当前地址。' : ''}</div>
                     </div>`}
-                    ${hasEditableConfig ? `<button class="btn btn-sm btn-success" data-save-scope="xt:${escapeHtml(m.id)}" onclick="saveExtractorConfig('${escapeHtml(m.id)}')">💾 保存配置</button>` : ''}
+                    ${hasEditableConfig ? `<button class="btn btn-sm btn-success" data-save-scope="xt:${escapeHtml(m.id)}" onclick="saveExtractorConfig('${escapeHtml(m.id)}')">保存配置</button>` : ''}
                 </div>`;
 
             // 助手随展开区一起重建，每次渲染后重新挂一次
@@ -5250,7 +5290,7 @@
                             <input type="checkbox" ${s.enabled !== false ? 'checked' : ''} onchange="toggleEpgSource(${i}, this.checked)">
                             <strong style="word-break:break-all;">${escapeHtml(s.name || '未命名')}</strong>
                         </label>
-                        <button class="btn btn-sm btn-danger" onclick="deleteEpgSource(${i})">🗑️ 删除</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEpgSource(${i})">删除</button>
                     </div>
                     <div style="font-size:12px; color:#888; word-break:break-all; margin:4px 0;">${escapeHtml(s.url || '')}</div>
                     <div style="font-size:12px; margin-bottom:6px;">${epgStatusHtml(s)}</div>
@@ -5393,17 +5433,17 @@
                             <strong>${escapeHtml(u.name || '未命名')}</strong>
                         </label>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn btn-sm" onclick="regenUserToken('${u.id}')" title="生成新令牌，旧链接立即失效">🔁 重置令牌</button>
+                            <button class="btn btn-sm" onclick="regenUserToken('${u.id}')" title="生成新令牌，旧链接立即失效">重置令牌</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">删除</button>
                         </div>
                     </div>
                     <div style="font-size:12px;color:#888;margin:6px 0;word-break:break-all;">源地址：<span style="font-family:monospace;">${escapeHtml(m3u)}</span></div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                        <button class="btn btn-sm" onclick="copyToClipboard('${m3u.replace(/'/g, "\\'")}', 'm3u 源地址')">📋 复制 m3u</button>
-                        <button class="btn btn-sm" onclick="copyToClipboard('${(m3u + '?relay=1').replace(/'/g, "\\'")}', '兼容版 m3u 地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——发兼容版给对方">🩹 兼容版</button>
-                        <button class="btn btn-sm" onclick="copyToClipboard('${(m3u + '?relay=2').replace(/'/g, "\\'")}', '全代理版 m3u 地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">🚚 全代理版</button>
-                        <button class="btn btn-sm" onclick="copyToClipboard('${pb.replace(/'/g, "\\'")}', 'EPG 地址')">📋 复制 EPG</button>
-                        <button class="btn btn-sm" onclick="copyToClipboard('${txt.replace(/'/g, "\\'")}', 'txt 地址')">📋 复制 txt</button>
+                        <button class="btn btn-sm" onclick="copyToClipboard('${m3u.replace(/'/g, "\\'")}', 'm3u 源地址')">复制 m3u</button>
+                        <button class="btn btn-sm" onclick="copyToClipboard('${(m3u + '?relay=1').replace(/'/g, "\\'")}', '兼容版 m3u 地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——发兼容版给对方">兼容版</button>
+                        <button class="btn btn-sm" onclick="copyToClipboard('${(m3u + '?relay=2').replace(/'/g, "\\'")}', '全代理版 m3u 地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">全代理版</button>
+                        <button class="btn btn-sm" onclick="copyToClipboard('${pb.replace(/'/g, "\\'")}', 'EPG 地址')">复制 EPG</button>
+                        <button class="btn btn-sm" onclick="copyToClipboard('${txt.replace(/'/g, "\\'")}', 'txt 地址')">复制 txt</button>
                         <span style="font-size:12px;color:#888;">绑定档 <select onchange="updateUserProfile('${u.id}', this.value)" style="font-size:12px;">${profOpts}</select></span>
                     </div>
                     <div style="font-size:12px;color:#999;margin-top:6px;">最近访问：${escapeHtml(last)} · 请求数 ${u.reqCount || 0}</div>
@@ -5843,7 +5883,7 @@
             document.getElementById('missingLogoCount').textContent = String(list.length);
             const box = document.getElementById('missingLogoList');
             if (!list.length) {
-                box.innerHTML = '<div class="system-config-hint" style="margin:0;">当前档里所有可见频道都有台标 🎉</div>';
+                box.innerHTML = '<div class="system-config-hint" style="margin:0;">当前档里所有可见频道都有台标 </div>';
             } else {
                 const byGroup = new Map();
                 for (const it of list) {
@@ -6242,7 +6282,7 @@
                 ftwCard.className = 'source-card-add';
                 ftwCard.title = '一键填好仓库 from-the-web 列表的订阅地址，再点「导入并保存」即可';
                 ftwCard.onclick = () => addFromTheWebSource();
-                ftwCard.innerHTML = '<span class="plus">🌏</span><span>添加「来源于网络」列表</span><small>港澳台、新马、影视等网络第三方频道</small>';
+                ftwCard.innerHTML = '<span class="plus"></span><span>添加「来源于网络」列表</span><small>港澳台、新马、影视等网络第三方频道</small>';
                 addCard.after(ftwCard);
             }
 
@@ -6423,7 +6463,7 @@
                         </div>`).join('');
                     html += '</div>';
                 } else if (!d.cancelled) {
-                    html += '<div style="padding:16px; color:#52c41a;">🎉 没有检测到失效频道</div>';
+                    html += '<div style="padding:16px; color:#52c41a;">没有检测到失效频道</div>';
                 }
                 const skipList = d.skip || [];
                 if (skipList.length > 0) {
@@ -6678,9 +6718,9 @@
                         </div>
                         <div class="external-actions">
                             <button class="btn btn-small btn-primary" data-save-scope="ext" onclick="fetchAndSaveSource(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>
-                                ${updatingSourceIndex === index ? '🔄 抓取中...' : '🔍 抓取并保存'}
+                                ${updatingSourceIndex === index ? '抓取中...' : '抓取并保存'}
                             </button>
-                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>🗑️ 删除</button>
+                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>删除</button>
                         </div>
                     </div>
                 
@@ -6689,7 +6729,7 @@
                          外观和上下字段一模一样 —— 挪到保存按钮之下、单独成块并标注，免得用户
                          以为它也要按保存（或反过来，以为上面那些也是点了就生效）。 -->
                     <div class="external-instant-block">
-                        <label>📡 在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
+                        <label>在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
                             <div id="srcProfRow_${index}" class="form-hint" style="margin-top:2px;">${source.id ? '加载中…' : '新源「保存」后即可设置（默认所有配置档可见）'}</div>
                     </div>
                 `;
@@ -6711,35 +6751,35 @@
                         <div class="external-field">
                             <label>来源 *</label>
                             <div class="mode-switcher" style="margin-bottom: 8px;">
-                                <button class="mode-switch-btn ${!source.localImport ? 'active' : ''}" onclick="setSubImportType(${index}, false)">🌐 在线 URL</button>
-                                <button class="mode-switch-btn ${source.localImport ? 'active' : ''}" onclick="setSubImportType(${index}, true)">📁 本地文件 / 粘贴</button>
+                                <button class="mode-switch-btn ${!source.localImport ? 'active' : ''}" onclick="setSubImportType(${index}, false)">在线 URL</button>
+                                <button class="mode-switch-btn ${source.localImport ? 'active' : ''}" onclick="setSubImportType(${index}, true)">本地文件 / 粘贴</button>
                             </div>
                             ${!source.localImport ? `
                             <input type="text" value="${source.subscriptionUrl || ''}" oninput="updateExternalField(${index}, 'subscriptionUrl', this.value)" placeholder="例：https://example.com/playlist.m3u 或 .txt">
                             <div class="form-hint">填写包含多个频道的 m3u/m3u8 或 txt（频道名,地址）播放列表地址，系统会自动识别格式并解析其中的所有频道</div>
                             ${isFromTheWebUrl(source.subscriptionUrl) ? `
                             <div style="margin-top:8px;padding:8px 10px;background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;font-size:12px;color:#8c6d1f;line-height:1.6;">
-                                🌏 这是仓库 from-the-web 里的<strong>网络第三方转发源</strong>，不是电视台官方地址：国内直连大多播不了，需要海外网络或路由器全局代理；本项目不维护，失效不作为 bug 处理。不想要了删掉这条订阅即可。<a href="${FROM_THE_WEB_README}" target="_blank" rel="noopener">收录范围 ↗</a>
+                                这是仓库 from-the-web 里的<strong>网络第三方转发源</strong>，不是电视台官方地址：国内直连大多播不了，需要海外网络或路由器全局代理；本项目不维护，失效不作为 bug 处理。不想要了删掉这条订阅即可。<a href="${FROM_THE_WEB_README}" target="_blank" rel="noopener">收录范围 ↗</a>
                             </div>` : (!isSaved && findFromTheWebSource(index) === -1 ? `
                             <div class="form-hint">想加回以前精选列表里的港澳台、新马、影视等网络第三方频道？<a href="javascript:void(0)" onclick="fillFromTheWeb(${index})">一键填入「来源于网络」列表</a></div>` : '')}
                             ` : `
                             <input type="file" accept=".m3u,.m3u8,.txt,text/plain" onchange="onLocalFilePicked(${index}, this)" style="margin-bottom: 8px;">
                             <textarea oninput="updateExternalField(${index}, 'subscriptionContent', this.value)" placeholder="选择本地 .m3u/.m3u8/.txt 文件，或直接把播放列表内容粘贴到这里（支持 m3u/m3u8 与 txt「频道名,地址」格式，自动识别 GBK/UTF-8 编码）" style="width: 100%; min-height: 120px; font-family: monospace; font-size: 12px; box-sizing: border-box;">${(source.subscriptionContent || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</textarea>
-                            <div class="form-hint">选择文件或粘贴内容后，点下方「📥 导入并保存」即可解析入库；本地导入不发起网络请求</div>
+                            <div class="form-hint">选择文件或粘贴内容后，点下方「导入并保存」即可解析入库；本地导入不发起网络请求</div>
                             `}
                             ${channelInfo}
                         </div>
                         <div class="external-field">
                             <label>默认分组</label>
                             ${renderGroupSelect(index, source.group || '未分组')}
-                            <div class="form-hint">订阅里<strong>没自带分组</strong>的频道统一归到这个分组（频道自带分组的保持不变）。保持「未分组」则不归类，可在「🗂️ 关键字自动分组」里按频道名细分。</div>
+                            <div class="form-hint">订阅里<strong>没自带分组</strong>的频道统一归到这个分组（频道自带分组的保持不变）。保持「未分组」则不归类，可在「关键字自动分组」里按频道名细分。</div>
                         </div>
                         <div class="external-field">
                             <label>
                                 <input type="checkbox" ${source.ignoreGroups === true ? 'checked' : ''} onchange="updateExternalField(${index}, 'ignoreGroups', this.checked)">
                                 忽略源自带分组
                             </label>
-                            <div class="form-hint">勾选后<strong>不采用</strong>订阅里自带的分组（group-title）：该源所有频道改按「🗂️ 关键字自动分组」规则按频道名归组，规则没命中的进上方「默认分组」。注意：切换本开关后，之前对该源频道做的隐藏/移动/重命名会失效，需重新设置。</div>
+                            <div class="form-hint">勾选后<strong>不采用</strong>订阅里自带的分组（group-title）：该源所有频道改按「关键字自动分组」规则按频道名归组，规则没命中的进上方「默认分组」。注意：切换本开关后，之前对该源频道做的隐藏/移动/重命名会失效，需重新设置。</div>
                         </div>
                         <div class="external-field">
                             <label>自动刷新间隔（分钟）</label>
@@ -6764,10 +6804,10 @@
                         </div>
                         <div class="external-actions">
                             <button class="btn btn-small btn-primary" data-save-scope="ext" onclick="importSubscription(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>
-                                ${updatingSourceIndex === index ? '🔄 导入中...' : '📥 导入并保存'}
+                                ${updatingSourceIndex === index ? '导入中...' : '导入并保存'}
                             </button>
-                            <button class="btn btn-small" onclick="startSourceProbe(${index})" ${updatingSourceIndex === index || channelCount === 0 ? 'disabled' : ''} title="检测该源全部频道的连通性，标出失效频道（只标记不删除；防盗链源可能误报，以实际播放为准）">🩺 检测失效</button>
-                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>🗑️ 删除</button>
+                            <button class="btn btn-small" onclick="startSourceProbe(${index})" ${updatingSourceIndex === index || channelCount === 0 ? 'disabled' : ''} title="检测该源全部频道的连通性，标出失效频道（只标记不删除；防盗链源可能误报，以实际播放为准）">检测失效</button>
+                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})" ${updatingSourceIndex === index ? 'disabled' : ''}>删除</button>
                         </div>
                     </div>
                 
@@ -6776,7 +6816,7 @@
                          外观和上下字段一模一样 —— 挪到保存按钮之下、单独成块并标注，免得用户
                          以为它也要按保存（或反过来，以为上面那些也是点了就生效）。 -->
                     <div class="external-instant-block">
-                        <label>📡 在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
+                        <label>在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
                             <div id="srcProfRow_${index}" class="form-hint" style="margin-top:2px;">${source.id ? '加载中…' : '新源「导入并保存」后即可设置（默认所有配置档可见）'}</div>
                     </div>
                 `;
@@ -6814,10 +6854,10 @@
                         </div>
                         <div class="external-actions">
                             <button class="btn btn-small btn-success" data-save-scope="ext" onclick="saveDirectSource(${index})">
-                                💾 保存
+                                保存
                             </button>
-                            <button class="btn btn-small" onclick="startSourceProbe(${index})" ${source.m3u8Url ? '' : 'disabled'} title="检测当前直播链接的连通性（只标记不删除；防盗链源可能误报，以实际播放为准）">🩺 检测失效</button>
-                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})">🗑️ 删除</button>
+                            <button class="btn btn-small" onclick="startSourceProbe(${index})" ${source.m3u8Url ? '' : 'disabled'} title="检测当前直播链接的连通性（只标记不删除；防盗链源可能误报，以实际播放为准）">检测失效</button>
+                            <button class="btn btn-small btn-danger" onclick="removeExternalSource(${index})">删除</button>
                         </div>
                     </div>
                 
@@ -6826,7 +6866,7 @@
                          外观和上下字段一模一样 —— 挪到保存按钮之下、单独成块并标注，免得用户
                          以为它也要按保存（或反过来，以为上面那些也是点了就生效）。 -->
                     <div class="external-instant-block">
-                        <label>📡 在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
+                        <label>在哪些配置档显示 <span class="instant-badge">改动即时保存</span></label>
                             <div id="srcProfRow_${index}" class="form-hint" style="margin-top:2px;">${source.id ? '加载中…' : '新源「保存」后即可设置（默认所有配置档可见）'}</div>
                     </div>
                 `;
@@ -7026,7 +7066,7 @@
                     source.name = file.name.replace(/\.(m3u8?|txt)$/i, '');
                 }
                 renderExternalDetail(index);
-                showStatus(`已读取「${file.name}」，识别到 ${result.channelCount || 0} 个频道，点「📥 导入并保存」入库`, 'success');
+                showStatus(`已读取「${file.name}」，识别到 ${result.channelCount || 0} 个频道，点「导入并保存」入库`, 'success');
             } catch (e) {
                 showStatus('读取文件失败: ' + e.message, 'error');
             }
@@ -7595,7 +7635,7 @@
             }
             if (systemConfig.blankModeEnv) {
                 parts.push(
-                    '🧹 已通过环境变量 <code>mblank</code> 开启<strong>空白模式</strong>：咪咕 / 内置单频道源 / 内置订阅源默认关闭。' +
+                    '已通过环境变量 <code>mblank</code> 开启<strong>空白模式</strong>：咪咕 / 内置单频道源 / 内置订阅源默认关闭。' +
                     '可在上方单独勾选并保存以覆盖（保存后以你的勾选为准）。'
                 );
             }
@@ -8261,7 +8301,7 @@ if(success){
         function openProfileModal() {
             renderProfileList();
             document.getElementById('profileModal').style.display = 'block';
-            // 源 ↔ 档 绑定矩阵惰性加载（issue #29）：到手后重渲染补出「📡 源」按钮
+            // 源 ↔ 档 绑定矩阵惰性加载（issue #29）：到手后重渲染补出「源」按钮
             loadSourceProfiles().then(() => renderProfileList()).catch(() => {});
         }
 
@@ -8331,7 +8371,7 @@ if(success){
                 // 「源」按钮（issue #29）：选择本档启用哪些源；有禁用时按钮上带数量提示
                 const disCount = sourceProfileData ? (sourceProfileData.disabled[p.id] || []).length : 0;
                 const srcBtn = sourceProfileData ?
-                    ` <button class="btn btn-sm" onclick="toggleProfileSourcesRow('${p.id}')" title="选择本档启用哪些源" style="padding:2px 8px; font-size:12px;">📡 源${disCount ? `（禁${disCount}）` : ''}</button>` : '';
+                    ` <button class="btn btn-sm" onclick="toggleProfileSourcesRow('${p.id}')" title="选择本档启用哪些源" style="padding:2px 8px; font-size:12px;">源${disCount ? `（禁${disCount}）` : ''}</button>` : '';
                 // 展开的源勾选面板：取消勾选＝该源频道不在本档出现
                 const srcPanel = (sourceProfileData && expandedSourceRows.has(p.id)) ?
                     `<div style="margin-top:6px; padding:8px 10px; background:#fafafa; border:1px solid #eee; border-radius:6px; font-size:13px;">
@@ -8345,14 +8385,14 @@ if(success){
                     </div>` : '';
                 // 右侧竖排：当前档=重置，其它档=切换；非默认档另有删除
                 const left = isActive
-                    ? '<button class="btn btn-sm btn-warning" onclick="closeProfileModal(); resetMyPlaylist();" title="重置本档：重命名 / 隐藏 / 排序">🔄 重置</button>'
+                    ? '<button class="btn btn-sm btn-warning" onclick="closeProfileModal(); resetMyPlaylist();" title="重置本档：重命名 / 隐藏 / 排序">重置</button>'
                     : `<button class="btn btn-sm btn-primary" onclick="switchProfile('${p.id}')">切换</button>`;
                 const del = isDefault ? '' :
                     `<button class="btn btn-sm btn-danger" onclick="deleteProfilePrompt('${p.id}')">删除</button>`;
                 return `<div class="profile-row${isActive ? ' active' : ''}">
                     <div style="flex:1; min-width:0;">
                         <div style="font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">${escapeHtml(p.name)}${slugHtml}${renameBtn}${srcBtn}</div>
-                        <div class="profile-url"><code>${escapeHtml(url)}</code><button class="btn btn-sm" onclick="copyToClipboard('${url}', '播放地址')">复制</button><button class="btn btn-sm" onclick="copyToClipboard('${compatUrl}', '兼容版播放地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——用兼容版">🩹 兼容版</button><button class="btn btn-sm" onclick="copyToClipboard('${proxyUrl}', '全代理版播放地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">🚚 全代理版</button></div>
+                        <div class="profile-url"><code>${escapeHtml(url)}</code><button class="btn btn-sm" onclick="copyToClipboard('${url}', '播放地址')">复制</button><button class="btn btn-sm" onclick="copyToClipboard('${compatUrl}', '兼容版播放地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——用兼容版">兼容版</button><button class="btn btn-sm" onclick="copyToClipboard('${proxyUrl}', '全代理版播放地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">全代理版</button></div>
                         ${srcPanel}
                     </div>
                     <div class="profile-row-actions">${left}${del}</div>
@@ -8527,15 +8567,15 @@ if(success){
             // 分成「订阅 / 节目单 / 公网」三组，窄了整组换行，不会把某个复制按钮单独甩到下一行
             let html =
                 `<span class="sb-group sb-group-main">`
-                + `<span class="sb-label">📡 订阅地址</span>`
+                + `<span class="sb-label">订阅地址</span>`
                 + `<code title="${escapeHtml(m3u)}">${escapeHtml(m3u)}</code>`
-                + `<button class="sb-copy" onclick="copyToClipboard('${m3u.replace(/'/g, "\\'")}', '订阅地址')">📋 复制</button>`
-                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${m3uCompat.replace(/'/g, "\\'")}', '兼容版订阅地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——用兼容版订阅（服务器直出播放清单，仅限与服务器同网观看）">🩹 兼容版</button>`
-                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${m3uProxy.replace(/'/g, "\\'")}', '全代理版订阅地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">🚚 全代理版</button>`
+                + `<button class="sb-copy" onclick="copyToClipboard('${m3u.replace(/'/g, "\\'")}', '订阅地址')">复制</button>`
+                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${m3uCompat.replace(/'/g, "\\'")}', '兼容版订阅地址')" title="播放一直转圈/失败？极空间极影视、部分老电视盒不跟随跳转——用兼容版订阅（服务器直出播放清单，仅限与服务器同网观看）">兼容版</button>`
+                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${m3uProxy.replace(/'/g, "\\'")}', '全代理版订阅地址')" title="兼容版仍播不了再用它：连视频分片也经服务器转发（占服务器带宽），给极空间极影视这类「清单里的绝对地址取不动」的播放器（issue #98）">全代理版</button>`
                 + `</span><span class="sb-group sb-group-epg">`
                 + `<span class="sb-sep">节目单 EPG</span>`
                 + `<code class="sb-epg" title="${escapeHtml(epg)}">${escapeHtml(epg)}</code>`
-                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${epg.replace(/'/g, "\\'")}', 'EPG 地址')">📋 复制</button>`
+                + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${epg.replace(/'/g, "\\'")}', 'EPG 地址')">复制</button>`
                 + `</span>`;
             // 公网地址（系统配置里的「公网地址」mhost）：给别人用时复制公网版，免得复制出内网 IP 还要手动替换（issue #62）
             const cfgHost = (systemConfig && (systemConfig.host || (systemConfig.data && systemConfig.data.host))) || '';
@@ -8544,9 +8584,9 @@ if(success){
                 const pubM3u = pub + '/interface.m3u' + q;
                 const pubEpg = pub + '/playback.xml';
                 html += `<span class="sb-group">`
-                    + `<span class="sb-sep" title="来自「系统配置 → 公网地址」，分享给外网用户用这个">🌐 公网</span>`
-                    + `<button class="sb-copy" onclick="copyToClipboard('${pubM3u.replace(/'/g, "\\'")}', '公网订阅地址')" title="${escapeHtml(pubM3u)}">📋 复制公网订阅</button>`
-                    + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${pubEpg.replace(/'/g, "\\'")}', '公网 EPG 地址')" title="${escapeHtml(pubEpg)}">📋 公网 EPG</button>`
+                    + `<span class="sb-sep" title="来自「系统配置 → 公网地址」，分享给外网用户用这个">公网</span>`
+                    + `<button class="sb-copy" onclick="copyToClipboard('${pubM3u.replace(/'/g, "\\'")}', '公网订阅地址')" title="${escapeHtml(pubM3u)}">复制公网订阅</button>`
+                    + `<button class="sb-copy sb-copy-muted" onclick="copyToClipboard('${pubEpg.replace(/'/g, "\\'")}', '公网 EPG 地址')" title="${escapeHtml(pubEpg)}">公网 EPG</button>`
                     + `</span>`;
             }
             bar.innerHTML = html;
@@ -8969,7 +9009,7 @@ if(success){
                         <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'up')" ${atTop ? 'disabled' : ''}>↑ 上移</button>
                         <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'down')" ${atBottom ? 'disabled' : ''}>↓ 下移</button>
                         <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'bottom')" ${atBottom ? 'disabled' : ''} title="把这个分组移到所有分组最后">⤓ 置底</button>
-                        <button class="btn btn-sm" onclick="toggleGroupSort()" title="点击切换：手动拖拽 ⇄ 按名称自动排序（中文按拼音、含数字按数值）">📑 排序：${isNameSorted ? '名称' : '手动'}</button>
+                        <button class="btn btn-sm" onclick="toggleGroupSort()" title="点击切换：手动拖拽 ⇄ 按名称自动排序（中文按拼音、含数字按数值）">排序：${isNameSorted ? '名称' : '手动'}</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteGroup(${groupIndex})" ${isUngrouped || isCustomGroup ? 'disabled' : ''} title="${isCustomGroup ? '自定义分组无需隐藏：「删除分组」即彻底移除；想隐藏其中的频道请用「批量管理 → 隐藏」' : isUngrouped ? '「未分组」不可隐藏' : '隐藏整个分组，可在右侧「已隐藏」里恢复'}">隐藏分组</button>
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量管理</button>
                     `;
@@ -9766,7 +9806,7 @@ if(success){
         function resetMyPlaylist() {
             // 标题/说明带上当前档名，明确「只重置当前档」
             const t = document.getElementById('resetModalTitle');
-            if (t) t.textContent = `🔄 重置「${currentProfileName()}」配置`;
+            if (t) t.textContent = `重置「${currentProfileName()}」配置`;
             const h = document.getElementById('resetModalHint');
             if (h) h.textContent = '选择要重置的配置项，未选中的保留不变。仅重置当前档，其它档不受影响。';
             document.getElementById('resetRename').checked = true;
@@ -10192,7 +10232,7 @@ if(success){
                             <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 5px; word-break: break-all; font-family: monospace; font-size: 12px;">${escapeHtml(actualUrl)}</div>
                             <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                                 <button class="btn btn-sm btn-primary" onclick="playInline('${escUrl}', '${escName}')">▶ 在页面里播放</button>
-                                <button class="btn btn-sm" onclick="copyToClipboard('${escUrl}', '播放地址')">📋 复制地址</button>
+                                <button class="btn btn-sm" onclick="copyToClipboard('${escUrl}', '播放地址')">复制地址</button>
                             </div>
                         </div>
                         <div style="margin-bottom:15px;padding:10px 12px;background:#f0f7ff;border:1px solid #cfe2ff;border-radius:6px;color:#456078;font-size:13px;line-height:1.7;">
@@ -10225,9 +10265,9 @@ if(success){
                     <div style="margin-bottom: 15px;">
                         <strong style="color: #667eea;">配对状态：</strong>
                         ${channel.epgMatched
-                            ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f6ffed;color:#52a30d;border:1px solid #d6f0bd;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">📅 节目单已匹配${channel.epgName ? ' · ' + channel.epgName : ''}</span>`
-                            : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fafafa;color:#999;border:1px solid #eee;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">📅 未匹配节目单</span>`}
-                        <span style="display:inline-flex;align-items:center;gap:4px;background:#e6f2ff;color:#1166c7;border:1px solid #cfe5ff;border-radius:4px;padding:2px 9px;font-size:12px;">🖼️ 台标 · ${({ local: '本地上传', source: '源自带', pack: '内置', auto: '公共库', none: '无' })[channel.logoStatus] || '—'}</span>
+                            ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f6ffed;color:#52a30d;border:1px solid #d6f0bd;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">节目单已匹配${channel.epgName ? ' · ' + channel.epgName : ''}</span>`
+                            : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fafafa;color:#999;border:1px solid #eee;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">未匹配节目单</span>`}
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:#e6f2ff;color:#1166c7;border:1px solid #cfe5ff;border-radius:4px;padding:2px 9px;font-size:12px;">台标 · ${({ local: '本地上传', source: '源自带', pack: '内置', auto: '公共库', none: '无' })[channel.logoStatus] || '—'}</span>
                         ${(channel.epgName && channel.epgName !== channel.name)
                             ? `<div style="color:#999;font-size:12px;margin-top:6px;line-height:1.6;">显示名「${channel.name}」已自动归一到「${channel.epgName}」匹配节目单，显示名本身不变。</div>`
                             : ''}
@@ -10259,7 +10299,7 @@ if(success){
                         </div>
                         <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                             <button class="btn btn-sm btn-primary" onclick="playInline('${actualUrl.replace(/'/g, "\\'")}', '${(channel.name || '').replace(/'/g, "\\'")}')">▶ 在页面里播放</button>
-                            <button class="btn btn-sm" onclick="copyToClipboard('${actualUrl.replace(/'/g, "\\'")}', '播放地址')">📋 复制地址</button>
+                            <button class="btn btn-sm" onclick="copyToClipboard('${actualUrl.replace(/'/g, "\\'")}', '播放地址')">复制地址</button>
                             ${(PLAYERS_BY_PLATFORM[getClientPlatform()] || []).map(p => {
                                 const escUrl = actualUrl.replace(/'/g, "\\'");
                                 const escName = (channel.name || '').replace(/'/g, "\\'");
@@ -10276,7 +10316,7 @@ if(success){
                         </div>
                         <div style="margin-top: 6px; color: #999; font-size: 12px; line-height: 1.6;">
                             <div style="display: flex; align-items: center; gap: 4px;">
-                                <span>ℹ️</span>
+
                                 <span>按钮已按当前浏览器所在平台筛选；播放将在你"打开本页的这台机器"上启动，请确保本机已安装对应播放器</span>
                             </div>
                             ${(PLAYERS_BY_PLATFORM[getClientPlatform()] || []).includes('vlc') ? `
@@ -10394,7 +10434,7 @@ if(success){
             detailHTML += `
                 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
                     <span style="color: #999; font-size: 13px;">
-                        ℹ️ 此频道来自：${escapeHtml(sourceText)}
+                        此频道来自：${escapeHtml(sourceText)}
                     </span>
                 </div>
             `;
@@ -10668,7 +10708,7 @@ if(success){
         }
 
         function showNonMiguPlayModal(url, channelName) {
-            document.getElementById('nonMiguPlayTitle').textContent = '📺 播放 - ' + channelName;
+            document.getElementById('nonMiguPlayTitle').textContent = '播放 - ' + channelName;
             const copyBtn = document.getElementById('nonMiguCopyBtn');
             const downloadBtn = document.getElementById('nonMiguDownloadBtn');
             copyBtn.onclick = function() {

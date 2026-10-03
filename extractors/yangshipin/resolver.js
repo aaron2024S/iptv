@@ -10,7 +10,9 @@ import { createPlaylistHistory } from './playlist-history.js'
  * 直播媒体清单里只有 3 个分片、每 3 秒滚动一次，缓存正文等于让播放器在整个 TTL 内
  * 反复拿到同一批分片：播完这十几秒就没有下一片，画面直接卡死，且那批分片早已被
  * CDN 回收，重取只会 403。正在观看的频道每 5 秒共享刷新一次，并直接交给代理层下发，
- * 避免多客户端重复刷新触发 CDN 403，也避免播放器刷新较慢漏掉短片。停播后停止刷新。
+ * 避免多客户端重复刷新触发 CDN 403，也避免播放器刷新较慢漏掉短片。只有同一频道短时间内来了
+ * 第二次请求（确实有播放器在轮询）才启动共享刷新，单次请求不留后台尾巴（见 PLAYING_WINDOW_MS）；
+ * 停播后停止刷新。
  * （取不到新清单时拿上一份顶一下是另一回事，见 STALE_AFTER_MS。）
  *
  * 5 分钟远短于接口自报的 vkey_renew_interval（实测 14400 秒）；但 CDN 仍可能
@@ -20,6 +22,30 @@ import { createPlaylistHistory } from './playlist-history.js'
 export const CACHE_MS = 5 * 60 * 1000
 export const LIVE_REFRESH_MS = 5_000
 export const LIVE_IDLE_MS = 15_000
+
+/**
+ * 共享刷新只给「真在播」的频道开：同一频道两次请求相隔在 (PLAYING_MIN_GAP_MS, PLAYING_WINDOW_MS]
+ * 之内才算有播放器在轮询。播放器拿到清单后要隔两三秒（hls.js 按分片时长、libVLC 约 5 秒）才会再来；
+ * 「刷新预览图 / 检测可用性」式的扫描每台只碰一次，有的连打两次但相隔只有几十毫秒，都够不到这个判定。
+ * v4.27.0 一开始是只要有过一份清单就起后台刷新、停播后再跑 15 秒：按「同一地址重取即 403」模拟，
+ * 扫一遍 20 个台上游要多打 40 次清单、多换 20 张票，正好放大被官方按出口限流的风险（issue #162）。
+ */
+export const PLAYING_MIN_GAP_MS = 1_000
+export const PLAYING_WINDOW_MS = 10_000
+
+/**
+ * 实例级取票预算：整台实例每分钟最多为 TICKET_BUDGET 个「没在播」的频道向官方取票。
+ *
+ * utils/clientScanGuard.js 按客户端（IP+UA）记账，拦得住一台播放器连扫；但官方限的是本机出口 IP，
+ * 几台设备各扫几个、或 2 秒一台的慢扫，按客户端都够不到判定，加起来照样把出口打进限流，此后换新票
+ * 也全部 403（issue #162）。所以再加一道按实例的令牌桶：只约束冷启动（30 秒内没有这个频道的清单、
+ * 也没人正在取），正在播的频道续播换票不计；桶空了对冷启动本地回「请求过于频繁」，一枪不打上游。
+ * 20 张/分钟：一个人换台怎么也到不了一分钟 20 个新台，而把 63 个公开频道扫一遍会在第 21 个被拦住。
+ * 代价是多人共用一台时，有人扫台的那一分钟里别人换新台会被挡几十秒，正在看的不受影响——比起出口
+ * 被封、所有人一起 403 半小时，这是更小的伤害。只在单例上启用（见文件末尾），注入式解析器默认不限。
+ */
+export const TICKET_BUDGET = 20
+export const TICKET_BUDGET_WINDOW_MS = 60 * 1000
 
 /**
  * 换票后主备 CDN 仍全部 403 = 本机出口正被官方限流。此后该频道 30 秒内直接回失败、
@@ -162,6 +188,11 @@ export function createResolver({
   // The singleton enables shared polling; injected one-shot resolvers can opt in.
   refreshIntervalMs = 0,
   idleMs = LIVE_IDLE_MS,
+  playingMinGapMs = PLAYING_MIN_GAP_MS,
+  playingWindowMs = PLAYING_WINDOW_MS,
+  // 0 = 不限；单例按 TICKET_BUDGET 启用
+  ticketBudget = 0,
+  ticketBudgetWindowMs = TICKET_BUDGET_WINDOW_MS,
   log = printYellow,
 } = {}) {
   const cache = new Map()
@@ -169,8 +200,12 @@ export function createResolver({
   const cooling = new Map()
   const pins = new Map()
   const histories = new Map()
-  const segmentProbes = new Map()
   const refreshers = new Map()
+  // 频道 -> 最近一次播放器请求的时刻；连着两次请求隔得像在轮询才启动共享刷新
+  const asks = new Map()
+  // 实例级取票预算（令牌桶）：按 ticketBudget / ticketBudgetWindowMs 的速率回填，满桶封顶
+  const bucket = { tokens: ticketBudget, at: 0 }
+  let budgetAnnouncedAt = -Infinity
   let generation = 0
   // 频道 -> 最近一份成功取回的清单 { text, plain, url, at, tail, stale, sent }；
   // stale = 已经拿它顶过至少一次，sent = 发给过播放器（没等到、后台才取回的那份一开始是没发过的）
@@ -195,18 +230,11 @@ export function createResolver({
     if (current) return current
     const epoch = generation
     current = (async () => {
-      if (!segmentProbes.has(ref)) segmentProbes.set(ref, new Map())
-      const selection = {
-        ...ctx, segmentProbeState: segmentProbes.get(ref),
-        onSegmentProbe: ({ host, ok, reason }) => {
-          if (!ok) log(`[央视频] ${channel.name} ${host} 服务端分片探测未通过（${reason}），尝试备用线路；若主备均未通过仍保留有效清单，播放器直连不受阻断`)
-        },
-      }
       let lastError
       const cached = cache.get(ref)
       if (cached && Number(ctx.now ?? Date.now()) < cached.expiresAt) {
         try {
-          const manifest = await select(cached.urls, selection)
+          const manifest = await select(cached.urls, ctx)
           if (epoch === generation) remember(ref, cached.urls, manifest, cached.expiresAt)
           return manifest
         } catch (error) {
@@ -217,7 +245,7 @@ export function createResolver({
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const { urls } = await request(channel, ctx)
-          const manifest = await select(urls, selection)
+          const manifest = await select(urls, ctx)
           if (epoch === generation) remember(ref, urls, manifest, Number(ctx.now ?? Date.now()) + CACHE_MS)
           return manifest
         } catch (error) {
@@ -258,7 +286,7 @@ export function createResolver({
   }
 
   function answer(key, entry, ctx, desc) {
-    touch(key, CHANNEL_BY_REF.get(key), ctx)
+    renew(key, ctx)
     served.set(key, entry.tail)
     entry.sent = true
     // libVLC 另拿一份清单视图（见 libvlc-view.js）。垫片由本机提供，所以只在外壳给了
@@ -287,11 +315,16 @@ export function createResolver({
       })
   }
 
+  // 已在跑的共享刷新续一下活跃时间，不新开
+  function renew(key, ctx) {
+    const state = refreshers.get(key)
+    if (state) { state.touched = Date.now(); state.ctx = ctx }
+  }
+
   function touch(key, channel, ctx) {
     if (!(refreshIntervalMs > 0) || !latest.has(key)) return
-    let state = refreshers.get(key)
-    if (state) { state.touched = Date.now(); state.ctx = ctx; return }
-    state = { touched: Date.now(), ctx, timer: null }
+    if (refreshers.has(key)) return renew(key, ctx)
+    const state = { touched: Date.now(), ctx, timer: null }
     refreshers.set(key, state)
     const tick = async () => {
       if (refreshers.get(key) !== state) return
@@ -321,12 +354,30 @@ export function createResolver({
     state.timer.unref?.()
   }
 
+  function refillBudget(now) {
+    if (now <= bucket.at) return
+    bucket.tokens = Math.min(ticketBudget, bucket.tokens + (now - bucket.at) * ticketBudget / ticketBudgetWindowMs)
+    bucket.at = now
+  }
+
+  // 冷启动花一张票；桶空回 ok:false，并给出大约几秒后攒得出下一张
+  function takeTicket(now) {
+    refillBudget(now)
+    if (bucket.tokens >= 1) { bucket.tokens -= 1; return { ok: true } }
+    return { ok: false, wait: Math.max(1, Math.ceil((1 - bucket.tokens) * ticketBudgetWindowMs / ticketBudget / 1000)) }
+  }
+
   async function resolve(ref, ctx = {}) {
     const key = String(ref || '')
     const channel = CHANNEL_BY_REF.get(key)
     if (!channel) return { url: '', desc: '央视频频道引用格式错误' }
-    touch(key, channel, ctx)
     const now = Number(ctx.now ?? Date.now())
+    // 隔得像播放器在轮询的第二次请求才启动共享刷新；已在跑的只续活跃时间
+    const asked = asks.get(key)
+    asks.set(key, now)
+    const gap = asked == null ? NaN : now - asked
+    if (gap > playingMinGapMs && gap <= playingWindowMs) touch(key, channel, ctx)
+    else renew(key, ctx)
     const held = latest.get(key)
     const spare = held && now - held.at <= STALE_MAX_MS ? held : null
     const standIn = () => answer(key, spare, ctx, `${channel.name} 暂时取不到新清单，先回上一份`)
@@ -341,6 +392,18 @@ export function createResolver({
     if (spare && !spare.sent) return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
     if (refreshIntervalMs > 0 && spare && !spare.stale && now - spare.at < refreshIntervalMs) {
       return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
+    }
+    // 冷启动（30 秒内没有这个频道的清单、也没人正在取）要花一张实例级取票预算
+    if (ticketBudget > 0 && !spare && !pending.has(key)) {
+      const ticket = takeTicket(now)
+      if (!ticket.ok) {
+        const seconds = ticketBudgetWindowMs / 1000
+        if (now - budgetAnnouncedAt >= 10_000) {
+          budgetAnnouncedAt = now
+          log(`[央视频] ${seconds} 秒内已为 ${ticketBudget} 个新频道向官方取票，疑似播放器批量探测，暂停新频道取票约 ${ticket.wait} 秒（最近：${ctx.client?.tag || '未知客户端'} 请求 ${channel.name}）；正在播放的频道不受影响`)
+        }
+        return { url: '', silent: true, desc: `${channel.name}链接请求失败：央视频 ${seconds} 秒内已为 ${ticketBudget} 个新频道取票，疑似播放器批量探测，已暂停新频道取票，约 ${ticket.wait} 秒后恢复（正在播放的频道不受影响）` }
+      }
     }
     // 结果统一收成 { entry } 或 { error }：后台跑完没人等的那一次也得把冷却记上，且不留未处理的拒绝
     const fresh = fetchFresh(key, channel, ctx)
@@ -376,12 +439,13 @@ export function createResolver({
     latest.clear()
     served.clear()
     histories.clear()
-    segmentProbes.clear()
+    asks.clear()
+    // 取票预算不随缓存清空重置：它量的是出口 IP 最近一分钟的消耗，不是缓存
   }
 
   return { resolve, clear, cache, pending, cooling, pins, latest }
 }
 
-const resolver = createResolver({ refreshIntervalMs: LIVE_REFRESH_MS })
+const resolver = createResolver({ refreshIntervalMs: LIVE_REFRESH_MS, ticketBudget: TICKET_BUDGET })
 export const resolveChannel = resolver.resolve
 export const clearCache = resolver.clear

@@ -28,6 +28,8 @@ export default {
   // 一被限连正在看的人也一起 403）。HEAD 探活 app.js 已本地应答，GET 这一半交给客户端批量探测
   // 防护本地拒绝，见 utils/clientScanGuard.js。这只管公开频道（走 resolve）；10 个会员频道走本地
   // 媒体路由，由 runtime.js 的 vipBurstRefusal 接上同一本账。
+  // 按客户端的账拦不住多设备各扫几个、两秒一台的慢扫，出口一旦被限连换新票都 403（issue #162）：
+  // resolver.js 另有实例级取票预算（TICKET_BUDGET）兜底，只拦冷启动，正在播的不受影响。
   resolveBurstGuard: true,
   defaultRefreshMinutes: 1440,
   refreshConfigurable: false,

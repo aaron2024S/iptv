@@ -1309,67 +1309,17 @@ check('缺口不拼接、过期/换流/序号倒退清空历史，复杂 HLS 原
   }
 })
 
-await checkAsync('清单正常而 TS 403 时选可下载的备用，每 CDN 每分钟只探一次', async () => {
-  const probes = [], state = new Map()
-  const packet = Buffer.alloc(188); packet[0] = 0x47
-  const urls = ['https://bad.ysp.cctv.cn/live.m3u8', 'https://good.ysp.cctv.cn/live.m3u8']
-  const fetchImpl = async (url, options) => {
-    if (url.endsWith('.m3u8')) return new Response('#EXTM3U\n#EXTINF:5,\npart-1.ts\n')
-    probes.push({ url, range: options.headers.Range })
-    return url.includes('bad.ysp') ? new Response('denied', { status: 403 }) : new Response(packet, { status: 206 })
-  }
-  for (const now of [0, 5000, 59_999]) {
-    const result = await selectWorkingManifest(urls, { fetchImpl, segmentProbeState: state, now })
-    assert.equal(result.sourceUrl, urls[1])
-  }
-  assert.equal(probes.length, 2)
-  assert.ok(probes.every(p => p.range === 'bytes=0-187'))
-  await selectWorkingManifest(urls, { fetchImpl, segmentProbeState: state, now: 60_000 })
-  assert.equal(probes.length, 4)
-})
-
-await checkAsync('服务端分片全被拒或超时不判死直连频道，不触发全部 403 冷却', async () => {
-  const urls = ['https://a.ysp.cctv.cn/live.m3u8', 'https://b.ysp.cctv.cn/live.m3u8']
-  for (const failure of ['403', 'timeout', 'html']) {
-    const fetchImpl = (url, { signal } = {}) => {
-      if (url.endsWith('.m3u8')) return Promise.resolve(new Response('#EXTM3U\n#EXTINF:5,\npart.ts\n'))
-      if (failure === 'timeout') return new Promise((_, reject) => signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))))
-      return Promise.resolve(failure === '403' ? new Response('no', { status: 403 }) : new Response('x'.repeat(188)))
-    }
-    const result = await selectWorkingManifest(urls, { fetchImpl, segmentProbeState: new Map(), segmentProbeTimeoutMs: 10 })
-    assert.equal(result.sourceUrl, urls[0])
-  }
-})
-
-await checkAsync('分片探测不跟随到非官方域名，忽略 Range 的节点正文也会及时取消', async () => {
-  let cancelled = false
-  const calls = [], urls = ['https://a.ysp.cctv.cn/live.m3u8']
-  const fetchImpl = async (url, options) => {
-    calls.push(url)
-    if (url.endsWith('.m3u8')) return new Response('#EXTM3U\n#EXTINF:5,\npart.ts\n')
-    assert.equal(options.redirect, 'manual')
-    return new Response('', { status: 302, headers: { location: 'http://127.0.0.1/private' } })
-  }
-  await selectWorkingManifest(urls, { fetchImpl, segmentProbeState: new Map() })
-  assert.equal(calls.length, 2)
-  await selectWorkingManifest(urls, {
-    segmentProbeState: new Map(),
-    fetchImpl: async url => url.endsWith('.m3u8') ? new Response('#EXTM3U\n#EXTINF:5,\npart.ts\n')
-      : new Response(new ReadableStream({ start(c) { const packet = new Uint8Array(188); packet[0] = 0x47; c.enqueue(packet) }, cancel() { cancelled = true } })),
-  })
-  assert.equal(cancelled, true)
-})
-
 await checkAsync('活跃频道共享定时刷新，不跟着慢播放器漏片；短期重复请求不重复拉官方，停播后停止', async () => {
   let selects = 0
   const resolver = createResolver({
-    refreshIntervalMs: 20, idleMs: 75, log: () => {},
+    refreshIntervalMs: 20, idleMs: 75, playingMinGapMs: 5, playingWindowMs: 40, log: () => {},
     request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
     select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: officialPlaylist(100 + selects++, [1000, 1005, 1010], [5, 5, 5]) }),
   })
   try {
-    await resolver.resolve('ysp-cctv4')
-    await Promise.all(Array.from({ length: 5 }, () => resolver.resolve('ysp-cctv4')))
+    await resolver.resolve('ysp-cctv4', { now: 0 })
+    // 第二次请求隔得像播放器在轮询（> playingMinGapMs），共享刷新从这里启动
+    await Promise.all(Array.from({ length: 5 }, () => resolver.resolve('ysp-cctv4', { now: 10 })))
     assert.equal(selects, 1, '多人并发、首份清单还新鲜，只用这一份')
     await new Promise(r => setTimeout(r, 50))
     assert.ok(selects >= 2, '播放器不轮询也在积累真实历史')
@@ -1385,7 +1335,7 @@ await checkAsync('活跃频道共享定时刷新，不跟着慢播放器漏片�
 await checkAsync('清空解析缓存会停止后台刷新，正在飞的旧请求也不再把缓存写回来', async () => {
   let release, selects = 0, hanging = false
   const resolver = createResolver({
-    refreshIntervalMs: 10, idleMs: 100, log: () => {},
+    refreshIntervalMs: 10, idleMs: 100, playingMinGapMs: 2, playingWindowMs: 40, log: () => {},
     request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
     select: async () => {
       selects++
@@ -1394,7 +1344,9 @@ await checkAsync('清空解析缓存会停止后台刷新，正在飞的旧请�
     },
   })
   try {
-    await resolver.resolve('ysp-cctv4')
+    await resolver.resolve('ysp-cctv4', { now: 0 })
+    // 第二次请求隔得像在轮询，共享刷新从这里启动；清单还新鲜，这次不打上游
+    await resolver.resolve('ysp-cctv4', { now: 5 })
     hanging = true
     await new Promise(r => setTimeout(r, 20))
     assert.equal(typeof release, 'function')
@@ -1405,6 +1357,73 @@ await checkAsync('清空解析缓存会停止后台刷新，正在飞的旧请�
     assert.equal(resolver.pending.size, 0)
     assert.equal(selects, 2)
   } finally { resolver.clear(); release?.() }
+})
+
+await checkAsync('只请求一次、或几毫秒内连打两次、或隔太久再来，都不算在播，不启动共享刷新', async () => {
+  let selects = 0
+  const resolver = createResolver({
+    refreshIntervalMs: 10, idleMs: 100, playingMinGapMs: 5, playingWindowMs: 40, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: officialPlaylist(100 + selects++, [1000, 1005, 1010], [5, 5, 5]) }),
+  })
+  try {
+    await resolver.resolve('ysp-cctv4', { now: 0 })
+    await new Promise(r => setTimeout(r, 60))
+    assert.equal(selects, 1, '扫一遍只碰一次的频道，后台没有尾巴')
+    await resolver.resolve('ysp-cctv5', { now: 0 })
+    await resolver.resolve('ysp-cctv5', { now: 2 })
+    await new Promise(r => setTimeout(r, 60))
+    assert.equal(selects, 2, '相隔几毫秒连打两次仍算扫描，不启动刷新')
+    await resolver.resolve('ysp-cctv5', { now: 50 })
+    assert.equal(selects, 3, '清单过了刷新周期，这次请求自己去取')
+    await new Promise(r => setTimeout(r, 60))
+    assert.equal(selects, 3, '隔太久再来也不算轮询')
+  } finally { resolver.clear() }
+})
+
+await checkAsync('实例级取票预算：冷启动超预算的新频道本地拒绝且只打一行黄字，正在播的续播、同频道并发等待都不花票，回填后恢复', async () => {
+  let requests = 0
+  const logs = []
+  const playlist = () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: officialPlaylist(100 + requests, [1000, 1005, 1010], [5, 5, 5]) })
+  const resolver = createResolver({
+    ticketBudget: 3, ticketBudgetWindowMs: 60_000, log: line => logs.push(line),
+    request: async () => { requests++; return { urls: ['https://a.ysp.cctv.cn/live.m3u8'] } },
+    select: async () => playlist(),
+  })
+  const client = { key: 'scan', tag: '10.0.0.9 UA:scan-test' }
+  try {
+    for (const ref of ['ysp-cctv1', 'ysp-cctv2', 'ysp-cctv3']) {
+      assert.ok((await resolver.resolve(ref, { now: 1000, client })).url, `${ref} 在预算内正常解析`)
+    }
+    assert.equal(requests, 3)
+    const refused = await resolver.resolve('ysp-cctv4', { now: 1500, client })
+    assert.equal(refused.url, '')
+    assert.equal(refused.silent, true, '拒绝按归并日志处理，不逐条刷红')
+    assert.match(refused.desc, /批量探测/)
+    assert.equal(requests, 3, '桶空了一枪不打上游')
+    assert.equal(logs.filter(l => l.includes('批量探测') && l.includes('scan-test')).length, 1, '黄字写明是哪个客户端')
+    assert.equal((await resolver.resolve('ysp-cctv5', { now: 2000, client })).url, '')
+    assert.equal(logs.filter(l => l.includes('批量探测')).length, 1, '10 秒内只打一行黄字')
+    const playing = await resolver.resolve('ysp-cctv1', { now: 8000, client })
+    assert.ok(playing.url, '正在播的频道续播不受预算影响')
+    assert.equal(requests, 3)
+    const later = await resolver.resolve('ysp-cctv4', { now: 1500 + 20_000, client })
+    assert.ok(later.url, '3 张/60 秒，过 20 秒攒出一张，新频道恢复')
+    assert.equal(requests, 4)
+  } finally { resolver.clear() }
+
+  let slow = 0
+  const shared = createResolver({
+    ticketBudget: 1, ticketBudgetWindowMs: 60_000, log: () => {},
+    request: async () => { slow++; await new Promise(r => setTimeout(r, 10)); return { urls: ['https://a.ysp.cctv.cn/live.m3u8'] } },
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: officialPlaylist(100, [1000, 1005, 1010], [5, 5, 5]) }),
+  })
+  try {
+    const both = await Promise.all([shared.resolve('ysp-cctv6', { now: 0 }), shared.resolve('ysp-cctv6', { now: 0 })])
+    assert.ok(both.every(out => out.url), '同一个冷频道几人同时点开，等同一次取票')
+    assert.equal(slow, 1)
+    assert.equal((await shared.resolve('ysp-cctv7', { now: 0 })).url, '', '那一张票已经花掉')
+  } finally { shared.clear() }
 })
 
 console.log(`\n全部通过：${passed} 项`)

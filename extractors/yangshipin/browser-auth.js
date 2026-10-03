@@ -123,10 +123,24 @@ export class YspBrowserSession {
     this.lifecycle = Promise.resolve()
     this.lifecycleJobs = 0
     this.accountReads = 0
+    this.launchWaiters = []
     this.canYield = () => false
   }
 
   get running() { return Boolean(this.browser?.connected) }
+
+  /**
+   * 浏览器进程一拉起、账号基页选定就兑现（不等基页加载完、不等读账号）；已在跑则立即兑现，
+   * 启动失败兑现 null。会员桥冷起时借这几秒并行加载播放页（见 vip-bridge.js 预热页）。
+   */
+  whenLaunched() {
+    if (this.running && this.page) return Promise.resolve(this.browser)
+    return new Promise(resolve => this.launchWaiters.push(resolve))
+  }
+
+  notifyLaunched(browser) {
+    for (const resolve of this.launchWaiters.splice(0)) resolve(browser)
+  }
 
   withLifecycle(work) {
     this.lifecycleJobs++
@@ -151,22 +165,28 @@ export class YspBrowserSession {
 
     await mkdir(this.profileDir, { recursive: true })
     this.logger(`启动${visible ? '可见' : '后台'}央视频浏览器会话`)
-    const browser = await this.launchImpl({
-      headless: !visible,
-      label: '央视频会员会话',
-      onIdleRequest: () => this.requestIdleYield(),
-      launchOptions: {
-        userDataDir: this.profileDir,
-        protocolTimeout: 30_000,
-        defaultViewport: visible ? null : { width: 1440, height: 900 },
-        // app.js 自己处理 SIGTERM / SIGINT：browser.close() 让 Chromium 把 cookie 落盘、删掉 Singleton 锁再退出。
-        // puppeteer 默认也挂这两个信号，收到就 SIGKILL 整个进程组（SIGINT 还立刻 process.exit），抢在正常关闭
-        // 之前——docker stop 后锁必然残留，停止前约 30 秒内导入 / 续期的登录 cookie 也会丢（issue #153）。
-        // 进程退出时 puppeteer 的 exit 钩子仍会杀掉没关掉的 Chromium，不留孤儿；SIGHUP 没人接，保持默认。
-        handleSIGINT: false,
-        handleSIGTERM: false,
-      },
-    })
+    let browser
+    try {
+      browser = await this.launchImpl({
+        headless: !visible,
+        label: '央视频会员会话',
+        onIdleRequest: () => this.requestIdleYield(),
+        launchOptions: {
+          userDataDir: this.profileDir,
+          protocolTimeout: 30_000,
+          defaultViewport: visible ? null : { width: 1440, height: 900 },
+          // app.js 自己处理 SIGTERM / SIGINT：browser.close() 让 Chromium 把 cookie 落盘、删掉 Singleton 锁再退出。
+          // puppeteer 默认也挂这两个信号，收到就 SIGKILL 整个进程组（SIGINT 还立刻 process.exit），抢在正常关闭
+          // 之前——docker stop 后锁必然残留，停止前约 30 秒内导入 / 续期的登录 cookie 也会丢（issue #153）。
+          // 进程退出时 puppeteer 的 exit 钩子仍会杀掉没关掉的 Chromium，不留孤儿；SIGHUP 没人接，保持默认。
+          handleSIGINT: false,
+          handleSIGTERM: false,
+        },
+      })
+    } catch (error) {
+      this.notifyLaunched(null)
+      throw error
+    }
     this.browser = browser
     this.visible = visible
     browser.once?.('disconnected', () => {
@@ -180,10 +200,13 @@ export class YspBrowserSession {
     try {
       const pages = await browser.pages()
       this.page = pages[0] || await browser.newPage()
+      // 基页选定之后才通知：会员桥随即开的播放页不会被 pages()[0] 误当成基页
+      this.notifyLaunched(browser)
       await this.configurePage(this.page)
       await this.ensureHome()
       return this.page
     } catch (error) {
+      this.notifyLaunched(null)
       await this.closeNow()
       throw error
     }
@@ -211,9 +234,10 @@ export class YspBrowserSession {
     if (!page.url().startsWith(YSP_HOME)) {
       await page.goto(YSP_HOME, { waitUntil: 'domcontentloaded', timeout: 30_000 })
     }
+    // 定时轮询而不是默认的 requestAnimationFrame：会员桥冷起时会同时开播放页，基页可能落到后台，后台标签不跑 rAF
     await page.waitForFunction(
       () => window.yspLogin?.default && document.querySelectorAll('.tv-main-con-r-list-left-imga').length >= 40,
-      { timeout: 30_000 },
+      { timeout: 30_000, polling: 250 },
     )
   }
 

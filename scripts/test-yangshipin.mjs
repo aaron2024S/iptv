@@ -30,6 +30,7 @@ import {
   createTrackState,
   inspectInitSegment,
   inspectMediaFragment,
+  isParkedMediaRequest,
   parseSimpleFragment,
   VipMseBridge,
 } from '../extractors/yangshipin/vip-bridge.js'
@@ -178,6 +179,39 @@ await checkAsync('会话浏览器不让 puppeteer 接管 SIGTERM / SIGINT：dock
     assert.equal(seen.launchOptions.handleSIGTERM, false)
     assert.equal(seen.launchOptions.handleSIGINT, false)
     assert.equal('handleSIGHUP' in seen.launchOptions, false)
+  } finally { rmSync(profileDir, { recursive: true, force: true }) }
+})
+
+await checkAsync('浏览器一拉起、基页选定就通知会员桥（不等基页加载完）；启动失败通知 null', async () => {
+  const profileDir = mkdtempSync(join(tmpdir(), 'ysp-profile-'))
+  const order = []
+  let releaseHome
+  const homeLoaded = new Promise(resolve => { releaseHome = resolve })
+  const page = {
+    isClosed: () => false,
+    setUserAgent: async () => {},
+    evaluateOnNewDocument: async () => {},
+    setRequestInterception: async () => {},
+    on() {},
+    url: () => 'about:blank',
+    goto: async () => { await homeLoaded; order.push('home') },
+    waitForFunction: async () => {},
+  }
+  const browser = { connected: true, once() {}, pages: async () => [page] }
+  const session = new YspBrowserSession({ profileDir, launchImpl: async () => browser })
+  try {
+    const launched = session.whenLaunched().then(value => { order.push('launched'); return value })
+    const ensuring = session.ensureBrowserNow({ visible: false })
+    assert.equal(await launched, browser)
+    assert.deepEqual(order, ['launched'], '基页还在加载时就已通知')
+    releaseHome()
+    await ensuring
+    assert.equal(await session.whenLaunched(), browser, '已在跑时立即兑现')
+
+    const failing = new YspBrowserSession({ profileDir, launchImpl: async () => { throw new Error('no chrome') } })
+    const waiting = failing.whenLaunched()
+    await assert.rejects(failing.ensureBrowserNow({ visible: false }), /no chrome/)
+    assert.equal(await waiting, null)
   } finally { rmSync(profileDir, { recursive: true, force: true }) }
 })
 
@@ -567,6 +601,190 @@ await checkAsync('会员页与后台浏览器都改为 3 分钟无人请求才�
     bridge.cleanup()
     await tick()
     assert.equal(browserClosed, true)
+  } finally {
+    await bridge.close()
+  }
+})
+
+// 预热页测试用：每个页面独立记账，drain 时给出 init + 三片（每片 1 秒）
+function sparePage(id, events) {
+  let drains = 0
+  const handlers = new Set()
+  const page = {
+    id, closed: false, interception: false, gotos: 0,
+    isClosed: () => page.closed,
+    close: async () => { page.closed = true; events.push(`close ${id}`) },
+    on(event, fn) { if (event === 'request') handlers.add(fn) },
+    off(event, fn) { handlers.delete(fn) },
+    setUserAgent: async () => {},
+    evaluateOnNewDocument: async () => {},
+    setRequestInterception: async value => { page.interception = value; events.push(`intercept ${id} ${value}`) },
+    bringToFront: async () => { events.push(`front ${id}`) },
+    goto: async () => { page.gotos++; events.push(`goto ${id}`) },
+    waitForFunction: async () => {},
+    evaluate: async (fn, arg) => {
+      if (typeof fn === 'function' && fn.name === 'base64DrainScript') {
+        drains++
+        if (drains === 1) return [mseChunk('audio/mp4', fakeInit()), mseChunk('video/mp4', fakeInit()), mseChunk('audio/mp4', fakeMedia(0)), mseChunk('video/mp4', fakeMedia(0))]
+        if (drains <= 3) return [mseChunk('audio/mp4', fakeMedia(drains - 1)), mseChunk('video/mp4', fakeMedia(drains - 1))]
+        return []
+      }
+      if (arg !== undefined) { events.push(`click ${id} ${arg}`); return true }
+      if (String(fn).includes('__yspHlsInstances')) return '已催官网播放器重拉清单（1/1 个实例）'
+      if (String(fn).includes('buffered')) return { currentTime: 1, bufferedEnd: 3, ahead: 2, paused: false, readyState: 4 }
+      return undefined
+    },
+    // 模拟一个请求经过页面上的拦截处理器，返回处理结果
+    request(url, resourceType = 'xhr') {
+      let outcome = page.interception ? 'pending' : 'free'
+      const request = {
+        url: () => url,
+        resourceType: () => resourceType,
+        abort: async () => { outcome = 'abort' },
+        continue: async () => { outcome = 'continue' },
+      }
+      for (const handler of handlers) handler(request)
+      return outcome
+    },
+  }
+  return page
+}
+
+function spareSession(events, { launchDelayMs = 0, accountDelayMs = 0 } = {}) {
+  const pages = []
+  const browser = {
+    connected: true,
+    newPage: async options => {
+      const page = sparePage(`p${pages.length + 1}`, events)
+      page.background = Boolean(options?.background)
+      pages.push(page)
+      return page
+    },
+  }
+  let launched
+  const launchedPromise = new Promise(resolve => { launched = resolve })
+  const session = {
+    running: false, visible: false, browser: null, pages,
+    whenLaunched: () => (session.running ? Promise.resolve(browser) : launchedPromise),
+    ensureBrowser: async () => {
+      if (session.running) return
+      session.browser = browser
+      session.running = true
+      events.push('launch')
+      launched(browser)
+      await new Promise(resolve => setTimeout(resolve, launchDelayMs))
+      events.push('base ready')
+    },
+    readAccount: async () => {
+      await new Promise(resolve => setTimeout(resolve, accountDelayMs))
+      events.push('account ok')
+      return { authenticated: true, account: { nickname: '测试', vip: true } }
+    },
+    close: async () => { browser.connected = false; session.running = false },
+  }
+  return session
+}
+
+check('预热页只挡媒体分片和清单，页面脚本、接口照常放行', () => {
+  assert.equal(isParkedMediaRequest('https://live-dtocnc-cdn.ysp.cctv.cn/x/index.m3u8?a=1', 'xhr'), true)
+  assert.equal(isParkedMediaRequest('https://hlsliveali-cdn.ysp.cctv.cn/x/1700.m4s', 'xhr'), true)
+  assert.equal(isParkedMediaRequest('https://x/seg-1.ts?k=v', 'xhr'), true)
+  assert.equal(isParkedMediaRequest('https://x/whatever', 'media'), true)
+  assert.equal(isParkedMediaRequest('https://player-api.yangshipin.cn/v1/player/auth', 'xhr'), false)
+  assert.equal(isParkedMediaRequest('https://www.yangshipin.cn/Library/CMGPlayer.json', 'fetch'), false)
+  assert.equal(isParkedMediaRequest('https://www.yangshipin.cn/static/app.mp4.js', 'script'), false)
+})
+
+await checkAsync('切台用预热页：起好一台就备下一页（挡住默认台媒体），下一台直接放开拦截点台，不再现开页面', async () => {
+  const events = []
+  const logs = []
+  const session = spareSession(events)
+  const bridge = new VipMseBridge(session, { logger: line => logs.push(line), readyMinMediaS: 3 })
+  try {
+    await bridge.ensure(AUTH_CHANNELS[0])
+    const [p1] = session.pages
+    assert.equal(p1.interception, false, '认领后拦截已关')
+    assert.ok(events.indexOf(`intercept p1 false`) < events.indexOf(`front p1`), '先放开拦截')
+    assert.ok(events.indexOf(`front p1`) < events.indexOf(`click p1 ${AUTH_CHANNELS[0].siteName}`), '切到前台再点台')
+
+    // 第一台起好后备下一页：加载官网但不点台，媒体请求被挡
+    assert.ok(bridge.spare, '起好一台后开始备预热页')
+    assert.equal(await bridge.spare.ready, true)
+    const p2 = session.pages[1]
+    assert.equal(p2.gotos, 1)
+    assert.equal(p2.interception, true)
+    assert.equal(p2.background, true, '预热页建在后台标签，不把正在播的页挤到后台')
+    assert.ok(!events.includes('front p2'))
+    assert.equal(p2.request('https://cdn/x/index.m3u8'), 'abort')
+    assert.equal(p2.request('https://cdn/x/12.m4s'), 'abort')
+    assert.equal(p2.request('https://player-api.yangshipin.cn/v1/player/auth'), 'continue')
+    assert.ok(!events.some(line => line.startsWith('click p2')), '预热页闲置时不点台')
+
+    await bridge.ensure(AUTH_CHANNELS[1])
+    assert.equal(session.pages[1], p2)
+    assert.equal(p2.gotos, 1, '切台直接用预热页，不再加载官网')
+    assert.equal(p2.interception, false)
+    assert.equal(p2.request('https://cdn/y/index.m3u8'), 'free', '认领后处理器已摘掉')
+    assert.ok(events.includes(`click p2 ${AUTH_CHANNELS[1].siteName}`))
+    assert.equal(bridge.streams.get(AUTH_CHANNELS[1].id).page, p2)
+    const ready = logs.filter(line => line.includes('解扰桥就绪')).at(-1)
+    assert.match(ready, /浏览器与页面 \d+\.\d（预热页） · 首片/)
+    assert.equal(await bridge.spare.ready, true, '又备好下一页')
+    assert.equal(session.pages.length, 3)
+  } finally {
+    await bridge.close()
+  }
+  assert.ok(session.pages.every(page => page.closed), '关闭时预热页一并关掉')
+})
+
+await checkAsync('冷起时播放页和账号基页、读账号同时加载', async () => {
+  const events = []
+  const session = spareSession(events, { launchDelayMs: 150, accountDelayMs: 100 })
+  const bridge = new VipMseBridge(session, { readyMinMediaS: 3 })
+  try {
+    await bridge.ensure(AUTH_CHANNELS[2])
+    const at = name => events.indexOf(name)
+    assert.ok(at('goto p1') > at('launch'))
+    assert.ok(at('goto p1') < at('base ready'), `播放页不等基页加载完：${events.join(' / ')}`)
+    assert.ok(at(`click p1 ${AUTH_CHANNELS[2].siteName}`) > at('account ok'), '账号确认过才点台')
+    await bridge.spare.ready
+    assert.equal(session.pages.filter(page => page.gotos).length, 2, '只多出一个给下次切台的预热页')
+  } finally {
+    await bridge.close()
+  }
+})
+
+await checkAsync('账号不可用时冷起不提前备页；预热页放久了换新、浏览器换过就丢掉', async () => {
+  const events = []
+  const session = spareSession(events)
+  session.readAccount = async () => ({ authenticated: false, account: null })
+  const bridge = new VipMseBridge(session, { readyMinMediaS: 3, spareMaxAgeMs: 30 })
+  try {
+    await assert.rejects(bridge.ensure(AUTH_CHANNELS[3]), /登录/)
+    assert.equal(bridge.accountMissing, true)
+    const opened = session.pages.length
+    bridge.dropSpare()
+    await assert.rejects(bridge.ensure(AUTH_CHANNELS[3]), /登录/)
+    assert.equal(session.pages.length, opened, '上次读账号失败，这次不再提前开页')
+
+    // 放久了：还有人在看会员台就换一个新的
+    bridge.prepareSpare()
+    const old = bridge.spare
+    await old.ready
+    bridge.streams.set('fake', { channel: AUTH_CHANNELS[4], page: { isClosed: () => false, close: async () => {} }, touched: Date.now(), audio: createTrackState(), video: createTrackState() })
+    await new Promise(resolve => setTimeout(resolve, 40))
+    bridge.cleanup()
+    assert.equal(old.page.closed, true)
+    assert.ok(bridge.spare && bridge.spare !== old, '换了个新的')
+    await bridge.spare.ready
+
+    // 浏览器换过：旧预热页丢掉
+    const current = bridge.spare
+    session.browser = { connected: true, newPage: async () => sparePage('other', events) }
+    bridge.streams.clear()
+    bridge.cleanup()
+    assert.equal(current.page.closed, true)
+    assert.equal(bridge.spare, null, '没人在看就不重备')
   } finally {
     await bridge.close()
   }

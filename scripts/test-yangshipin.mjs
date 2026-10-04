@@ -1554,6 +1554,78 @@ check('缺口不拼接、过期/换流/序号倒退清空历史，复杂 HLS 原
   }
 })
 
+// CCTV8K 那种 2 秒一片的官方清单：每取一次窗口往后滚一片
+const shortPlaylist = seq => officialPlaylist(seq, [seq * 2, seq * 2 + 2, seq * 2 + 4], [2, 2, 2]).replace('TARGETDURATION:5', 'TARGETDURATION:2')
+
+await checkAsync('短分片频道冷起先续取清单、攒到门槛再回，同时来的请求一起等；之后照常不等', async () => {
+  let selects = 0
+  const resolver = createResolver({
+    warmupSeconds: 10, warmupMaxMs: 1000, warmupStepMs: 5, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: shortPlaylist(100 + selects++) }),
+  })
+  const [first, second] = await Promise.all([
+    resolver.resolve('ysp-cctv8k', {}),
+    new Promise(resolve => setTimeout(resolve, 2)).then(() => resolver.resolve('ysp-cctv8k', {})),
+  ])
+  assert.equal(selects, 3, '6 秒 → 8 秒 → 10 秒，续取两次')
+  assert.deepEqual(segmentsOf(first.manifestText).map(x => x.seq), [100, 101, 102, 103, 104])
+  assert.equal(second.manifestText, first.manifestText, '攒的过程中来的请求拿同一份，不先给薄清单')
+  const vlc = await resolver.resolve('ysp-cctv8k', { client: { ua: LIBVLC }, selfBase: 'http://192.168.1.2:1905' })
+  // 这个 resolver 没开共享刷新缓存，第三次照常取一次新的；已经起播过，不再续取等待
+  assert.equal(selects, 4, '已经起播的频道不再等')
+  assert.equal(vlc.manifestText.match(/2029797103-\d+\.ts/g).length, 6, 'VLC 视图用的也是攒好的历史')
+})
+
+await checkAsync('短分片冷起攒不够时最多等 warmupMaxMs，续取出错就先回手里的；普通频道和认不出的清单不等', async () => {
+  let selects = 0
+  let failing = false
+  const resolver = createResolver({
+    warmupSeconds: 100, warmupMaxMs: 60, warmupStepMs: 10, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => {
+      if (failing) throw new Error('清单 HTTP 502')
+      return { url: 'https://a.ysp.cctv.cn/live.m3u8', text: shortPlaylist(200 + selects++) }
+    },
+  })
+  const startedAt = Date.now()
+  const capped = await resolver.resolve('ysp-cctv8k', {})
+  assert.ok(Date.now() - startedAt < 500)
+  assert.ok(selects >= 3 && selects <= 7, `等到上限就回：${selects}`)
+  assert.ok(segmentsOf(capped.manifestText).length >= 3)
+
+  selects = 0
+  const erroring = createResolver({
+    warmupSeconds: 100, warmupMaxMs: 1000, warmupStepMs: 5, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => {
+      if (selects++) throw new Error('清单 HTTP 502')
+      return { url: 'https://a.ysp.cctv.cn/live.m3u8', text: shortPlaylist(300) }
+    },
+  })
+  const early = await erroring.resolve('ysp-cctv13', {})
+  assert.deepEqual(segmentsOf(early.manifestText).map(x => x.seq), [300, 301, 302], '续取出错就拿第一份先回')
+
+  selects = 0
+  const normal = createResolver({
+    warmupSeconds: 100, warmupMaxMs: 1000, warmupStepMs: 5, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: officialPlaylist(400 + selects++, [1000, 1005, 1010], [5, 5, 5]) }),
+  })
+  await normal.resolve('ysp-cctv4', {})
+  assert.equal(selects, 1, '每片 5 秒的频道冷起直接回')
+
+  selects = 0
+  const opaque = createResolver({
+    warmupSeconds: 100, warmupMaxMs: 1000, warmupStepMs: 5, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: shortPlaylist(500 + selects++).replace('#EXTM3U', '#EXTM3U\n#EXT-X-DISCONTINUITY') }),
+  })
+  await opaque.resolve('ysp-cctv8k', {})
+  assert.equal(selects, 1, '历史认不出的清单不等')
+  failing = true
+})
+
 await checkAsync('活跃频道共享定时刷新，不跟着慢播放器漏片；短期重复请求不重复拉官方，停播后停止', async () => {
   let selects = 0
   const resolver = createResolver({

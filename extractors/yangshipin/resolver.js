@@ -107,6 +107,18 @@ export const STALE_RECHECK_MS = 1000
 export const STALE_MAX_MS = 30 * 1000
 
 /**
+ * 短分片频道冷起时先攒一攒再交给播放器。CCTV8K 每片只有 2 秒，官方窗口 3 片 = 6 秒；共享刷新
+ * 5 秒一次，新片两三片一批地出现，播放器自己还要再隔一个刷新周期才看得到，libVLC 又要数据比
+ * 播放头早约 4.4 秒到。冷起时手里只有 6 秒，盖不住这几段，于是几秒卡一次（普通频道每片 5～7 秒，
+ * 冷起就有 15 秒左右，没这个问题）。所以每片不超过 WARMUP_MAX_TD 秒的频道，冷起取到第一份清单后
+ * 按它的 TARGETDURATION 续取，等清单历史攒到 WARMUP_SECONDS 再回，最多等 WARMUP_MAX_MS；只多取
+ * 四五次清单，之后照常 5 秒一次。CDN 对这类频道只留最近 11 片（8K 是 22 秒），门槛只能定在这以内。
+ */
+export const WARMUP_MAX_TD = 3
+export const WARMUP_SECONDS = 14
+export const WARMUP_MAX_MS = 12_000
+
+/**
  * 断流恢复后，把清单跳过去的分片接回来（issue #158）。
  *
  * 官方清单只列最新 3 片。断了十几秒再取到时窗口已经滚过去，播放器手里最后一片和新清单第一片
@@ -218,6 +230,11 @@ export function createResolver({
   programmesOf = (channel, day) => epg.programmes(channel.livePid, day, { timeoutMs: 5000 }),
   blackoutFallbackMs = BLACKOUT_FALLBACK_MS,
   blackoutRecheckMs = BLACKOUT_RECHECK_MS,
+  warmupMaxTd = WARMUP_MAX_TD,
+  warmupSeconds = WARMUP_SECONDS,
+  warmupMaxMs = WARMUP_MAX_MS,
+  // 续取间隔，默认按该频道的 TARGETDURATION；测试注入
+  warmupStepMs = 0,
   log = printYellow,
 } = {}) {
   const cache = new Map()
@@ -228,6 +245,8 @@ export function createResolver({
   const pins = new Map()
   const histories = new Map()
   const refreshers = new Map()
+  // 频道 -> 冷起攒清单的任务（见 WARMUP_SECONDS）；同一频道同时来的请求都等它
+  const warmups = new Map()
   // 频道 -> 最近一次播放器请求的时刻；连着两次请求隔得像在轮询才启动共享刷新
   const asks = new Map()
   // 实例级取票预算（令牌桶）：按 ticketBudget / ticketBudgetWindowMs 的速率回填，满桶封顶
@@ -308,7 +327,11 @@ export function createResolver({
     const tail = tailOf(manifest.text)
     if (previous?.stale) log(`[央视频] ${channel.name} 官方入口恢复，隔了 ${Math.round((at - previous.at) / 1000)} 秒拿到新清单`)
     if (filled !== manifest.text) log(`[央视频] ${channel.name} 新清单跳过了 ${firstSeq(manifest.text) - firstSeq(filled)} 片，已接回`)
-    const entry = { source: manifest, text, plain, url: manifest.url, at, stale: false, tail }
+    const entry = {
+      source: manifest, text, plain, url: manifest.url, at, stale: false, tail,
+      covered: histories.get(key).seconds,
+      targetDuration: Number(manifest.text.match(/^#EXT-X-TARGETDURATION:\s*(\d+)/m)?.[1]) || 0,
+    }
     latest.set(key, entry)
     return entry
   }
@@ -358,6 +381,30 @@ export function createResolver({
         const title = show ? `（当前节目《${show.title}》）` : '（节目单里查不到当前节目）'
         log(`[央视频] ${channel.name} 版权停播${title}，${shanghaiClock(entry.until)} 前不再向官方请求`)
       })
+  }
+
+  // 短分片频道冷起：按 TARGETDURATION 续取，清单历史攒到 warmupSeconds 再交给播放器（见 WARMUP_SECONDS）。
+  // 清单认不出（历史为 0）、片不短或已经够了就原样返回；续取出错就拿手里有的先回。
+  function warmUp(key, channel, entry, ctx) {
+    const step = warmupStepMs || entry.targetDuration * 1000
+    if (!(step > 0 && entry.targetDuration <= warmupMaxTd && entry.covered > 0 && entry.covered < warmupSeconds)) return entry
+    const running = warmups.get(key)
+    if (running) return running
+    const task = (async () => {
+      const deadline = Date.now() + warmupMaxMs
+      let current = entry
+      while (current.covered < warmupSeconds && Date.now() + step <= deadline) {
+        await new Promise(resolvePromise => setTimeout(resolvePromise, step))
+        const pollContext = { ...ctx }
+        delete pollContext.now
+        const outcome = await fetchFresh(key, channel, pollContext)
+        if (outcome.error) break
+        current = outcome.entry
+      }
+      return current
+    })().finally(() => { if (warmups.get(key) === task) warmups.delete(key) })
+    warmups.set(key, task)
+    return task
   }
 
   // 已在跑的共享刷新续一下活跃时间，不新开
@@ -439,6 +486,9 @@ export function createResolver({
       return { url: '', silent: true, desc: `${channel.name}链接请求失败：${blackout.reason}（版权停播，${shanghaiClock(blackout.until)} 前不再向官方请求）` }
     }
     blackouts.delete(key)
+    // 正在冷起攒清单：同一频道后来的请求一起等它，不拿攒了一半的薄清单先走
+    const warming = warmups.get(key)
+    if (warming) return answer(key, await warming, ctx, `${channel.name} H.264 播放地址获取成功`)
     // 没等到、在后台才取回的清单还没发给过播放器：直接给它，不让播放器再陪着取一次
     if (spare && !spare.sent) return answer(key, spare, ctx, `${channel.name} H.264 播放地址获取成功`)
     if (refreshIntervalMs > 0 && spare && !spare.stale && now - spare.at < refreshIntervalMs) {
@@ -461,8 +511,11 @@ export function createResolver({
     const patient = LIBVLC_UA.test(String(ctx.client?.ua || ''))
     const wait = !spare ? Infinity : !spare.stale ? staleAfterMs : patient ? staleRecheckMs : 0
     const outcome = wait === Infinity ? await fresh : wait ? await within(fresh, wait) : null
-    // 新取得的正文立即交给播放器；正常时复用最多一个共享刷新周期。
-    if (outcome?.entry) return answer(key, outcome.entry, ctx, `${channel.name} H.264 播放地址获取成功`)
+    // 新取得的正文立即交给播放器（短分片频道冷起时先攒一攒）；正常时复用最多一个共享刷新周期。
+    if (outcome?.entry) {
+      const entry = spare ? outcome.entry : await warmUp(key, channel, outcome.entry, ctx)
+      return answer(key, entry, ctx, `${channel.name} H.264 播放地址获取成功`)
+    }
     if (spare) {
       if (!spare.stale) {
         spare.stale = true
@@ -491,6 +544,7 @@ export function createResolver({
     latest.clear()
     served.clear()
     histories.clear()
+    warmups.clear()
     asks.clear()
     // 取票预算不随缓存清空重置：它量的是出口 IP 最近一分钟的消耗，不是缓存
   }

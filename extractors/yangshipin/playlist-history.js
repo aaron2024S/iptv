@@ -35,9 +35,11 @@ function parse(text) {
 }
 
 export function createPlaylistHistory() {
-  let entries = new Map(), identity = '', tail = -1, updatedAt = -Infinity, target = 0
+  let entries = new Map(), identity = '', tail = -1, updatedAt = -Infinity, target = 0, covered = 0
   return {
-    clear() { entries.clear(); identity = ''; tail = -1; updatedAt = -Infinity; target = 0 },
+    clear() { entries.clear(); identity = ''; tail = -1; updatedAt = -Infinity; target = 0; covered = 0 },
+    /** 上一次 extend 给出的清单共多少秒；清单不认识（原样下发）时为 0。 */
+    get seconds() { return covered },
     extend(text, now = Date.now()) {
       const parsed = parse(text)
       if (!parsed) { this.clear(); return text }
@@ -55,6 +57,7 @@ export function createPlaylistHistory() {
         if (seconds >= HISTORY_SECONDS && window.length >= Math.max(HISTORY_MIN_SEGMENTS, parsed.segments.length)) break
       }
       for (const seq of entries.keys()) if (seq < window[0].seq) entries.delete(seq)
+      covered = seconds
       // Keep a high watermark: older retained fragments may be longer than the
       // upstream's current three, so its smaller target cannot describe our window.
       target = Math.max(target, Number(text.match(/^#EXT-X-TARGETDURATION:\s*(\d+)/m)?.[1]) || 0,

@@ -53,11 +53,13 @@ const UPSTREAM_KICK_INTERVAL_MS = 1_500
 const UPSTREAM_KICK_STALE_MS = 1_000
 const MAX_ACTIVE_CHANNELS = 3
 // 预热页：起桥最慢的是「开新页 → 等官网频道列表 → 点台后官网首次加载播放器和解扰模块」，NAS 上实测
-// 首片要 8～14 秒。所以浏览器开着时总备一个已加载好官网的页面，切台直接拿它点台（本机实验点台到首片
-// 1.2～1.8 秒，现开页面要 4～5 秒）；冷起时它和账号基页、读账号同时加载。官网页面一打开就自动播默认台，
-// 预热页建在后台标签、用请求拦截挡掉分片和清单，闲置时不下载不解码；认领时关拦截、切到前台再点台。放久了换一个新的，
-// 免得官网页面状态过旧；浏览器回收时随之关掉，不会让浏览器常驻。
-const SPARE_MAX_AGE_MS = 20 * 60_000
+// 首片要 8～14 秒。所以起好一台后备一个已加载好官网的页面，切台直接拿它点台（本机实验点台到首片
+// 1.2～1.8 秒，现开页面要 4～5 秒）。官网页面一打开就自动播默认台，预热页建在后台标签、用请求拦截挡掉
+// 分片和清单，闲置时不下载不解码；认领时关拦截、切到前台再点台；浏览器回收时随之关掉，不会让浏览器常驻。
+// 只能在账号已确认（基页读账号、该续期的已续完）之后才开新的官网页：官网登录 SDK 每个页面加载时都会
+// 检查 endtime，剩不到 10 分钟就拿刷新令牌续期，续期会轮换令牌、没有跨页互斥，失败时清空全部登录 cookie。
+// 两个页面同时加载就会同时续期，后到的拿着已作废的旧令牌失败，把整个 profile 的登录清掉。v4.28.0 冷起时
+// 让播放页和账号基页并行加载就是这样把账号登出的；放久了重开预热页也会多出这种时刻，所以都不做。
 const MAX_SEGMENT_BYTES = 16 * 1024 * 1024
 const MAX_TRACK_BYTES = 64 * 1024 * 1024
 const QUIESCE_TIMEOUT_MS = 2_000
@@ -358,7 +360,6 @@ export class VipMseBridge {
     readyMediaWaitMs = READY_MEDIA_WAIT_MS,
     readyTopUpMs = READY_TOP_UP_MS,
     readyTimeoutMs = READY_TIMEOUT_MS,
-    spareMaxAgeMs = SPARE_MAX_AGE_MS,
     traceNetwork = false,
   } = {}) {
     this.browserSession = browserSession
@@ -375,12 +376,10 @@ export class VipMseBridge {
     this.readyMediaWaitMs = positiveLimit(readyMediaWaitMs, READY_MEDIA_WAIT_MS)
     this.readyTopUpMs = positiveLimit(readyTopUpMs, READY_TOP_UP_MS)
     this.readyTimeoutMs = positiveLimit(readyTimeoutMs, READY_TIMEOUT_MS)
-    this.spareMaxAgeMs = positiveLimit(spareMaxAgeMs, SPARE_MAX_AGE_MS)
     this.streams = new Map()
     this.starts = new Map()
     this.pages = new Set()
     this.spare = null
-    this.accountMissing = false
     this.inFlight = new Set()
     this.warming = null
     this.startQueue = Promise.resolve()
@@ -428,8 +427,6 @@ export class VipMseBridge {
       await this.browserSession.ensureBrowser({ visible: false })
       this.assertAvailable(generation)
       const status = await this.browserSession.readAccount()
-      // 记下账号是否可用：不可用时冷起不再提前备预热页（没登录的部署被播放器扫到会员台时不白开页面）
-      this.accountMissing = !status.authenticated || !status.account?.vip
       if (!status.authenticated) throw new LoginRequiredError()
       if (!status.account?.vip) throw new LoginRequiredError('央视频账号已登录，但未识别到有效 VIP 权益')
       return this.browserSession.browser
@@ -501,12 +498,8 @@ ${video}
       await this.stop(oldest[0], oldest[1])
     }
 
-    const warming = this.warm()
-    // 浏览器一拉起就开始备播放页：冷起时和账号基页加载、读账号同时进行（见 SPARE_MAX_AGE_MS 一段）
-    if (!this.accountMissing) {
-      this.browserSession.whenLaunched?.().then(() => { if (this.starts.size) this.prepareSpare() }, () => {})
-    }
-    const browser = await warming
+    // 先读账号（该续期的由基页续完）再碰任何新的官网页面，见文件开头「预热页」一段
+    const browser = await this.warm()
     this.assertAvailable(generation)
     let holder = null
     try {
@@ -630,7 +623,8 @@ ${video}
   }
 
   /**
-   * 给下一次起桥备一个预热页（见 SPARE_MAX_AGE_MS 一段）。已有就不再开；浏览器换过的旧页丢掉重备。
+   * 给下一次起桥备一个预热页（见文件开头「预热页」一段）。已有就不再开；浏览器换过的旧页丢掉重备。
+   * 只在账号刚确认过之后调用（起桥就绪后、takeSpare 里 warm 之后），不能和别的官网页同时加载。
    * 只在后台浏览器开着、没在关联登录时备；失败只记一行，下次起桥照旧现开页面。
    */
   prepareSpare() {
@@ -1001,7 +995,6 @@ ${video}
 
   async resume() {
     this.suspended = false
-    this.accountMissing = false   // 刚关联/导入过登录，下次冷起照常并行备页
     this.lastActivity = Date.now()
   }
 
@@ -1010,14 +1003,10 @@ ${video}
     for (const [id, state] of this.streams) {
       if (now - state.touched > this.streamIdleTtlMs) this.stop(id, state).catch(() => {})
     }
-    // 预热页：浏览器换过 / 页面没了就丢掉；放太久换个新的（还有人在看会员台时才重备）
+    // 预热页：浏览器换过 / 页面没了就丢掉，下次起桥再备（这里不重开，见文件开头「预热页」一段）
     const spare = this.spare
-    if (spare?.settled) {
-      const stale = spare.browser !== this.browserSession.browser || !spare.browser?.connected || spare.page?.isClosed?.()
-      if (stale || now - spare.createdAt > this.spareMaxAgeMs) {
-        this.dropSpare()
-        if (!stale && this.streams.size) this.prepareSpare()
-      }
+    if (spare?.settled && (spare.browser !== this.browserSession.browser || !spare.browser?.connected || spare.page?.isClosed?.())) {
+      this.dropSpare()
     }
     // 没有会员播放器页后，账号基页也不常驻占用全局 BrowserPool。下次播放会
     // 用同一 profile 按需恢复，登录态不会因此丢失。预热页随浏览器一起关。

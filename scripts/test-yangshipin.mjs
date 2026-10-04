@@ -182,39 +182,6 @@ await checkAsync('会话浏览器不让 puppeteer 接管 SIGTERM / SIGINT：dock
   } finally { rmSync(profileDir, { recursive: true, force: true }) }
 })
 
-await checkAsync('浏览器一拉起、基页选定就通知会员桥（不等基页加载完）；启动失败通知 null', async () => {
-  const profileDir = mkdtempSync(join(tmpdir(), 'ysp-profile-'))
-  const order = []
-  let releaseHome
-  const homeLoaded = new Promise(resolve => { releaseHome = resolve })
-  const page = {
-    isClosed: () => false,
-    setUserAgent: async () => {},
-    evaluateOnNewDocument: async () => {},
-    setRequestInterception: async () => {},
-    on() {},
-    url: () => 'about:blank',
-    goto: async () => { await homeLoaded; order.push('home') },
-    waitForFunction: async () => {},
-  }
-  const browser = { connected: true, once() {}, pages: async () => [page] }
-  const session = new YspBrowserSession({ profileDir, launchImpl: async () => browser })
-  try {
-    const launched = session.whenLaunched().then(value => { order.push('launched'); return value })
-    const ensuring = session.ensureBrowserNow({ visible: false })
-    assert.equal(await launched, browser)
-    assert.deepEqual(order, ['launched'], '基页还在加载时就已通知')
-    releaseHome()
-    await ensuring
-    assert.equal(await session.whenLaunched(), browser, '已在跑时立即兑现')
-
-    const failing = new YspBrowserSession({ profileDir, launchImpl: async () => { throw new Error('no chrome') } })
-    const waiting = failing.whenLaunched()
-    await assert.rejects(failing.ensureBrowserNow({ visible: false }), /no chrome/)
-    assert.equal(await waiting, null)
-  } finally { rmSync(profileDir, { recursive: true, force: true }) }
-})
-
 await checkAsync('官网 SDK 校验异常会清掉内存中的旧账号，不继续误报 VIP 有效', async () => {
   const session = new YspBrowserSession({ profileDir: '/tmp/ysp-test-unused' })
   session.browser = { connected: true }
@@ -661,17 +628,13 @@ function spareSession(events, { launchDelayMs = 0, accountDelayMs = 0 } = {}) {
       return page
     },
   }
-  let launched
-  const launchedPromise = new Promise(resolve => { launched = resolve })
   const session = {
     running: false, visible: false, browser: null, pages,
-    whenLaunched: () => (session.running ? Promise.resolve(browser) : launchedPromise),
     ensureBrowser: async () => {
       if (session.running) return
       session.browser = browser
       session.running = true
       events.push('launch')
-      launched(browser)
       await new Promise(resolve => setTimeout(resolve, launchDelayMs))
       events.push('base ready')
     },
@@ -737,16 +700,16 @@ await checkAsync('切台用预热页：起好一台就备下一页（挡住默�
   assert.ok(session.pages.every(page => page.closed), '关闭时预热页一并关掉')
 })
 
-await checkAsync('冷起时播放页和账号基页、读账号同时加载', async () => {
+await checkAsync('账号确认完（该续期的已续完）才开新的官网页：官网登录 SDK 续期没有跨页互斥，同时加载会把账号登出', async () => {
   const events = []
   const session = spareSession(events, { launchDelayMs: 150, accountDelayMs: 100 })
   const bridge = new VipMseBridge(session, { readyMinMediaS: 3 })
   try {
     await bridge.ensure(AUTH_CHANNELS[2])
     const at = name => events.indexOf(name)
-    assert.ok(at('goto p1') > at('launch'))
-    assert.ok(at('goto p1') < at('base ready'), `播放页不等基页加载完：${events.join(' / ')}`)
-    assert.ok(at(`click p1 ${AUTH_CHANNELS[2].siteName}`) > at('account ok'), '账号确认过才点台')
+    assert.ok(at('goto p1') > at('base ready'), `播放页要等基页加载完：${events.join(' / ')}`)
+    assert.ok(at('goto p1') > at('account ok'), '也要等读账号（SDK 在这里续期）结束')
+    assert.ok(at(`click p1 ${AUTH_CHANNELS[2].siteName}`) > at('goto p1'))
     await bridge.spare.ready
     assert.equal(session.pages.filter(page => page.gotos).length, 2, '只多出一个给下次切台的预热页')
   } finally {
@@ -754,37 +717,23 @@ await checkAsync('冷起时播放页和账号基页、读账号同时加载', as
   }
 })
 
-await checkAsync('账号不可用时冷起不提前备页；预热页放久了换新、浏览器换过就丢掉', async () => {
+await checkAsync('浏览器换过、预热页没了就丢掉，定时清理里不重开新页', async () => {
   const events = []
   const session = spareSession(events)
-  session.readAccount = async () => ({ authenticated: false, account: null })
-  const bridge = new VipMseBridge(session, { readyMinMediaS: 3, spareMaxAgeMs: 30 })
+  const bridge = new VipMseBridge(session, { readyMinMediaS: 3 })
   try {
-    await assert.rejects(bridge.ensure(AUTH_CHANNELS[3]), /登录/)
-    assert.equal(bridge.accountMissing, true)
+    await bridge.ensure(AUTH_CHANNELS[4])
+    const spare = bridge.spare
+    await spare.ready
     const opened = session.pages.length
-    bridge.dropSpare()
-    await assert.rejects(bridge.ensure(AUTH_CHANNELS[3]), /登录/)
-    assert.equal(session.pages.length, opened, '上次读账号失败，这次不再提前开页')
-
-    // 放久了：还有人在看会员台就换一个新的
-    bridge.prepareSpare()
-    const old = bridge.spare
-    await old.ready
-    bridge.streams.set('fake', { channel: AUTH_CHANNELS[4], page: { isClosed: () => false, close: async () => {} }, touched: Date.now(), audio: createTrackState(), video: createTrackState() })
-    await new Promise(resolve => setTimeout(resolve, 40))
     bridge.cleanup()
-    assert.equal(old.page.closed, true)
-    assert.ok(bridge.spare && bridge.spare !== old, '换了个新的')
-    await bridge.spare.ready
+    assert.equal(bridge.spare, spare, '浏览器没换、页面还在就一直留着，不按时间重开')
 
-    // 浏览器换过：旧预热页丢掉
-    const current = bridge.spare
-    session.browser = { connected: true, newPage: async () => sparePage('other', events) }
-    bridge.streams.clear()
+    session.browser = { connected: true, newPage: async () => { throw new Error('不该开新页') } }
     bridge.cleanup()
-    assert.equal(current.page.closed, true)
-    assert.equal(bridge.spare, null, '没人在看就不重备')
+    assert.equal(spare.page.closed, true)
+    assert.equal(bridge.spare, null)
+    assert.equal(session.pages.length, opened, '清理时不开新页')
   } finally {
     await bridge.close()
   }

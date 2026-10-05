@@ -37,8 +37,8 @@ iPTV 是一个面向家庭影音与 NAS 用户的**模块化 IPTV 直播源管�
 <p align="center"><b>源管理 · 每个内容来源独立、透明、可控</b></p>
 <p align="center"><img src="Resources/source-management.png?v=20261005" alt="源管理" width="900"/></p>
 
-<p align="center"><b>网页播放预览 · 在管理台直接播放</b></p>
-<p align="center"><img src="Resources/live-preview.jpg?v=20261005-2" alt="管理台内置播放器播放 iPTV 欢迎视频" width="900"/></p>
+<p align="center"><b>网页播放实况 · 在管理台直接预览频道</b></p>
+<p align="center"><img src="Resources/live-preview.jpg?v=20261005-3" alt="管理台内置播放器预览 Love Nature 4K 频道" width="900"/></p>
 
 ## ✨ 为什么选择 iPTV
 

@@ -3529,8 +3529,136 @@
         .subscribe-bar { background: transparent; }
         .subscribe-bar code { color: var(--ui-text-secondary); }
         code { color: var(--ui-text-secondary); }
-        /* Older detail templates still set their label color inline. */
-        #channelDetailModal strong[style*="#667eea"] { color: var(--ui-accent) !important; }
+        /* 频道详情沿用主界面的薄荷玻璃材质，所有编辑行共用一套尺寸与对齐。 */
+        #channelDetailModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            width: min(760px, calc(100% - 32px)) !important;
+            max-width: none;
+            max-height: calc(100vh - 40px);
+            max-height: calc(100dvh - 40px);
+            padding: 0;
+            overflow: hidden;
+            border-color: var(--ui-glass-edge);
+            background: var(--ui-surface-soft);
+        }
+        .channel-detail-header {
+            flex: 0 0 auto;
+            padding: 22px 24px;
+            background: var(--ui-heading-bg);
+        }
+        .channel-detail-kicker {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--ui-heading-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+        }
+        #channelDetailTitle { margin: 0; color: var(--ui-heading-text); font-size: 20px; line-height: 1.4; overflow-wrap: anywhere; }
+        #channelDetailContent {
+            min-height: 0;
+            padding: 20px 24px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ui-line-strong) transparent;
+            scrollbar-gutter: stable;
+        }
+        .channel-detail-section {
+            padding: 18px;
+            border: 1px solid var(--ui-glass-edge);
+            border-radius: 16px;
+            background: var(--ui-glass-card);
+            box-shadow: var(--ui-shadow-card);
+        }
+        .channel-detail-section + .channel-detail-section { margin-top: 14px; }
+        .channel-detail-section h4 { margin: 0 0 14px; color: var(--ui-text); font-size: 15px; font-weight: 700; line-height: 1.4; }
+        .channel-detail-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin: 0; }
+        .channel-detail-fact { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+        .channel-detail-fact-wide { grid-column: 1 / -1; }
+        .channel-detail-fact dt,
+        .channel-detail-field > label { color: var(--ui-text-secondary); font-size: 13px; font-weight: 600; line-height: 1.6; }
+        .channel-detail-fact dd { min-width: 0; margin: 0; color: var(--ui-text); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+        .channel-detail-fact code { padding: 3px 7px; background: var(--ui-surface-soft); font-size: 13px; }
+        .channel-detail-badges { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+        .channel-detail-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            max-width: 100%;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: var(--ui-accent-soft);
+            color: var(--ui-accent);
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+        .channel-detail-badge.is-muted { background: var(--ui-surface-soft); color: var(--ui-muted); }
+        .channel-detail-help { margin: 7px 0 0; color: var(--ui-muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+        .channel-detail-note { margin-top: 12px; padding: 12px 14px; border-radius: 11px; background: var(--ui-accent-soft); color: var(--ui-text-secondary); font-size: 12px; line-height: 1.7; }
+        .channel-detail-note.is-warning { background: var(--ui-warning-soft); color: var(--ui-warning); }
+        .channel-detail-note p { margin: 0; }
+        .channel-detail-note .channel-detail-help { margin-top: 7px; }
+        .channel-detail-note .channel-detail-field { margin-top: 12px; }
+        .channel-detail-note .channel-detail-buttons { margin-top: 12px; }
+        .channel-detail-url {
+            display: block;
+            padding: 12px 14px;
+            border-radius: 11px;
+            background: var(--ui-surface-soft);
+            color: var(--ui-text-secondary);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+        .channel-detail-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        #channelDetailModal .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 9px 14px; font-size: 13px; white-space: nowrap; }
+        #channelDetailModal .player-btn-vlc { background: var(--ui-warning-soft); color: var(--ui-warning); }
+        #channelDetailModal .player-btn-vlc:hover { background: var(--ui-warning-line); }
+        #channelDetailModal .player-btn-iina { background: var(--ui-violet-soft); color: var(--ui-violet); }
+        #channelDetailModal .player-btn-iina:hover { background: var(--ui-violet-line); }
+        #channelDetailModal .player-btn-potplayer { background: #fff8df; color: #816507; }
+        #channelDetailModal .player-btn-potplayer:hover { background: #fff0bb; }
+        .channel-detail-buttons svg { flex: 0 0 auto; width: 13px; height: 13px; }
+        .channel-detail-field { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 12px; align-items: start; }
+        .channel-detail-field + .channel-detail-field { margin-top: 16px; }
+        .channel-detail-field > label { padding-top: 10px; }
+        .channel-detail-field-body { min-width: 0; }
+        .channel-detail-control { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 10px; align-items: start; }
+        #channelDetailModal input,
+        #channelDetailModal select { width: 100%; min-width: 0; height: 40px; min-height: 40px; margin: 0; font-size: 13px; }
+        #channelDetailModal select[multiple] { height: 108px; padding: 6px; }
+        #channelDetailModal select[multiple] option { padding: 4px 6px; border-radius: 5px; }
+        #channelDetailModal input[type="file"] { padding: 5px 7px; }
+        #channelDetailModal input[type="file"]::file-selector-button { height: 28px; }
+        .channel-detail-logo { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; }
+        .channel-detail-logo-preview { display: flex; align-items: center; justify-content: center; width: 96px; height: 96px; padding: 10px; border-radius: 12px; background: var(--ui-surface-soft); }
+        .channel-detail-logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+        .channel-detail-logo-preview span { color: var(--ui-muted); font-size: 12px; }
+        .channel-detail-source { margin: 16px 2px 0; color: var(--ui-muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+        #channelDetailModal .modal-actions { flex: 0 0 auto; margin: 0; padding: 16px 24px; border-top: 1px solid var(--ui-line); background: var(--ui-glass-card); }
+        @media (max-width: 560px) {
+            #channelDetailModal .modal-content { width: calc(100% - 20px) !important; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); }
+            .channel-detail-header { padding: 18px 20px; }
+            #channelDetailTitle { font-size: 18px; }
+            #channelDetailContent { padding: 14px; }
+            .channel-detail-section { padding: 15px; border-radius: 14px; }
+            .channel-detail-facts { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .channel-detail-field { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+            .channel-detail-field > label { padding-top: 0; }
+            .channel-detail-control { grid-template-columns: minmax(0, 1fr) 84px; gap: 8px; }
+            .channel-detail-note .channel-detail-control { grid-template-columns: minmax(0, 1fr); }
+            .channel-detail-note .btn { justify-self: start; min-width: 84px; }
+            .channel-detail-logo { grid-template-columns: 80px minmax(0, 1fr); gap: 12px; }
+            .channel-detail-logo-preview { width: 80px; height: 80px; }
+            .channel-detail-logo .channel-detail-control { grid-template-columns: minmax(0, 1fr); }
+            .channel-detail-logo .btn { justify-self: start; min-width: 84px; }
+            #channelDetailModal .modal-actions { padding: 14px 20px; }
+        }
         input::placeholder, textarea::placeholder { color: #607365; }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { transition: none !important; }
@@ -3685,13 +3813,16 @@
     <div class="status" id="status"></div>
     
     <!-- 频道详情弹窗 -->
-    <div class="modal" id="channelDetailModal">
-        <div class="modal-content" style="width: 720px; max-width: 92%;">
-            <h3 id="channelDetailTitle">频道详情</h3>
-            <div id="channelDetailContent" style="max-height: 72vh; overflow-y: auto;">
+    <div class="modal" id="channelDetailModal" role="dialog" aria-modal="true" aria-labelledby="channelDetailTitle">
+        <div class="modal-content">
+            <div class="channel-detail-header">
+                <span class="channel-detail-kicker">CHANNEL DETAILS</span>
+                <h3 id="channelDetailTitle">频道详情</h3>
+            </div>
+            <div id="channelDetailContent">
                 <!-- 动态内容将在这里插入 -->
             </div>
-            <div class="modal-actions" style="margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeChannelDetail()">关闭</button>
                 <button class="btn btn-primary" id="channelDetailEditBtn" style="display: none;" onclick="editChannelFromDetail()">编辑</button>
             </div>
@@ -10507,6 +10638,34 @@ if(success){
         // 频道详情相关功能
         let currentChannelDetail = null;
 
+        // 普通频道与系统频道共用播放区的布局；系统频道不提供外部播放器入口。
+        function channelDetailPlayback(channel, includeExternalPlayers = true) {
+            if (!channel.url) return '';
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
+            const actualUrl = String(channel.url).replace(/\$\{replace\}/g, baseUrl);
+            const urlArg = escapeHtml(JSON.stringify(actualUrl));
+            const nameArg = escapeHtml(JSON.stringify(channel.name || ''));
+            const playIcon = '<svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M3.5 2.5v11l10-5.5z"/></svg>';
+            const players = includeExternalPlayers ? (PLAYERS_BY_PLATFORM[getClientPlatform()] || []) : [];
+            return `
+                <section class="channel-detail-section">
+                    <h4>播放地址</h4>
+                    <code class="channel-detail-url">${escapeHtml(actualUrl)}</code>
+                    <div class="channel-detail-buttons">
+                        <button class="btn btn-primary" onclick="playInline(${urlArg}, ${nameArg})">${playIcon}在页面里播放</button>
+                        <button class="btn" onclick="copyToClipboard(${urlArg}, '播放地址')">复制地址</button>
+                        ${players.map(p => {
+                            const label = p === 'iina' ? 'IINA' : p === 'vlc' ? 'VLC' : 'PotPlayer';
+                            const title = p === 'vlc' ? '下载 .m3u 文件后，在浏览器下载栏点击打开' : `用 ${label} 打开`;
+                            return `<button class="btn player-btn player-btn-${p}" title="${title}" onclick="openInExternalPlayer('${p}', ${urlArg}, ${nameArg})">${playIcon}${label}</button>`;
+                        }).join('')}
+                    </div>
+                    ${players.length ? '<p class="channel-detail-help">外部播放器会在当前浏览器所在的设备上打开，请先安装相应播放器。</p>' : ''}
+                    ${players.includes('vlc') ? '<div class="channel-detail-note is-warning"><p><strong>VLC</strong> 会先下载一个 .m3u 文件，请在浏览器下载栏中打开该文件后播放。</p></div>' : ''}
+                </section>
+            `;
+        }
+
         function showChannelDetail(channelId, isDeleted) {
             // 从原始数据中查找频道
             let channel = null;
@@ -10552,254 +10711,177 @@ if(success){
             const isExternal = sourceType === 'external';
             currentChannelDetail = { ...channel, groupName, isExternal, isDeleted };
 
-            // 系统公告频道只有一件事可做：给不给电视端看。频道 ID、节目单配对、别名、TVG、台标上传、
-            // 移动、重命名、复制对它全无意义，一概不渲染（issue #119）；只留播放预览和隐藏 / 恢复。
-            // 删除、移动、排序、重命名仍由服务端 protectAnnouncementConfig 兜底拒绝。
+            // 系统频道仅提供播放预览和隐藏 / 恢复，保留原有保护规则（issue #119）。
             if (isProtectedAnnouncement) {
-                const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
-                const actualUrl = String(channel.url || '').replace(/\$\{replace\}/g, baseUrl);
-                const escUrl = actualUrl.replace(/'/g, "\\'");
-                const escName = (channel.name || '').replace(/'/g, "\\'");
                 const originalGroup = channel.originalGroup || groupName || '公告';
                 const isHidden = isDeleted || (myPlaylistConfig.hiddenChannels || []).includes(`${originalGroup}::${channel.id}`);
+                const idArg = escapeHtml(JSON.stringify(channel.id));
+                const groupArg = escapeHtml(JSON.stringify(originalGroup));
                 const detailAction = isHidden
-                    ? `<button class="btn btn-sm btn-primary" onclick="closeChannelDetail(); restoreChannel('${channel.id}', '${originalGroup.replace(/'/g, "\\'")}')">恢复显示</button>`
-                    : `<button class="btn btn-sm" onclick="closeChannelDetail(); hideChannel('${channel.id}')">隐藏此频道</button>`;
-                document.getElementById('channelDetailTitle').textContent = `频道详情 - ${channel.name}`;
+                    ? `<button class="btn btn-primary" onclick="closeChannelDetail(); restoreChannel(${idArg}, ${groupArg})">恢复显示</button>`
+                    : `<button class="btn" onclick="closeChannelDetail(); hideChannel(${idArg})">隐藏此频道</button>`;
+                document.getElementById('channelDetailTitle').textContent = `频道详情 · ${channel.name}`;
                 document.getElementById('channelDetailContent').innerHTML = `
-                    <div style="line-height: 1.8;">
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #667eea;">频道名称：</strong>
-                            <span>${escapeHtml(channel.name || '')}</span>
-                            ${isHidden ? '<span style="color: #999; margin-left: 10px;">(已隐藏)</span>' : ''}
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #667eea;">所属分组：</strong>
-                            <span>${escapeHtml(groupName || '公告')}</span>
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #667eea;">播放地址：</strong>
-                            <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 5px; word-break: break-all; font-family: monospace; font-size: 12px;">${escapeHtml(actualUrl)}</div>
-                            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                                <button class="btn btn-sm btn-primary" onclick="playInline('${escUrl}', '${escName}')">▶ 在页面里播放</button>
-                                <button class="btn btn-sm" onclick="copyToClipboard('${escUrl}', '播放地址')">复制地址</button>
-                            </div>
-                        </div>
-                        <div style="margin-bottom:15px;padding:10px 12px;background:#f0f7ff;border:1px solid #cfe2ff;border-radius:6px;color:#456078;font-size:13px;line-height:1.7;">
-                            🔒 系统频道：${SYSTEM_CHANNEL_NOTES[channel.id] || SYSTEM_CHANNEL_NOTES[channel.tvgId] || '项目自带的短片'}。显示时随「公告」分组固定在订阅最前，不支持删除、移动、排序或重命名。不想在电视上显示可以隐藏，随时能在「已隐藏」里恢复。
-                            <div style="margin-top:8px;">${detailAction}</div>
-                        </div>
-                    </div>
+                    <section class="channel-detail-section">
+                        <h4>基本信息</h4>
+                        <dl class="channel-detail-facts">
+                            <div class="channel-detail-fact"><dt>频道名称</dt><dd>${escapeHtml(channel.name || '')}</dd></div>
+                            <div class="channel-detail-fact"><dt>所属分组</dt><dd>${escapeHtml(groupName || '公告')}</dd></div>
+                            <div class="channel-detail-fact channel-detail-fact-wide"><dt>显示状态</dt><dd><span class="channel-detail-badge${isHidden ? ' is-muted' : ''}">${isHidden ? '已隐藏' : '正常显示'}</span></dd></div>
+                        </dl>
+                    </section>
+                    ${channelDetailPlayback(channel, false)}
+                    <section class="channel-detail-section">
+                        <h4>系统频道</h4>
+                        <p class="channel-detail-help">${escapeHtml(SYSTEM_CHANNEL_NOTES[channel.id] || SYSTEM_CHANNEL_NOTES[channel.tvgId] || '项目自带的短片')}。显示时随「公告」分组固定在订阅最前，不支持删除、移动、排序或重命名。不想在电视上显示可以隐藏，随时能在「已隐藏」里恢复。</p>
+                        <div class="channel-detail-buttons">${detailAction}</div>
+                    </section>
                 `;
+                document.getElementById('channelDetailContent').scrollTop = 0;
                 document.getElementById('channelDetailEditBtn').style.display = 'none';
                 document.getElementById('channelDetailModal').style.display = 'block';
                 return;
             }
 
-            // 构建详情HTML
+            const logoStatus = ({ local: '本地上传', source: '源自带', pack: '内置', auto: '公共库', none: '无' })[channel.logoStatus] || '—';
             let detailHTML = `
-                <div style="line-height: 1.8;">
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">频道名称：</strong>
-                        <span>${channel.name || '未知'}</span>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">所属分组：</strong>
-                        <span>${groupName || '未知'}</span>
-                        ${isDeleted ? '<span style="color: #999; margin-left: 10px;">(已隐藏)</span>' : ''}
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">频道ID：</strong>
-                        <span style="font-family: monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">${channel.id || '未知'}</span>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">配对状态：</strong>
-                        ${channel.epgMatched
-                            ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f6ffed;color:#52a30d;border:1px solid #d6f0bd;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">节目单已匹配${channel.epgName ? ' · ' + channel.epgName : ''}</span>`
-                            : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fafafa;color:#999;border:1px solid #eee;border-radius:4px;padding:2px 9px;font-size:12px;margin-right:6px;">未匹配节目单</span>`}
-                        <span style="display:inline-flex;align-items:center;gap:4px;background:#e6f2ff;color:#1166c7;border:1px solid #cfe5ff;border-radius:4px;padding:2px 9px;font-size:12px;">台标 · ${({ local: '本地上传', source: '源自带', pack: '内置', auto: '公共库', none: '无' })[channel.logoStatus] || '—'}</span>
-                        ${(channel.epgName && channel.epgName !== channel.name)
-                            ? `<div style="color:#999;font-size:12px;margin-top:6px;line-height:1.6;">显示名「${channel.name}」已自动归一到「${channel.epgName}」匹配节目单，显示名本身不变。</div>`
-                            : ''}
-                        ${!channel.epgMatched
-                            ? `<div style="margin-top:8px;padding:8px 10px;background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;">
-                                <div style="font-size:12px;color:#8a5a00;margin-bottom:6px;">节目单没匹配上？给它设个<strong>别名</strong>归一到正确的频道名（节目单来自外部 EPG 源的，保存后还要到「设置 → EPG 聚合」点一次「立即刷新并应用」）：</div>
-                                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                                    <span style="font-size:12px;color:#888;flex:0 0 auto;">规范名</span>
-                                    <input id="detailAliasCanonical" type="text" placeholder="统一后的频道名，如 CCTV5体育" style="flex:1;min-width:150px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
-                                    <button class="btn btn-sm btn-primary" onclick="setAliasFromDetail()">保存别名</button>
+                <section class="channel-detail-section">
+                    <h4>基本信息</h4>
+                    <dl class="channel-detail-facts">
+                        <div class="channel-detail-fact"><dt>频道名称</dt><dd>${escapeHtml(channel.name || '未知')}</dd></div>
+                        <div class="channel-detail-fact"><dt>所属分组</dt><dd>${escapeHtml(groupName || '未知')}${isDeleted ? ' <span class="channel-detail-badge is-muted">已隐藏</span>' : ''}</dd></div>
+                        <div class="channel-detail-fact channel-detail-fact-wide"><dt>频道 ID</dt><dd><code>${escapeHtml(channel.id || '未知')}</code></dd></div>
+                        <div class="channel-detail-fact channel-detail-fact-wide">
+                            <dt>配对状态</dt>
+                            <dd>
+                                <div class="channel-detail-badges">
+                                    <span class="channel-detail-badge${channel.epgMatched ? '' : ' is-muted'}">${channel.epgMatched ? '节目单已匹配' + (channel.epgName ? ' · ' + escapeHtml(channel.epgName) : '') : '未匹配节目单'}</span>
+                                    <span class="channel-detail-badge">台标 · ${logoStatus}</span>
                                 </div>
-                                <div style="font-size:11px;color:#aaa;margin-top:5px;">别名 = 本频道名「${channel.tvgName || channel.name}」，追加到该规范名下（不覆盖已有别名）</div>
-                            </div>`
-                            : ''}
-                    </div>
+                                ${(channel.epgName && channel.epgName !== channel.name) ? `<p class="channel-detail-help">显示名「${escapeHtml(channel.name)}」已自动归一到「${escapeHtml(channel.epgName)}」匹配节目单，显示名本身不变。</p>` : ''}
+                            </dd>
+                        </div>
+                    </dl>
+                    ${!channel.epgMatched ? `
+                        <div class="channel-detail-note">
+                            <p>节目单未匹配时，可以设置别名归一到正确的频道名。使用外部 EPG 源时，保存后请到「设置 → EPG 聚合」点击「立即刷新并应用」。</p>
+                            <div class="channel-detail-field">
+                                <label for="detailAliasCanonical">规范名</label>
+                                <div class="channel-detail-field-body">
+                                    <div class="channel-detail-control">
+                                        <input id="detailAliasCanonical" type="text" placeholder="如 CCTV5体育">
+                                        <button class="btn btn-primary" onclick="setAliasFromDetail()">保存别名</button>
+                                    </div>
+                                    <p class="channel-detail-help">将「${escapeHtml(channel.tvgName || channel.name)}」追加为该规范名的别名，不覆盖已有别名。</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </section>
+                ${channelDetailPlayback(channel)}
             `;
 
-            // 播放地址 + 播放器预览：置于基础信息之后、管理操作之前，避免被下方功能挤到底部
-            if (channel.url) {
-                // 获取当前页面的base URL（去掉 URL 最后一段，即管理页路径段），并替换 ${replace} 占位符
-                const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
-                const actualUrl = channel.url.replace(/\$\{replace\}/g, baseUrl);
-
-                detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">播放地址：</strong>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 5px; word-break: break-all; font-family: monospace; font-size: 12px;">
-                            ${escapeHtml(actualUrl)}
-                        </div>
-                        <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                            <button class="btn btn-sm btn-primary" onclick="playInline('${actualUrl.replace(/'/g, "\\'")}', '${(channel.name || '').replace(/'/g, "\\'")}')">▶ 在页面里播放</button>
-                            <button class="btn btn-sm" onclick="copyToClipboard('${actualUrl.replace(/'/g, "\\'")}', '播放地址')">复制地址</button>
-                            ${(PLAYERS_BY_PLATFORM[getClientPlatform()] || []).map(p => {
-                                const escUrl = actualUrl.replace(/'/g, "\\'");
-                                const escName = (channel.name || '').replace(/'/g, "\\'");
-                                const label = p === 'iina' ? 'IINA' : p === 'vlc' ? 'VLC' : 'PotPlayer';
-                                const title = p === 'vlc'
-                                    ? '点击后将下载 .m3u 文件，需在浏览器下载栏点击打开才会启动 VLC'
-                                    : `用 ${label} 打开`;
-                                return `
-                                    <button class="btn btn-sm player-btn player-btn-${p}" title="${title}" onclick="openInExternalPlayer('${p}', '${escUrl}', '${escName}')">
-                                        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" style="vertical-align: -1px; margin-right: 4px;"><path d="M3.5 2.5v11l10-5.5z"/></svg>${label}
-                                    </button>
-                                `;
-                            }).join('')}
-                        </div>
-                        <div style="margin-top: 6px; color: #999; font-size: 12px; line-height: 1.6;">
-                            <div style="display: flex; align-items: center; gap: 4px;">
-
-                                <span>按钮已按当前浏览器所在平台筛选；播放将在你"打开本页的这台机器"上启动，请确保本机已安装对应播放器</span>
-                            </div>
-                            ${(PLAYERS_BY_PLATFORM[getClientPlatform()] || []).includes('vlc') ? `
-                            <div style="display: flex; align-items: center; gap: 4px; color: #d48806; margin-top: 2px;">
-                                <span>⚠️</span>
-                                <span><strong>VLC</strong> 没有注册 URL 协议，点击按钮后会先<strong>下载一个 .m3u 文件</strong>，需要你再<strong>手动点击浏览器下载栏里的该文件</strong>，VLC 才会启动并播放</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 单频道归类：移动到其它分组（隐藏/已删除视图下不提供；公告频道已在上方提前返回）
+            // 隐藏频道不提供移动、重命名、复制或台标编辑；系统频道已在上方提前返回。
             if (!isDeleted) {
                 const moveKey = `${groupName}::${channelId}`;
                 const renamedOriginal = (myPlaylistConfig.groupRenameMap && myPlaylistConfig.groupRenameMap[groupName]) || groupName;
                 const currentTarget = (myPlaylistConfig.channelGroupMap && myPlaylistConfig.channelGroupMap[moveKey]) || renamedOriginal;
                 const moveNames = myPlaylistData.map(g => g.name);
                 if (!moveNames.includes(currentTarget)) moveNames.unshift(currentTarget);
-                const moveOpts = moveNames.map(n => {
-                    const v = String(n).replace(/"/g, '&quot;');
-                    return `<option value="${v}"${n === currentTarget ? ' selected' : ''}>${n}</option>`;
-                }).join('');
-                detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">移动到分组：</strong>
-                        <select id="channelMoveSelect" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; max-width: 200px;">${moveOpts}</select>
-                        <button class="btn btn-sm btn-primary" style="margin-left: 8px;" onclick="moveCurrentChannel()">移动</button>
-                        <div style="margin-top: 6px; color: #999; font-size: 12px;">将此频道单独归入所选分组（选回原分组即取消归类）</div>
-                    </div>
-                `;
-
-                // 单频道重命名
+                const moveOpts = moveNames.map(n => `<option value="${escapeHtml(n)}"${n === currentTarget ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('');
                 const renameKey = `${groupName}::${channelId}`;
                 const currentName = (myPlaylistConfig.channelRenameMap && myPlaylistConfig.channelRenameMap[renameKey]) || channel.name || '';
                 detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">重命名：</strong>
-                        <input id="channelRenameInput" type="text" value="${String(currentName).replace(/"/g, '&quot;')}" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; max-width: 200px;">
-                        <button class="btn btn-sm btn-primary" style="margin-left: 8px;" onclick="renameCurrentChannel()">保存</button>
-                        <div style="margin-top: 6px; color: #999; font-size: 12px;">修改此频道的显示名（清空或改回原名即恢复；不影响 EPG 匹配）</div>
-                    </div>
+                    <section class="channel-detail-section">
+                        <h4>频道设置</h4>
+                        <div class="channel-detail-field">
+                            <label for="channelMoveSelect">移动到分组</label>
+                            <div class="channel-detail-field-body">
+                                <div class="channel-detail-control">
+                                    <select id="channelMoveSelect">${moveOpts}</select>
+                                    <button class="btn btn-primary" onclick="moveCurrentChannel()">移动</button>
+                                </div>
+                                <p class="channel-detail-help">将此频道归入所选分组，选回原分组即可取消归类。</p>
+                            </div>
+                        </div>
+                        <div class="channel-detail-field">
+                            <label for="channelRenameInput">显示名称</label>
+                            <div class="channel-detail-field-body">
+                                <div class="channel-detail-control">
+                                    <input id="channelRenameInput" type="text" value="${escapeHtml(currentName)}">
+                                    <button class="btn btn-primary" onclick="renameCurrentChannel()">保存</button>
+                                </div>
+                                <p class="channel-detail-help">清空或改回原名即可恢复，不影响节目单匹配。</p>
+                            </div>
+                        </div>
                 `;
 
-                // 复制到分组（issue #37）：仅对地址固定的非咪咕频道提供
+                // 只有固定地址的频道可以复制到其它分组（issue #37）。
                 if (channel.url && !String(channel.url).includes('${replace}')) {
-                    const _copyGroups = myPlaylistData.map(g => g.name).filter(n => n !== groupName);
-                    if (_copyGroups.length) {
-                        const _copyOpts = _copyGroups.map(n => `<option value="${String(n).replace(/"/g, '&quot;')}">${n}</option>`).join('');
+                    const copyGroups = myPlaylistData.map(g => g.name).filter(n => n !== groupName);
+                    if (copyGroups.length) {
+                        const copyOpts = copyGroups.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
                         detailHTML += `
-                            <div style="margin-bottom: 15px;">
-                                <strong style="color: #667eea;">复制到分组：</strong>
-                                <select id="channelCopySelect" multiple size="4" style="min-width:200px;padding:4px;border-radius:4px;border:1px solid #ddd;vertical-align:top;">${_copyOpts}</select>
-                                <button class="btn btn-sm btn-primary" style="margin-left:8px;vertical-align:top;" onclick="copyCurrentChannelToGroups()">复制</button>
-                                <div style="margin-top:6px;color:#999;font-size:12px;">把本频道（同名同地址）复制一份到所选分组（按住 Ctrl/Cmd 可多选）。复制出的是<b>固定地址的独立频道</b>，适合地址不变的频道；可在「外部源管理」里删除。</div>
+                            <div class="channel-detail-field">
+                                <label for="channelCopySelect">复制到分组</label>
+                                <div class="channel-detail-field-body">
+                                    <div class="channel-detail-control">
+                                        <select id="channelCopySelect" multiple size="4">${copyOpts}</select>
+                                        <button class="btn btn-primary" onclick="copyCurrentChannelToGroups()">复制</button>
+                                    </div>
+                                    <p class="channel-detail-help">按住 Ctrl / Cmd 可多选。复制后为固定地址的独立频道，可在「外部源管理」中删除。</p>
+                                </div>
                             </div>
                         `;
                     }
                 }
+                detailHTML += '</section>';
 
-                // 台标：预览 + 上传 / 移除（issue #40）
-                const _logoBaseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
-                const _logoSrc = channel.logo ? String(channel.logo).replace(/\$\{replace\}/g, _logoBaseUrl) : '';
+                const logoBaseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
+                const logoSrc = channel.logo ? String(channel.logo).replace(/\$\{replace\}/g, logoBaseUrl) : '';
                 detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">台标：</strong>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
-                            <img id="channelLogoPreview" src="${_logoSrc}" alt="" style="width:120px;height:120px;object-fit:contain;border:1px solid #eee;border-radius:8px;background:#fafafa;padding:6px;${_logoSrc ? '' : 'display:none;'}" onerror="this.style.display='none';var e=document.getElementById('channelLogoEmpty');if(e)e.style.display='';">
-                            <span id="channelLogoEmpty" style="color:#999;font-size:12px;${_logoSrc ? 'display:none;' : ''}">暂无台标</span>
-                            <input type="file" accept="image/png,image/jpeg,image/webp" onchange="uploadCurrentChannelLogo(this)">
-                            <button class="btn btn-sm btn-danger" onclick="removeCurrentChannelLogo()">移除</button>
+                    <section class="channel-detail-section">
+                        <h4>频道台标</h4>
+                        <div class="channel-detail-logo">
+                            <div class="channel-detail-logo-preview">
+                                <img id="channelLogoPreview"${logoSrc ? ` src="${escapeHtml(logoSrc)}"` : ''} alt="当前频道台标" style="${logoSrc ? '' : 'display:none;'}" onerror="this.style.display='none';var e=document.getElementById('channelLogoEmpty');if(e)e.style.display='';">
+                                <span id="channelLogoEmpty" style="${logoSrc ? 'display:none;' : ''}">暂无台标</span>
+                            </div>
+                            <div class="channel-detail-field-body">
+                                <div class="channel-detail-control">
+                                    <input type="file" aria-label="上传频道台标" accept="image/png,image/jpeg,image/webp" onchange="uploadCurrentChannelLogo(this)">
+                                    <button class="btn btn-danger" onclick="removeCurrentChannelLogo()">移除</button>
+                                </div>
+                                <p class="channel-detail-help">本地台标优先显示，上传后立即生效。支持 PNG / JPG / WebP，小于 3 MB。</p>
+                            </div>
                         </div>
-                        <div style="margin-top:6px;color:#999;font-size:12px;">上传图片保存为 data/logos/「${String(channel.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}」，优先级最高、保存即生效（支持 png/jpg/webp，&lt;3MB）</div>
-                    </div>
+                    </section>
                 `;
             }
 
-            // 播放地址区块已上移到「频道ID」之后（管理操作之前）
-
-            // 显示其他可用信息
-            if (channel.tvgId) {
+            if (channel.tvgId || channel.tvgName || channel.tvgLogo) {
                 detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">TVG ID：</strong>
-                        <span>${channel.tvgId}</span>
-                    </div>
+                    <section class="channel-detail-section">
+                        <h4>源信息</h4>
+                        <dl class="channel-detail-facts">
+                            ${channel.tvgId ? `<div class="channel-detail-fact"><dt>TVG ID</dt><dd>${escapeHtml(channel.tvgId)}</dd></div>` : ''}
+                            ${channel.tvgName ? `<div class="channel-detail-fact"><dt>TVG 名称</dt><dd>${escapeHtml(channel.tvgName)}</dd></div>` : ''}
+                            ${channel.tvgLogo ? `<div class="channel-detail-fact channel-detail-fact-wide"><dt>源台标</dt><dd><div class="channel-detail-logo-preview"><img src="${escapeHtml(channel.tvgLogo)}" alt="源频道台标" onerror="this.style.display='none'"></div></dd></div>` : ''}
+                        </dl>
+                    </section>
                 `;
             }
 
-            if (channel.tvgName) {
-                detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">TVG名称：</strong>
-                        <span>${channel.tvgName}</span>
-                    </div>
-                `;
-            }
-
-            if (channel.tvgLogo) {
-                detailHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #667eea;">频道图标：</strong>
-                        <div style="margin-top: 8px;">
-                            <img src="${channel.tvgLogo}" alt="频道图标" style="max-width: 150px; max-height: 150px; border-radius: 4px;" onerror="this.style.display='none'">
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 显示来源信息：优先按 sourceIds 显示具体源名（issue #94），旧数据无 sourceIds 时退回粗粒度类型
+            // 优先显示具体源名，旧数据退回来源类型（issue #94）。
             const sourceLabels = { 'migu': '咪咕源', 'built-in': '内置源', 'external': '外部源', 'system': '系统公告' };
             const sourceNames = sourceNamesFor(channel);
             const sourceText = sourceNames.length > 0 ? sourceNames.join('、') : sourceLabels[sourceType];
-            detailHTML += `
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
-                    <span style="color: #999; font-size: 13px;">
-                        此频道来自：${escapeHtml(sourceText)}
-                    </span>
-                </div>
-            `;
+            detailHTML += `<p class="channel-detail-source">此频道来自：${escapeHtml(sourceText)}</p>`;
 
-            detailHTML += '</div>';
-
-            // 更新弹窗内容
-            document.getElementById('channelDetailTitle').textContent = `频道详情 - ${channel.name}`;
+            document.getElementById('channelDetailTitle').textContent = `频道详情 · ${channel.name}`;
             document.getElementById('channelDetailContent').innerHTML = detailHTML;
-            
-            // 仅外部源显示编辑按钮
-            const editBtn = document.getElementById('channelDetailEditBtn');
-            editBtn.style.display = sourceType === 'external' ? 'block' : 'none';
-
-            // 显示弹窗
+            document.getElementById('channelDetailContent').scrollTop = 0;
+            document.getElementById('channelDetailEditBtn').style.display = sourceType === 'external' ? '' : 'none';
             document.getElementById('channelDetailModal').style.display = 'block';
         }
 

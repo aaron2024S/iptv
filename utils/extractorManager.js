@@ -655,6 +655,12 @@ class ExtractorManager {
         refreshConfigurable: module.refreshConfigurable !== false,
         refreshDescription: module.refreshDescription || '',
         health,
+        // 详情弹窗列「抓到了哪些频道」（issue #164）：只给名字，地址等不出后台。
+        // 来自缓存，关掉的模块也保留关闭前最后一轮；没抓到过就是空数组。
+        channelGroups: cacheEntry.groups.map(group => ({
+          name: group.name,
+          channels: group.dataList.map(channel => channel?.name).filter(Boolean),
+        })).filter(group => group.channels.length),
       }
     })
     return {

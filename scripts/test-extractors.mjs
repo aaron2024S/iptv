@@ -1119,6 +1119,17 @@ try {
       '面板必须说明失败时的频道数来自上一轮缓存')
   })
 
+  check('详情弹窗的频道名单：按分组只给名字，关掉模块后仍保留（issue #164）', () => {
+    const manager = newManager()
+    seed(manager, [...oneGroup, { name: '空组', dataList: [] }])
+    manager.setModuleEnabled('bilibili-live', false)
+    const moduleState = manager.getState().modules.find(module => module.id === 'bilibili-live')
+    assert.deepEqual(moduleState.channelGroups, [{ name: '赛事', channels: ['[原画] 主播'] }],
+      '只回名字（不带地址），空分组不列')
+    assert.deepEqual(newManager().getState().modules.find(module => module.id === 'bilibili-live').channelGroups, [],
+      '没抓到过就是空数组')
+  })
+
   check('首次抓取失败且无缓存时，面板不得误报沿用缓存', () => {
     const manager = newManager()
     seed(manager, [], { status: 'failed', consecutiveFailures: 1, lastError: 'HTTP 403', channelCount: 0 })

@@ -2866,6 +2866,46 @@
             font-weight: 650;
         }
         .source-category-desc { color: var(--ui-muted); font-size: 13px; }
+
+        /* 抓取模块按开关筛选（issue #164）。比二级标签轻一档：描边小胶囊，
+           选中只换浅底，不和上面「自定义源 / 内置抓取模块 / 内置源」抢层级。 */
+        .extractor-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .extractor-filter:empty { display: none; }
+        .extractor-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 32px;
+            padding: 5px 13px;
+            border: 1px solid var(--ui-line-strong);
+            border-radius: 999px;
+            background: var(--ui-surface);
+            color: var(--ui-text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color .16s ease, background .16s ease, border-color .16s ease;
+        }
+        .extractor-filter-btn:hover { color: var(--ui-accent); border-color: var(--ui-accent-line); }
+        .extractor-filter-btn.active { color: var(--ui-accent); border-color: var(--ui-accent); background: var(--ui-accent-soft); }
+        .extractor-filter-count {
+            min-width: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: var(--ui-surface-strong);
+            color: var(--ui-text-secondary);
+            font-size: 11px;
+            line-height: 18px;
+            text-align: center;
+        }
+        .extractor-filter-btn.active .extractor-filter-count { background: var(--ui-accent); color: #fff; }
+        .extractor-filter-empty {
+            padding: 16px 18px;
+            border: 1px dashed var(--ui-line-strong);
+            border-radius: var(--ui-radius-card);
+            color: var(--ui-muted);
+            font-size: 13px;
+        }
         .source-grid { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 17px; }
         .source-card,
         .external-nav-item {
@@ -2900,13 +2940,77 @@
             background: var(--ui-surface-soft);
             box-shadow: none;
         }
+        /* 已关闭的模块（issue #164）。主题本身是浅绿，深一档浅一档的底色看不出来，
+           所以不靠色差：虚线空心边框 + 内容褪到一半 + 底部明写「已关闭」，开关保持原样
+           （还能点）。仍可点开看详情、改配置；放在 .source-card.active 之后，打开着的
+           卡片底色仍以「选中」为准。 */
+        .source-card.is-off { border-style: dashed; border-color: var(--ui-line-strong); }
+        .source-card.is-off:not(.active) { background: transparent; }
+        .source-card.is-off .name,
+        .source-card.is-off .source-card-desc { opacity: .5; }
+        .source-card.is-off .source-badge { filter: grayscale(1); opacity: .45; }
+        .module-off-label { color: var(--ui-muted); font-weight: 600; }
+        /* 模块开关：拨动开关代替勾选框——开是实心主题绿、关是灰，扫一眼就分得清；
+           「点了立刻生效」也比勾选框（像要按保存的表单项）更贴切。
+           单个 input 用 appearance:none + 背景渐变画滑块，不靠伪元素，键盘与读屏照常。 */
+        .source-card-toggle .module-switch {
+            appearance: none;
+            -webkit-appearance: none;
+            flex-shrink: 0;
+            width: 38px;
+            height: 22px;
+            margin: 0;
+            border-radius: 999px;
+            background: #c4cbc6 radial-gradient(circle, #fff 0 8px, transparent 8.5px) no-repeat left center / 22px 22px;
+            cursor: pointer;
+            transition: background-color .18s ease, background-position .18s ease;
+        }
+        .source-card-toggle .module-switch:checked { background-color: var(--ui-accent); background-position: right center; }
+        .source-card-toggle .module-switch:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+        .source-card-toggle { gap: 7px; }
+        /* 详情弹窗里的频道名单（issue #164）：小标签换行排，频道多时限高、内部滚动，
+           不把下面的配置表单顶出视野 */
+        .extractor-channels {
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            border: 1px solid var(--ui-line);
+            border-radius: 12px;
+            background: var(--ui-surface-soft);
+        }
+        .extractor-channels-head {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: var(--ui-text);
+            font-size: 13px;
+            font-weight: 650;
+            margin-bottom: 9px;
+        }
+        .extractor-channels-note { color: var(--ui-muted); font-size: 12px; font-weight: 400; }
+        .extractor-channels-body { max-height: 110px; overflow-y: auto; }
+        .extractor-channel-group + .extractor-channel-group { margin-top: 10px; }
+        .extractor-channel-group-name { margin-bottom: 5px; color: var(--ui-text-secondary); font-size: 12px; }
+        .extractor-channel-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+        .extractor-channel-chip {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px 9px;
+            border: 1px solid var(--ui-line);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--ui-text);
+            font-size: 12px;
+        }
+        .extractor-channels-empty { color: var(--ui-muted); font-size: 12px; }
         .source-card-title, .external-nav-title { color: var(--ui-text); font-size: 15px; font-weight: 700; }
         .external-nav-item.active .external-nav-title { color: var(--ui-accent); }
         .source-card-desc { color: var(--ui-text-secondary); font-size: 13px; line-height: 1.65; }
         .source-card-foot { padding-top: 4px; color: var(--ui-muted); font-size: 12px; }
         .external-nav-meta { color: var(--ui-muted); font-size: 12px; }
         .source-card-toggle { color: var(--ui-text-secondary); }
-        .source-card-toggle input { width: 17px; height: 17px; }
         .card-open-hint {
             padding: 3px 9px;
             border: 1px solid var(--ui-accent-line);
@@ -3798,12 +3902,13 @@
                         <div>
                             <div class="source-section-hint">
                                 平台自带的抓取模块。每个模块一个开关，点了立刻生效、无需保存；关掉即不联网、
-                                不出现在播放列表，配置原样保留、开回来即恢复。
+                                不出现在播放列表，配置原样保留、开回来即恢复。关掉的模块显示为灰色，可按开关筛选。
                             </div>
                         </div>
                     </div>
 
                     <div id="extractorNotice"></div>
+                    <div class="extractor-filter" id="extractorFilter" role="group" aria-label="按开关筛选模块"></div>
                     <div class="source-category-list" id="extractorList"></div>
                 </div>
                 </div>
@@ -4205,6 +4310,7 @@
             // （健康/频道数/上次成功时间都会变）。即便当前不是模块分类，也先把数据备好。
             if (index === 1) {
                 switchSourceTab(selectedSourceTab, false);
+                extractorFilterHold.clear();   // 重新进页面：筛选里「先留着」的卡片该归位了
                 loadExtractors();
             }
             // 切换到系统配置Tab时刷新 EPG 源状态（抓取时间/匹配数等）、用户列表、频道别名
@@ -4238,7 +4344,10 @@
             } catch (e) {
                 // 存储不可用只会失去“记住位置”，不影响标签切换。
             }
-            if (refresh && next === 1) loadExtractors();
+            if (refresh && next === 1) {
+                extractorFilterHold.clear();
+                loadExtractors();
+            }
         }
 
         // ===== EPG 节目单聚合（issue #38）=====
@@ -4617,6 +4726,43 @@
             return h.usingCachedChannels ? `沿用缓存 ${count} 频道` : `${count} 频道`;
         }
 
+        /**
+         * 详情弹窗里「抓到了哪些频道」（issue #164）。名单来自模块缓存：关掉的模块列的是
+         * 关闭前最后一轮；从没抓到过（刚装就关、缺账号、咪咕/大连只放内存且关后重启过）就没有。
+         */
+        function extractorChannelsHtml(m) {
+            const groups = m.channelGroups || [];
+            const total = groups.reduce((sum, group) => sum + group.channels.length, 0);
+            if (!total) {
+                const status = (m.health || {}).status;
+                // 抓过却没拿到（缺账号/Token、被拒）别说「启用就能看到」——原因看上面那行状态
+                const fetchedNothing = ['empty', 'failed', 'risk'].includes(status);
+                const why = !m.enabled
+                    ? (fetchedNothing ? '关闭前最后一次抓取没有拿到频道。' : '还没有可列的频道，勾选「启用」抓一次就能看到。')
+                    : status === 'idle'
+                        ? '还没抓取，等这一轮抓完就能看到。'
+                        : '目前没有抓到频道，抓取成功后显示在这里。';
+                return `<div class="extractor-channels"><div class="extractor-channels-empty">${why}</div></div>`;
+            }
+            const title = m.enabled ? '抓到的频道' : '关闭前抓到的频道';
+            const note = m.enabled && (m.health || {}).usingCachedChannels ? '本轮抓取失败，这是上次成功的结果' : '';
+            // 只有一个分组时组名多半就是模块名，不再重复
+            const showGroupName = groups.length > 1;
+            return `<div class="extractor-channels">
+                <div class="extractor-channels-head">
+                    <span>${title} · ${total} 个</span>
+                    ${note ? `<span class="extractor-channels-note">${note}</span>` : ''}
+                </div>
+                <div class="extractor-channels-body">
+                    ${groups.map(group => `<div class="extractor-channel-group">
+                        ${showGroupName ? `<div class="extractor-channel-group-name">${escapeHtml(group.name)}（${group.channels.length}）</div>` : ''}
+                        <div class="extractor-channel-chips">${group.channels.map(name =>
+                            `<span class="extractor-channel-chip" title="${escapeHtml(name)}">${escapeHtml(name)}</span>`).join('')}</div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
         /** 有表单字段或可编辑刷新间隔时才存在“配置”；否则展开区只是运行详情。 */
         function extractorHasEditableConfig(module) {
             const visibleFields = (module.configSchema || []).some(field => !field.hidden);
@@ -4627,6 +4773,46 @@
         function extractorCanManualRefresh(module) {
             if (extractorHasEditableConfig(module)) return true;
             return ['failed', 'empty', 'risk'].includes((module.health || {}).status);
+        }
+
+        // 抓取模块按开关筛选（issue #164）：all / on / off，记在本机浏览器里。
+        // 不按开关重排卡片——模块多、卡片高，点一下就整片补位重排，作者实测「一直跳变」。
+        let extractorFilter = 'all';
+        try {
+            const saved = localStorage.getItem('iptv-extractor-filter');
+            if (['all', 'on', 'off'].includes(saved)) extractorFilter = saved;
+        } catch (e) {
+            // 存储不可用只会失去「记住筛选」，默认看全部
+        }
+        // 筛选视图里刚点过开关、已不符合筛选的模块：先原地留着（变灰/变亮），
+        // 换筛选或重新进这一页才消失，免得卡片从鼠标底下抽走、后面整片补位。
+        const extractorFilterHold = new Set();
+
+        function setExtractorFilter(value) {
+            extractorFilter = ['on', 'off'].includes(value) ? value : 'all';
+            extractorFilterHold.clear();
+            try {
+                localStorage.setItem('iptv-extractor-filter', extractorFilter);
+            } catch (e) {
+                // 同上，不影响本次筛选
+            }
+            renderExtractors();
+        }
+
+        function renderExtractorFilter(modules) {
+            const bar = document.getElementById('extractorFilter');
+            if (!bar) return;
+            const enabledCount = modules.filter(module => module.enabled).length;
+            const options = [
+                ['all', '全部', modules.length],
+                ['on', '已启用', enabledCount],
+                ['off', '已关闭', modules.length - enabledCount],
+            ];
+            bar.innerHTML = modules.length ? options.map(([value, label, count]) =>
+                `<button type="button" class="extractor-filter-btn${extractorFilter === value ? ' active' : ''}"
+                         aria-pressed="${extractorFilter === value}" onclick="setExtractorFilter('${value}')">
+                    ${label}<span class="extractor-filter-count">${count}</span>
+                </button>`).join('') : '';
         }
 
         function renderExtractors() {
@@ -4641,6 +4827,7 @@
                 const enabledCount = modules.filter(module => module.enabled).length;
                 tabCount.textContent = modules.length ? `${enabledCount}/${modules.length}` : '0';
             }
+            renderExtractorFilter(modules);
             if (!modules.length) {
                 box.innerHTML = '<div class="system-config-hint" style="margin:0;">本版本没有内置任何抓取模块。</div>';
                 renderExtractorDetail();
@@ -4677,28 +4864,40 @@
                 const h = m.health || {};
                 const when = h.lastSuccessAt ? new Date(h.lastSuccessAt).toLocaleString() : '从未';
                 const hasEditableConfig = extractorHasEditableConfig(m);
+                const classes = ['source-card'];
+                if (!m.enabled) classes.push('is-off');
+                if (m.id === selectedExtractorId) classes.push('active');
                 return `
-                <div class="source-card${m.id === selectedExtractorId ? ' active' : ''}"
+                <div class="${classes.join(' ')}" data-extractor-id="${escapeHtml(m.id)}"
                      onclick="selectExtractorModule('${escapeHtml(m.id)}')">
                     <div class="source-card-title">
                         <span class="name">${escapeHtml(m.name)}</span>
                         <span class="source-badge ${escapeHtml(category.id)}">${escapeHtml(category.badge)}</span>
                         <label class="source-card-toggle" onclick="event.stopPropagation()" title="即时生效，无需保存">
-                            <input type="checkbox" ${m.enabled ? 'checked' : ''}
-                                   onchange="toggleExtractorModule('${escapeHtml(m.id)}', this.checked)">
                             启用
+                            <input type="checkbox" role="switch" class="module-switch" ${m.enabled ? 'checked' : ''}
+                                   onchange="toggleExtractorModule('${escapeHtml(m.id)}', this.checked)">
                         </label>
                     </div>
                     <div class="source-card-desc">${escapeHtml(m.description || '')}</div>
                     <div class="source-card-foot">
-                        <span title="上次成功抓取：${escapeHtml(when)}">${extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>
+                        ${m.enabled
+                            ? `<span title="上次成功抓取：${escapeHtml(when)}">${extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>`
+                            : '<span class="module-off-label">○ 已关闭</span>'}
                         <span class="card-open-hint">${hasEditableConfig ? '配置 ›' : '详情 ›'}</span>
                     </div>
                 </div>`;
             };
 
-            box.innerHTML = categories.map(category => {
-                const categoryModules = modules.filter(m => (m.category || 'standard') === category.id);
+            // 按开关筛选（issue #164）。卡片始终按原分类、原顺序排，开关只改变灰与否；
+            // 刚点过的模块在筛选视图里先留着（extractorFilterHold），见上方注释。
+            const visible = m => extractorFilter === 'all'
+                || (extractorFilter === 'on') === !!m.enabled
+                || extractorFilterHold.has(m.id);
+            const shown = modules.filter(visible);
+
+            box.innerHTML = shown.length ? categories.map(category => {
+                const categoryModules = shown.filter(m => (m.category || 'standard') === category.id);
                 if (!categoryModules.length) return '';
                 return `<section class="source-category" aria-labelledby="extractor-category-${escapeHtml(category.id)}">
                     <div class="source-category-head">
@@ -4710,7 +4909,9 @@
                         ${categoryModules.map(m => moduleCardHtml(m, category)).join('')}
                     </div>
                 </section>`;
-            }).join('');
+            }).join('') : `<div class="extractor-filter-empty">${extractorFilter === 'on'
+                ? '所有模块都已关闭。切到「已关闭」或「全部」，勾选「启用」即可打开。'
+                : '没有关闭的模块。'}</div>`;
 
             renderExtractorDetail();
         }
@@ -4800,6 +5001,7 @@
                     ${canManualRefresh ? `<button class="btn btn-sm" onclick="refreshExtractorNow('${escapeHtml(m.id)}')">立即刷新</button>` : ''}
                 </div>
                 <div style="font-size:12px; margin-bottom:12px;">${extractorHealthHtml(m.health || {})}</div>
+                ${extractorChannelsHtml(m)}
                 <div style="border-top:1px solid #f5f5f5; padding-top:12px;">
                     ${m.helperSection ? '' : extractorHelperHtml(m.helper, m.secretsSet || {}, m.config || {}, m.health || {})}
                     ${extractorFieldsHtml(m.id, m.configSchema || [], m.config || {}, m.secretsSet || {}, m.envProvided || {}, m.helperSection ? { key: m.helper, section: m.helperSection, health: m.health || {} } : null)}
@@ -4865,7 +5067,12 @@
         }
 
         async function toggleExtractorModule(id, on) {
-            applyExtractorResult(await extractorPost({ action: 'toggleModule', id, enabled: on }), on ? '模块已启用' : '模块已关闭');
+            const r = await extractorPost({ action: 'toggleModule', id, enabled: on });
+            if (r && r.success && extractorFilter !== 'all') extractorFilterHold.add(id);
+            applyExtractorResult(r, on ? '模块已启用' : '模块已关闭');
+            // 整份重渲染会丢焦点；卡片没挪位置，把焦点还给同一个开关，键盘可以接着操作
+            const toggle = document.querySelector(`[data-extractor-id="${CSS.escape(id)}"] .source-card-toggle input`);
+            if (toggle) toggle.focus({ preventScroll: true });
         }
 
         async function saveExtractorConfig(id) {

@@ -32,13 +32,13 @@ iPTV 是一个面向家庭影音与 NAS 用户的**模块化 IPTV 直播源管�
 ## 🖼️ 产品预览
 
 <p align="center"><b>我的频道 · 所有频道一处编排</b></p>
-<p align="center"><img src="Resources/dashboard.png?v=20260906" alt="我的频道主面板" width="900"/></p>
+<p align="center"><img src="Resources/dashboard.png?v=20261005" alt="我的频道主面板" width="900"/></p>
 
 <p align="center"><b>源管理 · 每个内容来源独立、透明、可控</b></p>
-<p align="center"><img src="Resources/source-management.png?v=20260906" alt="源管理" width="900"/></p>
+<p align="center"><img src="Resources/source-management.png?v=20261005" alt="源管理" width="900"/></p>
 
-<p align="center"><b>播放器实况 · 输出标准订阅，接入常用客户端</b></p>
-<p align="center"><img src="Resources/live-preview.jpg?v=20260907" alt="实况播放效果" width="900"/></p>
+<p align="center"><b>网页播放实况 · 在管理台直接预览频道</b></p>
+<p align="center"><img src="Resources/live-preview.jpg?v=20261005" alt="管理台内置播放器预览 iPanda 频道" width="900"/></p>
 
 ## ✨ 为什么选择 iPTV
 

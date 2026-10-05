@@ -1626,6 +1626,48 @@ await checkAsync('短分片冷起攒不够时最多等 warmupMaxMs，续取出�
   failing = true
 })
 
+check('短分片流窗口跳过的一两片按相邻分片补回历史；片长不齐、时刻对不上、缺太多或已出 CDN 留存范围都不补', () => {
+  const history = createPlaylistHistory()
+  history.extend(shortPlaylist(100), 0)
+  // 101、102 之后直接到 104：103 谁都没列过
+  const bridged = history.extend(shortPlaylist(104), 5000)
+  const list = segmentsOf(bridged)
+  assert.deepEqual(list.map(x => x.seq), [100, 101, 102, 103, 104, 105, 106])
+  assert.equal(list[3].duration, 2)
+  assert.equal(list[3].url, list[4].url.replace('-104.ts', '-103.ts'), '沿用缺口后第一片的主机和令牌')
+  assert.match(bridged, /#EXT-QQHLS-START-TIME:206\n#EXTINF:2\.000,\n\S+-103\.ts/)
+  // 再缺一片也能接着补（补出来的片带开始时刻）
+  assert.deepEqual(segmentsOf(history.extend(shortPlaylist(108), 10_000)).map(x => x.seq).slice(-5), [106, 107, 108, 109, 110])
+
+  const refuse = (second, why) => {
+    const h = createPlaylistHistory()
+    h.extend(shortPlaylist(100), 0)
+    assert.deepEqual(segmentsOf(h.extend(second, 5000)).map(x => x.seq), segmentsOf(second).map(x => x.seq), why)
+  }
+  refuse(shortPlaylist(107), '缺 4 片，太多')
+  refuse(shortPlaylist(104).replaceAll('#EXTINF:2.000,', '#EXTINF:3.000,'), '片长和前面不一样')
+  refuse(shortPlaylist(104).replace(/START-TIME:208/, 'START-TIME:211'), '开始时刻对不上')
+  refuse(shortPlaylist(104).replace(/SEGMENT_RANGE:\d+/, 'SEGMENT_RANGE:104'), '缺的片 CDN 已经不留了')
+  refuse(officialPlaylist(104, [208, 210, 212], [2, 2, 2]).replace('TARGETDURATION:5', 'TARGETDURATION:4'), '每片超过 3 秒的流不补')
+})
+
+await checkAsync('慢节点取回的清单比手里旧：沿用手里那份，清单不往回走、历史不清空；差太多才当序号重置', async () => {
+  const bodies = [shortPlaylist(100), shortPlaylist(101), shortPlaylist(100), shortPlaylist(102), shortPlaylist(50)]
+  const resolver = createResolver({
+    warmupSeconds: 0, log: () => {},
+    request: async () => ({ urls: ['https://a.ysp.cctv.cn/live.m3u8'] }),
+    select: async () => ({ url: 'https://a.ysp.cctv.cn/live.m3u8', text: bodies.shift() }),
+  })
+  await resolver.resolve('ysp-cctv8k', { now: 0 })
+  const ahead = await resolver.resolve('ysp-cctv8k', { now: 6000 })
+  const lagging = await resolver.resolve('ysp-cctv8k', { now: 12_000 })
+  assert.equal(lagging.manifestText, ahead.manifestText, '慢节点那份不下发')
+  const next = await resolver.resolve('ysp-cctv8k', { now: 18_000 })
+  assert.deepEqual(segmentsOf(next.manifestText).map(x => x.seq), [100, 101, 102, 103, 104], '历史没被清空')
+  const reset = await resolver.resolve('ysp-cctv8k', { now: 24_000 })
+  assert.deepEqual(segmentsOf(reset.manifestText).map(x => x.seq), [50, 51, 52], '落后几十片是真重置')
+})
+
 await checkAsync('活跃频道共享定时刷新，不跟着慢播放器漏片；短期重复请求不重复拉官方，停播后停止', async () => {
   let selects = 0
   const resolver = createResolver({

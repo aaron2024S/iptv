@@ -119,6 +119,15 @@ export const WARMUP_SECONDS = 14
 export const WARMUP_MAX_MS = 12_000
 
 /**
+ * 官方各 CDN 节点进度不一（实测慢的比快的落后一两片），共享刷新又因为重复取会被 403 而几乎每次都换节点，
+ * 于是时不时取回一份比手里还旧的清单。以前把它当成换流：清单往回走，清单历史整个清空；短分片频道
+ * （CCTV8K 窗口只有 6 秒）接下来再取到快节点时就跳过了一片，播放器少放 2 秒、音画时间戳断开
+ * （2026-10-04 libVLC 实测 6 分钟 3 次）。最新一片落后在 LAG_TOLERANCE 片以内的，当作这次没有新内容，
+ * 沿用手里那份；落后更多才当真是序号重置。
+ */
+export const LAG_TOLERANCE = 10
+
+/**
  * 断流恢复后，把清单跳过去的分片接回来（issue #158）。
  *
  * 官方清单只列最新 3 片。断了十几秒再取到时窗口已经滚过去，播放器手里最后一片和新清单第一片
@@ -314,6 +323,9 @@ export function createResolver({
     const previous = latest.get(key)
     // 同一次取回的清单会被每个在等它的请求各交来一次，只处理第一次
     if (previous?.source === manifest) return previous
+    // 落在慢节点上，比手里的旧：当作没有新内容（见 LAG_TOLERANCE）
+    const behind = previous?.tail?.seq - tailOf(manifest.text).seq
+    if (behind > 0 && behind <= LAG_TOLERANCE) return previous
     if (!pins.has(key)) pins.set(key, new Map())
     const at = Number(ctx.now ?? Date.now())
     const filled = backfillSkipped(manifest.text, served.get(key))

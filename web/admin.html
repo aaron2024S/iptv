@@ -2598,6 +2598,7 @@
         .mode-switch-btn:hover { color: var(--ui-accent); border-color: var(--ui-accent-line); }
         .mode-switch-btn.active {
             color: #fff;
+            font-weight: 600;
             border-color: var(--ui-accent);
             background: var(--ui-accent);
             box-shadow: none;
@@ -4318,6 +4319,7 @@
 
             // 新页面从顶部开始，避免沿用上一页的滚动位置或被短页面强制截断。
             if (tabChanged) window.scrollTo(0, 0);
+            if (index === 1 || index === 2) fitSubtabPanelHeight(panels[index]);
             
             // 切换到我的频道Tab时加载数据
             if (index === 0) {
@@ -4344,14 +4346,27 @@
 
         // 设置页二级标签切换（issue #72）：只做显隐，各卡片数据在进入设置页(switchTab(2))时已统一刷新
         function switchSettingsTab(index) {
+            fitSubtabPanelHeight(document.querySelector('.settings-panel'));
             document.querySelectorAll('.settings-subtabs .mode-switch-btn').forEach((b, i) => b.classList.toggle('active', i === index));
             document.querySelectorAll('.settings-subpanel').forEach((p, i) => p.classList.toggle('active', i === index));
         }
+
+        // 至少填满当前可视区域，长内容切到短内容时不会因页面变矮而截断 scrollY。
+        function fitSubtabPanelHeight(panel) {
+            if (!panel || !panel.classList.contains('active')) return;
+            const bottomPadding = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+            const minHeight = window.innerHeight - panel.getBoundingClientRect().top - bottomPadding;
+            panel.style.minHeight = Math.max(0, Math.ceil(minHeight)) + 'px';
+        }
+        window.addEventListener('resize', () => {
+            fitSubtabPanelHeight(document.querySelector('.settings-panel.active, .sources-panel.active'));
+        });
 
         // 源管理页二级标签：记住上次停留位置。切到抓取模块时顺手刷新运行状态；
         // 从顶层 Tab 恢复时会单独统一刷新，所以可用 refresh=false 避免重复请求。
         function switchSourceTab(index, refresh = true) {
             const next = [0, 1, 2].includes(Number(index)) ? Number(index) : 1;
+            fitSubtabPanelHeight(document.querySelector('.sources-panel'));
             selectedSourceTab = next;
             document.querySelectorAll('.source-subtabs .mode-switch-btn').forEach((button, i) => {
                 const active = i === next;

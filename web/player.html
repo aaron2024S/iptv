@@ -168,7 +168,7 @@
     <script>
         // 从URL参数获取播放信息
         const urlParams = new URLSearchParams(window.location.search);
-        const videoUrl = urlParams.get('url');
+        const videoUrl = browserPlaybackUrl(urlParams.get('url'));
         const channelName = urlParams.get('name') || '未知频道';
         let streamCleanup = () => {};
         window.addEventListener('pagehide', () => streamCleanup());
@@ -204,6 +204,22 @@
             const text = body.trim();
             if (!text || text.length > 300 || text.startsWith('#EXTM3U') || text.startsWith('<')) return '';
             return text.replace(/^\d+\s+/, '');
+        }
+
+        // 与管理台内播放一致：咪咕与山东齐鲁 CDN 不提供 CORS 许可，由本机全代理播放。
+        function browserPlaybackUrl(rawUrl, pageUrl = window.location.href) {
+            try {
+                const url = new URL(rawUrl, pageUrl);
+                if (url.origin !== new URL(pageUrl).origin) return rawUrl;
+                const match = url.pathname.match(/^(.*\/)(\d+|iqilu-[a-z0-9]{2,12})(?:\.m3u8)?$/);
+                if (!match) return rawUrl;
+                let prefix = match[1];
+                if (prefix.endsWith('/proxy/')) return rawUrl;
+                if (prefix.endsWith('/relay/')) prefix = prefix.slice(0, -6);
+                if (/\/(?:proxy|relay)\//i.test(prefix)) return rawUrl;
+                url.pathname = `${prefix}proxy/${match[2]}.m3u8`;
+                return url.href;
+            } catch { return rawUrl; }
         }
 
         // 初始化播放器

@@ -11379,6 +11379,22 @@ if(success){
         function inlinePlayerBaseUrl() {
             return window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
         }
+        // 咪咕与山东齐鲁入口会 302 到没有 CORS 许可的 CDN，浏览器无法读取清单。
+        // 仅网页播放改走现有全代理；保留密码/账号前缀和回看参数，其他来源及外部播放器地址不改。
+        function browserPlaybackUrl(rawUrl, pageUrl = window.location.href) {
+            try {
+                const url = new URL(rawUrl, pageUrl);
+                if (url.origin !== new URL(pageUrl).origin) return rawUrl;
+                const match = url.pathname.match(/^(.*\/)(\d+|iqilu-[a-z0-9]{2,12})(?:\.m3u8)?$/);
+                if (!match) return rawUrl;
+                let prefix = match[1];
+                if (prefix.endsWith('/proxy/')) return rawUrl;
+                if (prefix.endsWith('/relay/')) prefix = prefix.slice(0, -6);
+                if (/\/(?:proxy|relay)\//i.test(prefix)) return rawUrl;
+                url.pathname = `${prefix}proxy/${match[2]}.m3u8`;
+                return url.href;
+            } catch { return rawUrl; }
+        }
         function loadScriptOnce(src, isReady) {
             return new Promise((resolve, reject) => {
                 if (isReady()) return resolve();
@@ -11421,7 +11437,7 @@ if(success){
         }
         async function playInline(rawUrl, name) {
             if (!rawUrl) { showStatus('该频道没有播放地址', 'error'); return; }
-            const url = rawUrl.replace(/\$\{replace\}/g, inlinePlayerBaseUrl());
+            const url = browserPlaybackUrl(rawUrl.replace(/\$\{replace\}/g, inlinePlayerBaseUrl()));
             const dialog = document.getElementById('inlinePlayer');
             const video = document.getElementById('inlinePlayerVideo');
             closeInlinePlayer();

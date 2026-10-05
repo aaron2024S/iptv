@@ -2279,6 +2279,8 @@
         :root {
             color-scheme: light;
             --ui-bg: #f3f5f1;
+            --ui-page-background: radial-gradient(ellipse at 5% 0%, rgba(177, 216, 188, .28), transparent 55%),
+                radial-gradient(ellipse at 96% 40%, rgba(177, 216, 188, .16), transparent 54%), var(--ui-bg);
             --ui-surface: #fdfefb;
             --ui-surface-soft: #f5f8f3;
             --ui-surface-strong: #eaf0e8;
@@ -2317,7 +2319,8 @@
             --ui-ring: 0 0 0 3px rgba(65, 133, 106, .16);
         }
 
-        html { background: var(--ui-bg); }
+        /* 四个主页面高度不同，预留滚动条位置，切换时内容宽度保持一致。 */
+        html { background: var(--ui-bg); scrollbar-gutter: stable; }
         body {
             min-height: 100vh;
             padding: 26px;
@@ -2332,16 +2335,27 @@
         .container { max-width: 1720px; }
 
         /* 顶栏：品牌、主导航、运维操作各自成组 */
-        .header {
-            top: 16px;
-            padding: 12px 14px;
+        /* 吸顶外层覆盖顶部留白和圆角背后，避免滚动内容从顶栏周围露出。 */
+        .header-shell {
+            --header-inset: 26px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding-top: var(--header-inset);
+            margin-top: calc(-1 * var(--header-inset));
             margin-bottom: 14px;
+            background: var(--ui-page-background);
+            background-attachment: fixed;
+        }
+        .header {
+            position: relative;
+            top: auto;
+            padding: 12px 14px;
+            margin-bottom: 0;
             border: 1px solid rgba(255, 255, 255, .9);
             border-radius: var(--ui-radius-panel);
-            background: linear-gradient(150deg, rgba(255, 255, 255, .86), rgba(247, 251, 246, .76));
+            background: linear-gradient(150deg, #fff, #f7fbf6);
             box-shadow: var(--ui-shadow-header);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
         }
         .tabs {
             min-height: 52px;
@@ -3327,7 +3341,7 @@
         }
         @media (max-width: 900px) {
             body { padding: 18px; }
-            .header { top: 10px; }
+            .header-shell { --header-inset: 18px; }
             .panel { padding: 22px; }
             .tabs { gap: 10px; }
             .tab { padding-inline: 13px; }
@@ -3339,7 +3353,8 @@
         }
         @media (max-width: 768px) {
             body { padding: 14px; }
-            .header { padding: 10px; margin-bottom: 16px; border-radius: 16px; }
+            .header-shell { --header-inset: 14px; margin-bottom: 16px; }
+            .header { padding: 10px; border-radius: 16px; }
             .tabs {
                 flex-direction: row;
                 flex-wrap: wrap;
@@ -3435,8 +3450,7 @@
             inset: 0;
             z-index: -1;
             pointer-events: none;
-            background: radial-gradient(ellipse at 5% 0%, rgba(177, 216, 188, .28), transparent 55%),
-                radial-gradient(ellipse at 96% 40%, rgba(177, 216, 188, .16), transparent 54%);
+            background: var(--ui-page-background);
         }
         .brand-mark {
             border: 1px solid rgba(255, 255, 255, .95);
@@ -3753,38 +3767,40 @@
     </div>
     
     <div class="container">
-        <div class="header">
-            <div class="tabs">
-                <div class="brand" aria-label="IPTV 管理台">
-                    <span class="brand-mark" aria-hidden="true">TV</span>
-                    <span class="brand-copy">
-                        <strong>IPTV 管理台</strong>
-                        <small>频道管理控制台</small>
-                    </span>
+        <div class="header-shell">
+            <div class="header">
+                <div class="tabs">
+                    <div class="brand" aria-label="IPTV 管理台">
+                        <span class="brand-mark" aria-hidden="true">TV</span>
+                        <span class="brand-copy">
+                            <strong>IPTV 管理台</strong>
+                            <small>频道管理控制台</small>
+                        </span>
+                    </div>
+                    <div class="tabs-left">
+                        <button class="tab active" onclick="switchTab(0)">我的频道</button>
+                        <button class="tab" onclick="switchTab(1)">源管理</button>
+                        <button class="tab" onclick="switchTab(2)">设置</button>
+                        <button class="tab" onclick="switchTab(3)">关于我们</button>
+                    </div>
+                    <div class="tabs-right">
+                        <button class="restart-btn" onclick="restartService()">重启服务</button>
+                    </div>
                 </div>
-                <div class="tabs-left">
-                    <button class="tab active" onclick="switchTab(0)">我的频道</button>
-                    <button class="tab" onclick="switchTab(1)">源管理</button>
-                    <button class="tab" onclick="switchTab(2)">设置</button>
-                    <button class="tab" onclick="switchTab(3)">关于我们</button>
-                </div>
-                <div class="tabs-right">
-                    <button class="restart-btn" onclick="restartService()">重启服务</button>
-                </div>
-            </div>
 
-            <!-- 搬家指路。放在全局 header 里而不是某一页，是因为找不到东西的人可能停在
-                 任何子页面上（「设置」下面就有 5 个）。默认显示，点「知道了」写
-                 localStorage 后不再出现。
-                 键名带版本号：将来若要再公告一次，换个键即可，不会被这次的已读状态吃掉。
-                 **临时性质**——约两个版本（v3.19 前后）没人再问就把这一段和它的 CSS、
-                 dismissMovedNotice()、以及 loadData 里的那次调用一起摘掉，别让它长住。 -->
-            <div class="moved-notice" id="movedNotice" style="display:none;">
-                <span class="moved-notice-text">
-                    <strong>咪咕账号 / 画质</strong>、<strong>内容开关</strong>、<strong>源模块</strong>已从「设置」移到
-                    <a href="javascript:void(0)" onclick="switchTab(1)">源管理</a> 页。
-                </span>
-                <button class="moved-notice-close" onclick="dismissMovedNotice()" title="不再显示">知道了</button>
+                <!-- 搬家指路。放在全局 header 里而不是某一页，是因为找不到东西的人可能停在
+                     任何子页面上（「设置」下面就有 5 个）。默认显示，点「知道了」写
+                     localStorage 后不再出现。
+                     键名带版本号：将来若要再公告一次，换个键即可，不会被这次的已读状态吃掉。
+                     **临时性质**——约两个版本（v3.19 前后）没人再问就把这一段和它的 CSS、
+                     dismissMovedNotice()、以及 loadData 里的那次调用一起摘掉，别让它长住。 -->
+                <div class="moved-notice" id="movedNotice" style="display:none;">
+                    <span class="moved-notice-text">
+                        <strong>咪咕账号 / 画质</strong>、<strong>内容开关</strong>、<strong>源模块</strong>已从「设置」移到
+                        <a href="javascript:void(0)" onclick="switchTab(1)">源管理</a> 页。
+                    </span>
+                    <button class="moved-notice-close" onclick="dismissMovedNotice()" title="不再显示">知道了</button>
+                </div>
             </div>
         </div>
 
@@ -4282,6 +4298,7 @@
         async function switchTab(index) {
             const tabs = document.querySelectorAll('.tab');
             const panels = document.querySelectorAll('.panel');
+            const tabChanged = !tabs[index].classList.contains('active');
             
             tabs.forEach((tab, i) => {
                 if (i === index) {
@@ -4298,6 +4315,9 @@
                     panel.classList.remove('active');
                 }
             });
+
+            // 新页面从顶部开始，避免沿用上一页的滚动位置或被短页面强制截断。
+            if (tabChanged) window.scrollTo(0, 0);
             
             // 切换到我的频道Tab时加载数据
             if (index === 0) {

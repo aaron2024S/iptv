@@ -2618,8 +2618,9 @@
             padding: 0;
             gap: 0;
             overflow: hidden;
-            border: 1px solid var(--ui-line);
-            border-radius: var(--ui-radius-card);
+            /* 与源管理、设置的 page-intro 对齐，描边不再把色块向内推 1px。 */
+            border: 0;
+            border-radius: 16px;
             background: var(--ui-surface);
             box-shadow: none;
         }
@@ -3317,10 +3318,7 @@
         .inline-player-status.bad { color: var(--ui-danger); }
 
         /* 关于页：用与其他页一致的信息卡格式 */
-        .about-page { max-width: 980px !important; padding: 34px 18px !important; }
-        .about-hero { margin-bottom: 30px !important; padding: 30px 24px; border-radius: 18px; background: var(--ui-heading-bg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85); }
-        .about-hero h2 { margin-bottom: 9px !important; color: var(--ui-heading-text) !important; font-size: 34px !important; letter-spacing: -.025em; }
-        .about-hero p { color: var(--ui-heading-muted) !important; }
+        .about-hero { display: block; text-align: center; }
         .about-info-card {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3484,8 +3482,6 @@
             .system-config-item { padding: 15px; }
             .settings-backup { padding: 16px !important; }
             .modal-content, .confirm-dialog { width: calc(100% - 28px) !important; min-width: 0; padding: 22px; }
-            .about-page { padding: 22px 0 !important; }
-            .about-hero h2 { font-size: 28px !important; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -4377,10 +4373,10 @@
 
             <!-- 关于我们面板 -->
             <div class="panel about-panel">
-                <div class="about-page" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
-                    <div class="about-hero" style="text-align: center; margin-bottom: 40px;">
-                        <h2 style="color: #1890ff; font-size: 32px; margin-bottom: 10px;">IPTV 管理系统</h2>
-                        <p style="color: #666; font-size: 16px;">基于 Node.js 的 IPTV 直播源管理和分发系统</p>
+                <div class="about-page">
+                    <div class="page-intro about-hero">
+                        <h2>IPTV 管理系统</h2>
+                        <p>基于 Node.js 的 IPTV 直播源管理和分发系统</p>
                     </div>
                     
                     <div class="about-info-card">

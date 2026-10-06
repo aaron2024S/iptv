@@ -246,9 +246,11 @@ export async function detectDeploymentNetwork() {
   } else if (summary.region === 'unknown') {
     printYellow('部署网络未能检测（各端点均无响应），按大陆处理，所有模块照常默认开启')
   } else if (summary.autoOff.length || summary.unreachableOn.length) {
-    printYellow(`部署网络：${summary.regionLabel}${source}`
+    // 大陆部署时被关的只有「大陆以外」档（海外频道），属预期，不用黄字
+    const offshore = summary.region === 'hk' || summary.region === 'intl'
+    ;(offshore || summary.unreachableOn.length ? printYellow : printGreen)(`部署网络：${summary.regionLabel}${source}`
       + (summary.autoOff.length ? `。已按网络默认关闭 ${summary.autoOff.length} 个模块：${moduleNames(summary.autoOff)}` : '')
-      + (summary.unreachableOn.length ? `。手动开着、在当前网络大概率不通：${moduleNames(summary.unreachableOn)}` : ''))
+      + (summary.unreachableOn.length ? `。手动开着、在当前网络大概率不通或卡顿：${moduleNames(summary.unreachableOn)}` : ''))
   } else {
     printGreen(`部署网络：${summary.regionLabel}${source}`)
   }

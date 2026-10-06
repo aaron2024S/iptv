@@ -90,13 +90,15 @@ check('测不出：全部连不上，或只有一个 403，都不下结论（按
   assert.equal(classifyNetwork([]), 'unknown')
 })
 
-check('档位 × 地区：未知按大陆处理，不替用户关任何模块', () => {
-  for (const tier of NETWORK_TIERS) {
+check('档位 × 地区：未知按大陆处理；大陆以外档只在香港 / 海外开', () => {
+  for (const tier of ['any', 'cn-hk', 'cn']) {
     assert.equal(networkAllows(tier, 'cn'), true)
     assert.equal(networkAllows(tier, 'unknown'), true)
   }
-  assert.deepEqual(['any', 'cn-hk', 'cn'].map(t => networkAllows(t, 'hk')), [true, true, false])
-  assert.deepEqual(['any', 'cn-hk', 'cn'].map(t => networkAllows(t, 'intl')), [true, false, false])
+  assert.deepEqual(['any', 'cn-hk', 'cn', 'non-cn'].map(t => networkAllows(t, 'hk')), [true, true, false, true])
+  assert.deepEqual(['any', 'cn-hk', 'cn', 'non-cn'].map(t => networkAllows(t, 'intl')), [true, false, false, true])
+  assert.equal(networkAllows('non-cn', 'cn'), false, '大陆连得上但常卡顿，默认不开')
+  assert.equal(networkAllows('non-cn', 'unknown'), false, '未检测按大陆处理：与这档出现之前一样看不到')
 })
 
 await checkAsync('探测：并发、只看状态码、单个端点挂住会按超时收尾，绝不抛异常', async () => {
@@ -125,17 +127,32 @@ check('每个注册模块都声明了合法的 network；非法取值被拒', ()
   assert.ok(cnIds().includes('migu'), '咪咕在海外换签全被拒，是仅大陆')
   assert.ok(cnHkIds().length > 0)
   assert.equal(getModule('yangshipin').network, 'any', '央视频海外能播央视卫视，是海外部署的主力')
+  assert.equal(getModule('overseas').network, 'non-cn')
+})
+
+check('大陆手动打开海外频道：照开，并提示可能卡顿', () => {
+  setNetworkState({ region: 'cn' })
+  const manager = newManager(freshConfig())
+  manager.setModuleEnabled('overseas', true)
+  assert.equal(manager.isModuleEnabled(getModule('overseas')), true)
+  assert.deepEqual(manager.networkSummary().unreachableOn, ['overseas'])
+  assert.ok(!manager.networkSummary().autoOff.includes('overseas'))
+  resetNetworkState()
 })
 
 // ---- 默认开关 ----
 
-check('大陆 / 未检测：所有普通模块默认开启（与本功能上线前一致）', () => {
+check('大陆 / 未检测：除「大陆以外」档外所有普通模块默认开启（与本功能上线前一致）', () => {
   resetNetworkState()
   const manager = newManager(freshConfig())
   const regular = listModules().filter(m => typeof m.enabledGetter !== 'function')
-  assert.deepEqual(regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id), [])
+  const nonCn = regular.filter(m => m.network === 'non-cn').map(m => m.id).sort()
+  assert.ok(nonCn.includes('overseas'))
+  assert.deepEqual(regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id).sort(), nonCn)
   setNetworkState({ region: 'cn' })
-  assert.deepEqual(regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id), [])
+  assert.deepEqual(regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id).sort(), nonCn)
+  assert.deepEqual(manager.networkSummary().autoOff.sort(), nonCn, '大陆部署时后台要说明海外频道为什么是关的')
+  resetNetworkState()
 })
 
 check('海外：仅大陆、大陆和香港档默认关；香港：只关仅大陆档', () => {
@@ -143,10 +160,12 @@ check('海外：仅大陆、大陆和香港档默认关；香港：只关仅大�
   const regular = listModules().filter(m => typeof m.enabledGetter !== 'function')
   setNetworkState({ region: 'intl' })
   const offIntl = regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id).sort()
-  assert.deepEqual(offIntl, regular.filter(m => m.network !== 'any').map(m => m.id).sort())
+  assert.deepEqual(offIntl, regular.filter(m => m.network === 'cn' || m.network === 'cn-hk').map(m => m.id).sort())
+  assert.equal(manager.isModuleEnabled(getModule('overseas')), true, '海外频道在海外默认开')
   setNetworkState({ region: 'hk' })
   const offHk = regular.filter(m => !manager.isModuleEnabled(m)).map(m => m.id).sort()
   assert.deepEqual(offHk, regular.filter(m => m.network === 'cn').map(m => m.id).sort())
+  assert.equal(manager.isModuleEnabled(getModule('overseas')), true, '海外频道在香港默认开')
   resetNetworkState()
 })
 

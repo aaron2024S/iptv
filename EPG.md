@@ -90,6 +90,7 @@
 | `livechina` | 央视直播中国 | 不适用 | — | — | — | 景观直播 |
 | `ipanda` | iPanda 官方直播 | 不适用 | — | — | — | 熊猫机位 |
 | `mgtv` | 湖南 | 无官方节目单 | — | — | — | 芒果各接口只给 2010→2050 的占位；getLivePlayBill 要机顶盒参数且没有数据 |
+| `overseas` | 海外频道 | 未调研 | — | — | — | 33 台来自 Samsung TV Plus、Plex、Rakuten TV、LG Channels、Xumo 等免费流媒体平台和 France 24、Arirang 官网，节目表在各平台自己的接口里，还没查 |
 <!-- epg-status:end -->
 
 ## 不做对外发布

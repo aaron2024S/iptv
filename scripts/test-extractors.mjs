@@ -979,8 +979,9 @@ try {
 
   check('★ 所有非代理抓取模块首次出现默认开启，显式关闭后保持关闭', () => {
     // 跳过旧总开关迁移，只验证当前版本的模块默认值；代理模块继续听自己的 getter。
+    // 「大陆以外」档（海外频道）未检测网络时按大陆处理、默认关，另见 test-network-region.mjs
     const manager = newManager(undefined, { modules: {}, masterSwitchRetired: true })
-    const regular = listModules().filter(module => typeof module.enabledGetter !== 'function')
+    const regular = listModules().filter(module => typeof module.enabledGetter !== 'function' && module.network !== 'non-cn')
     assert.ok(regular.length > 0)
     assert.deepEqual(
       regular.filter(module => !manager.isModuleEnabled(module)).map(module => module.id),

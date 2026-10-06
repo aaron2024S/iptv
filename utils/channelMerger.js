@@ -179,14 +179,30 @@ function consolidateLocalChannels(groups, { targetGroup, matches, keyOf }) {
     appended.push(preferred.get(key) || channel, ...(userLines.get(key) || []))
     placedPreferred.add(key)
   }
-  // 合并优先级是「抓取模块 → 内置源 → 外部订阅」：地方官方频道插在第一个外部订阅频道之前，
-  // 不追加到组尾——否则精选列表里起播慢的海外台（World Poker Tour、UFC 24/7 等）会夹在
-  // 咪咕与各地体育频道中间。组里没有外部订阅频道时仍排在最后。紧贴官方线路的用户线路不算。
-  const firstExternal = merged.findIndex(channel => isExternalChannel(channel) && !gluedUserLines.has(channel))
-  merged.splice(firstExternal >= 0 ? firstExternal : merged.length, 0, ...appended)
-  contentGroup.dataList = merged
+  // 模块标了 trailing 的海外台（extractors/overseas）虽是模块频道，也排在组尾（见 moveTrailingChannelsLast）
+  const ordered = [...merged.filter(channel => channel?.trailing !== true), ...merged.filter(channel => channel?.trailing === true)]
+  // 合并优先级是「抓取模块 → 内置源 → 外部订阅」：地方官方频道插在第一个外部订阅频道
+  // （或海外台）之前，不追加到组尾——否则精选列表里起播慢的海外台（World Poker Tour、
+  // UFC 24/7 等）会夹在咪咕与各地体育频道中间。组里没有这两类时仍排在最后。紧贴官方线路的用户线路不算。
+  const firstExternal = ordered.findIndex(channel =>
+    (isExternalChannel(channel) || channel?.trailing === true) && !gluedUserLines.has(channel))
+  ordered.splice(firstExternal >= 0 ? firstExternal : ordered.length, 0, ...appended)
+  contentGroup.dataList = ordered
 
   return output.filter(group => group.dataList.length > 0)
+}
+
+/**
+ * 海外频道模块（extractors/overseas）的台标了 trailing：在任何分组里都排到最后，跟在各台官方
+ * 频道与精选列表之后。它们是部署在香港 / 海外时额外补的海外免费频道，不该抢在各组原有频道前面
+ * （海外部署时咪咕关着，它会是体育组里的第一个模块）。
+ */
+function moveTrailingChannelsLast(groups) {
+  return groups.map(group => {
+    const trailing = (group.dataList || []).filter(channel => channel?.trailing === true)
+    if (!trailing.length) return group
+    return { ...group, dataList: [...group.dataList.filter(channel => channel?.trailing !== true), ...trailing] }
+  })
 }
 
 function consolidateLocalKidsChannels(groups) {
@@ -317,6 +333,7 @@ async function getAllChannels() {
     // 平台历史名「纪实」统一显示为「文旅」，外部精选频道
     // 也合并到同一组，避免新旧名并存。
     allChannels = normalizeContentGroupNames(allChannels)
+    allChannels = moveTrailingChannelsLast(allChannels)
 
     // 内容型分组按频道性质统一：地方体育 / 少儿 / 教育频道分别复制到
     // 对应内容组，地方组仍保持完整；同台多源时优先地方官方线路。
@@ -446,6 +463,7 @@ export {
   dedupeAllChannels,
   primarySourceId,
   normalizeContentGroupNames,
+  moveTrailingChannelsLast,
   consolidateLocalSportsChannels,
   consolidateLocalKidsChannels,
   consolidateLocalEducationChannels

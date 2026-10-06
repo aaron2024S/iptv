@@ -20,8 +20,9 @@
  *                                 授权能力，'live' 表示网络直播平台；不声明即
  *                                 'standard'（免账号的普通官方抓取模块）
  *   network               string  必需；在哪种网络下能用：'any' 不限 / 'cn-hk' 大陆和香港 /
- *                                 'cn' 仅大陆。只决定默认开关——部署网络探测为香港或海外时，
- *                                 用户没手动设过开关的模块按它自动关（规则见 utils/networkRegion.js）。
+ *                                 'cn' 仅大陆 / 'non-cn' 大陆以外（大陆连得上但常卡顿的海外频道）。
+ *                                 只决定默认开关——用户没手动设过开关的模块，在部署网络里用不了
+ *                                 就默认关（规则见 utils/networkRegion.js）。
  *                                 按频道的版权拦截不算，照样 'any'。新模块要先在海外实测
  *                                 （scripts/probe-modules.mjs），依据记在仓库根目录 OVERSEAS.md
  *   capabilities          object  { cache: 'disk'|'memory'|'none',
@@ -135,6 +136,8 @@
  *   proxyHls   可选；清单和分片都经本机代理
  *   relayHls   可选；只由本机刷新/改写清单，分片仍由播放器直连 CDN
  *   catchup    可选 'none'，显式关闭该台继承订阅头的全局回看能力
+ *   trailing   可选 true，海外台：排到所在分组最后，跟在各台官方频道与精选列表等外部订阅
+ *              之后（extractors/overseas）
  *   supplement 可选 true，补充频道：追加在同组所有模块频道之后，不决定分组位置
  *              （咪咕并进地区分组的频道，见 extractors/migu 的 MIGU_LOCAL_SUPPLEMENTS）
  *
@@ -198,6 +201,7 @@ import xizang from './xizang/index.js'
 import wuxi from './wuxi/index.js'
 import yangzhou from './yangzhou/index.js'
 import yunnan from './yunnan/index.js'
+import overseas from './overseas/index.js'
 import { NETWORK_TIERS } from '../utils/networkRegion.js'
 
 // 模块 id 会进 sourceId 并写进 EXTINF 属性值，不消毒就是注入面。
@@ -264,6 +268,8 @@ const MODULES = [
   livechina,
   ipanda,
   mgtv,
+  // 海外频道排最后：并进体育、文旅等现有分组时，跟在各台官方频道后面
+  overseas,
 ]
 
 /**

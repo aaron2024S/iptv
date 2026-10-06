@@ -2402,24 +2402,6 @@
             box-shadow: 0 14px 40px rgba(35, 61, 43, .055), inset 0 1px 0 rgba(255, 255, 255, .9);
         }
         .panel h2 { padding-bottom: 0; border-bottom: 0; color: var(--ui-text); }
-        /* 源管理、设置、关于的页头：和「我的频道」标题行同一种条，标题居中（作者 10-06）；
-           高度、内边距、字号都对齐 .my-playlist-header-row（按钮 40px + 上下 12px） */
-        .page-intro {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            align-content: center;
-            justify-content: center;
-            gap: 4px 14px;
-            text-align: center;
-            min-height: 64px;
-            margin-bottom: 18px;
-            padding: 12px 16px;
-            border-radius: 16px;
-            background: var(--ui-heading-bg);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85);
-        }
-        .page-intro h2 { margin: 0; color: var(--ui-heading-text); font-size: 16px; font-weight: 700; line-height: 1.3; }
 
         /* 按钮：主操作实心，其余白底描边，不用立体渐变 */
         .btn,
@@ -2579,14 +2561,14 @@
             padding: 0;
             gap: 0;
             overflow: hidden;
-            /* 与源管理、设置的 page-intro 对齐，描边不再把色块向内推 1px。 */
+            /* 描边不再把色块向内推 1px。 */
             border: 0;
             border-radius: 16px;
             background: var(--ui-surface);
             box-shadow: none;
         }
         .my-playlist-header-row { padding: 12px 16px; background: var(--ui-heading-bg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85); }
-        /* 四个页面的页头标题统一 16px 加粗（作者 10-06）：标题只是标明在哪一页，不抢内容 */
+        /* 「我的频道」页头标题 16px 加粗（作者 10-06）：标题只是标明在哪一页，不抢内容；源管理、设置、关于不再有页头条（标题与顶部导航重复） */
         .my-playlist-info h3 { color: var(--ui-heading-text); font-size: 16px; font-weight: 700; }
         .my-playlist-info #myChannelTotal { color: var(--ui-heading-muted) !important; }
         .my-playlist-actions { gap: 12px; }
@@ -3428,7 +3410,6 @@
             .tabs-left::-webkit-scrollbar { display: none; }
             .tab { flex: 0 0 auto; white-space: nowrap; }
             .panel { padding: 18px; border-radius: 16px; }
-            .page-intro { min-height: 0; margin-bottom: 16px; padding: 14px; }
             .settings-subtabs, .source-subtabs { margin-bottom: 19px; }
             .my-playlist-header { padding: 0; gap: 0; }
             .my-playlist-header-row { padding: 14px; align-items: flex-start; gap: 14px; }
@@ -4047,9 +4028,6 @@
             <!-- 源管理：平台的全部内容来源集中在这一页，并像设置页一样用二级标签分区。
                  首次默认展示核心的「内置抓取模块」，同时记住用户上次停留的分类。 -->
             <div class="panel sources-panel">
-                <div class="page-intro">
-                    <h2>内容源管理</h2>
-                </div>
                 <div class="source-subtabs" role="tablist" aria-label="源管理分类">
                     <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub0" onclick="switchSourceTab(0)">自定义源 <span class="source-tab-count" id="sourceTabExternalCount"></span></button>
                     <button type="button" class="mode-switch-btn active" role="tab" aria-selected="true" aria-controls="sourceSub1" onclick="switchSourceTab(1)">内置抓取模块 <span class="source-tab-count" id="sourceTabExtractorCount"></span><span class="attention-dot" data-alert-where="extractors" role="img" hidden></span></button>
@@ -4159,9 +4137,6 @@
             </div>
 
             <div class="panel settings-panel">
-                <div class="page-intro">
-                    <h2>系统设置</h2>
-                </div>
                 <!-- 设置页二级标签（issue #72）：功能卡片分区，免长页滚动 -->
                 <div class="settings-subtabs">
                     <button class="mode-switch-btn active" onclick="switchSettingsTab(0)">系统配置<span class="attention-dot" data-alert-where="system" role="img" hidden></span></button>
@@ -4356,10 +4331,6 @@
             <!-- 关于我们面板 -->
             <div class="panel about-panel">
                 <div class="about-page">
-                    <div class="page-intro">
-                        <h2>IPTV 管理系统</h2>
-                    </div>
-                    
                     <div class="about-info-card">
                         <div class="about-version-card">
                             <div class="about-card-heading">

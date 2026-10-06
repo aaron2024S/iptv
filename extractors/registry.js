@@ -141,6 +141,8 @@
  *              之后（extractors/overseas）
  *   supplement 可选 true，补充频道：追加在同组所有模块频道之后，不决定分组位置
  *              （咪咕并进地区分组的频道，见 extractors/migu 的 MIGU_LOCAL_SUPPLEMENTS）
+ *   supersedesFeatured 可选 true，模块接手了精选频道（IPTV.m3u）里的这台：同组同名的精选频道条目
+ *              在输出时收掉（精选列表的条目留给没升级的部署；channelMerger.dropSupersededFeatured）
  *
  * sourceId / source 由 extractorManager 统一盖章，模块不用自己填——
  * `xt:` 这个前缀格式是注册表层的事，模块不该知道。

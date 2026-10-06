@@ -51,18 +51,26 @@ https://pb-ehs1glsha1juy.akamaized.net/v1/manifest/3722c60a815c199d9c0ef36c5b73d
 #EXTINF:-1 group-title="文旅",CGTN Documentary
 https://english-livebkali.cgtn.com/live/doccgtn.m3u8
 # 实验台备注：新加坡英语亚洲新闻频道，最高 1080p；直接用 1080p 档，免得播放器从最低档起播
+# 过渡：新镜像改由「亚洲与国际直播」模块提供（官方主清单、最高档在前、能降档），这一条在新镜像里会被收掉，
+#       留给没升级的部署；多数部署升级后删
 #EXTINF:-1 group-title="国际",CNA
 https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index_5.m3u8
 # 实验台备注：路透英语国际新闻直播，固定 1080p / 29.97fps
 #EXTINF:-1 tvg-logo="https://provider-static.plex.tv/epg/cms/production/8cf9c131-2d92-4d91-86b1-22ef458d703f/reuters_reutersnow_1RDX.png" group-title="国际",Reuters
 https://dbrb49pjoymg4.cloudfront.net/manifest/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/e7493ea5-5c1c-4d7a-a3f7-e95516048ad8/3.m3u8
 # 实验台备注：法语国际新闻高码率直播
+# 过渡：新镜像改由「亚洲与国际直播」模块提供（1080p 在前、360p 兜底），这一条在新镜像里会被收掉，
+#       留给没升级的部署；多数部署升级后删
 #EXTINF:-1 group-title="国际",France 24 Français
 https://live.france24.com/hls/live/2037179-b/F24_FR_HI_HLS/master_5000.m3u8
 # 实验台备注：英语国际新闻高码率直播
+# 过渡：新镜像改由「亚洲与国际直播」模块提供（1080p 在前、360p 兜底），这一条在新镜像里会被收掉，
+#       留给没升级的部署；多数部署升级后删
 #EXTINF:-1 group-title="国际",France 24 English
 https://live.france24.com/hls/live/2037218-b/F24_EN_HI_HLS/master_5000.m3u8
 # 实验台备注：英语职业扑克赛事频道，最高 1080p
+# 过渡：新镜像改由「亚洲与国际直播」模块提供（官方主清单、最高档在前、能降档），这一条在新镜像里会被收掉，
+#       留给没升级的部署；多数部署升级后删
 #EXTINF:-1 group-title="体育",World Poker Tour
 https://amg00477-samsungelectron-worldpokertour-samsunguk-81igb.amagi.tv/playlist/amg00477-samsungelectron-worldpokertour-samsunguk/playlist.m3u8
 # 实验台备注：极限运动、赛车及户外节目，最高 1080p；直接用 1080p 档，免得播放器从最低档起播

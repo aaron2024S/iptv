@@ -2336,7 +2336,9 @@
             gap: 11px;
             flex: 0 0 auto;
             padding: 0 6px;
+            text-decoration: none;
         }
+        .brand:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 4px; border-radius: 6px; }
         .brand-logo { display: block; color: var(--ui-accent); font-size: 32px; font-weight: 750; line-height: 1; letter-spacing: -.035em; }
         .tabs-left {
             display: grid;
@@ -4008,9 +4010,9 @@
         <div class="header-shell">
             <div class="header">
                 <div class="tabs">
-                    <div class="brand" role="img" aria-label="iFansClub · IPTV 管理台">
+                    <a class="brand" href="https://ifansclub.com/" target="_blank" rel="noopener noreferrer" aria-label="iFansClub 官网（在新标签页打开）" title="访问 iFansClub 官网（新标签页）">
                         <span class="brand-logo">iFansClub</span>
-                    </div>
+                    </a>
                     <div class="tabs-left">
                         <button class="tab active" onclick="switchTab(0)">我的频道</button>
                         <button class="tab" onclick="switchTab(1)">源管理<span class="attention-dot" data-alert-where="extractors" role="img" hidden></span></button>
@@ -11635,6 +11637,25 @@ if(success){
         function inlinePlayerBaseUrl() {
             return window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
         }
+        // 从最高档起播：主清单解析完后把起播档设成分辨率最高（同分辨率取码率最高）的那一档再开始加载，
+        // 之后照常自动升降档，网速跟不上会降。hls.js 默认按测速从中低档起步，几秒后才升上来。单档清单不受影响。
+        function highestLevelIndex(levels) {
+            let best = -1;
+            (levels || []).forEach((level, index) => {
+                const pixels = (level.width || 0) * (level.height || 0);
+                const top = levels[best];
+                const topPixels = top ? (top.width || 0) * (top.height || 0) : -1;
+                if (pixels > topPixels || (pixels === topPixels && (level.bitrate || 0) > (top.bitrate || 0))) best = index;
+            });
+            return best;
+        }
+        function startHlsAtTopLevel(hls) {
+            hls.once(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                const index = highestLevelIndex(data.levels);
+                if (index >= 0) hls.startLevel = index;
+                hls.startLoad();
+            });
+        }
         // 咪咕与山东齐鲁入口会 302 到没有 CORS 许可的 CDN，浏览器无法读取清单；宁波的清单中继下发的分片
         // 在官方 CDN 上，跨域许可写死成官网域名、还拒绝别家来源头，网页同样读不到。
         // 仅网页播放改走现有全代理；保留密码/账号前缀和回看参数，其他来源及外部播放器地址不改。
@@ -11727,7 +11748,8 @@ if(success){
                         // 央视频等来源每次刷新清单会换 CDN 节点，同一分片序号的地址随之变化；hls.js 1.6 起
                         // 把这当成清单错误，只有一个清晰度时直接放弃，十几秒后停播（issue #142）。内容是同一路
                         // 流，照常播即可，只记警告。
-                        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90, ignorePlaylistParsingErrors: true });
+                        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90, ignorePlaylistParsingErrors: true, autoStartLoad: false });
+                        startHlsAtTopLevel(hls);
                         hls.loadSource(url);
                         hls.attachMedia(video);
                         hls.on(Hls.Events.ERROR, (event, data) => {

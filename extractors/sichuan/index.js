@@ -56,7 +56,8 @@ export default {
       // 校验结果只做提示，不增删播放列表里的频道
       const check = await checkToken(rows, accessToken, options)
       if (check.warning) warnings.push(check.warning)
-      credentialRejected = check.rejected || ''
+      // 没查成（换签超时、502，或频道列表没取到、无从换签）不下结论，后台沿用上一轮（registry.js）
+      credentialRejected = check.rejected || (check.warning || !rows.length ? undefined : '')
     }
     try {
       liveRows = await fetchLiveEvents({ timeoutMs: ctx.timeoutMs, fetchImpl: ctx.fetchImpl })

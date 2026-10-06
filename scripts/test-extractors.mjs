@@ -20,6 +20,7 @@ import { constants, createCipheriv, createDecipheriv, createHash, createHmac, ge
 import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Readable } from 'node:stream'
 
 import { listModules, getModule, sourceIdOf, resolverFor, validateModule, MODULE_ID_RE } from '../extractors/registry.js'
 import { clearUrlCache } from '../utils/appUtils.js'
@@ -151,6 +152,9 @@ import { shouldFailRound as miguShouldFailRound } from '../extractors/migu/index
 import {
   ExtractorManager, validateConfig, redactConfig, resolveConfig, normalizeGroups, emptyHealth,
 } from '../utils/extractorManager.js'
+
+// 默认开关的用例都假定地区未检测：shell 里为测海外设过 mnetworkRegion 也别带进来
+delete process.env.mnetworkRegion
 
 let passed = 0
 const check = (name, fn) => { fn(); passed++; console.log(`  ✅ ${name}`) }
@@ -1628,6 +1632,9 @@ await checkAsync('B 站：刷新时检查登录态，失效进提醒中心但频
   assert.deepEqual(await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply({ code: -101, message: '账号未登录', data: { isLogin: false } }) }),
     { rejected: SESSDATA_REJECTED_NOTICE })
   assert.match((await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply(() => new Response('', { status: 502 })) })).warning, /检查没有完成：HTTP 502/)
+  // 生产默认是 node-fetch：body 是 Node 流、没有 cancel()，风控 412 时也要报出状态码
+  const nodeStream = { ok: false, status: 412, body: Readable.from([]) }
+  assert.match((await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply(() => nodeStream) })).warning, /检查没有完成：HTTP 412/)
   assert.match((await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply(() => { throw new Error('connect refused') }) })).warning, /检查没有完成：connect refused/)
   assert.match(SESSDATA_REJECTED_NOTICE, /超清/)
 

@@ -93,10 +93,10 @@
 按下面这几条做进了主项目（模块档位写在各自的 `extractors/<id>/index.js`，`network` 字段）：
 
 - 服务每次启动先探测部署网络（`utils/networkProbe.js`，最多 8 秒），每轮定时更新前再测一次，后台「源管理 → 内置抓取模块」顶部显示结果、可以「重新检测」。结果落盘，重启后先沿用上次的判定；一次测不出（断网）不会把已知的地区翻回去。
-- 档位只决定默认开关（`utils/networkRegion.js`）：香港关 `cn`，海外关 `cn` 和 `cn-hk`；大陆、或测不出时一个都不关。用户在卡片上开过、关过的照用户的来。咪咕的开关在 `config.js`（`enableMigu`），没设过时同样跟随网络。
-- 升级时把存量 `extractors.json` 里被写死的 `enabled: true` 去掉（以前没点过的开关也会落成 true），否则老的海外部署永远享受不到这个默认值；`false` 原样保留。
+- 档位只决定默认开关（`utils/networkRegion.js`）：香港关 `cn`，海外关 `cn` 和 `cn-hk`；大陆、或测不出时只关「大陆以外」档（海外频道、澳门）。用户在卡片上开过、关过的照用户的来。咪咕的开关在 `config.js`（`enableMigu`），没设过时同样跟随网络。
+- 升级时把存量 `extractors.json` 里被写死的 `enabled: true` 去掉（以前没点过的开关也会落成 true），否则老的海外部署永远享受不到这个默认值；`false` 原样保留。咪咕同理：v2.2～v3.x 系统配置页保存时顺带写进 `system-config.json` 的 `enableMigu: true` 去掉一次（标记 `miguFollowsNetwork` 记在同一个文件里），空白模式或 `menableMigu=false` 下的 `true` 是用户手动开的，保留。
 - 环境变量 `mnetworkRegion`（`cn` / `hk` / `intl`）可以固定地区、不再探测。
-- 探测端点：仅大陆档用新疆 `slstapi.xjtvs.com.cn`、宁夏 `hls.nxhhy.cn`、安徽 `console.ahsx.ahtv.cn`，大陆和香港档用吉林 `clientapi.jlntv.cn`、无锡 `bb-share.wifiwx.com`。回 403 / 451 才算被拒，至少两个才判海外。10-06 用 Globalping 复核：大陆全部可达；香港新疆、宁夏 403，吉林在阿里云能通、家宽偶尔连不上（无锡兜底）；日本、德国至少两个 403。这几家改了接口要跟着换。
+- 探测端点：仅大陆档用新疆 `slstapi.xjtvs.com.cn`、宁夏 `hls.nxhhy.cn`、安徽 `console.ahsx.ahtv.cn`，大陆和香港档用吉林 `clientapi.jlntv.cn`、无锡 `bb-share.wifiwx.com`。回 403 / 451 才算被拒：判香港要仅大陆端点至少一个被拒、吉林或无锡能通；判海外要两类端点都至少一个被拒；只是连不上、超时的凑不齐证据，沿用上次的判定。10-06 用 Globalping 复核：大陆全部可达；香港新疆、宁夏 403，吉林在阿里云能通、家宽偶尔连不上（无锡兜底）；日本、德国至少两个 403。这几家改了接口要跟着换。
 
 ## 海外频道（「大陆以外」档）
 

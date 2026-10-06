@@ -10,8 +10,9 @@
  * 判定刻意保守：
  *   - 回 403 / 451 才算「被地域拒绝」；回别的任何状态（200、302、404、业务层的 999…）
  *     都算「能连上」——官方接口改版、路径失效时大陆部署也不会被误判成海外；
- *   - 只有明确收到两个以上地域拒绝才判海外。连接失败、超时不算证据（可能只是断网、DNS 坏了），
- *     全部测不出时返回 unknown，按大陆处理，不替用户关任何东西。
+ *   - 「不是大陆」要有仅大陆端点明确回地域拒绝撑着；判海外还要大陆和香港端点也明确回拒绝。
+ *     连接失败、超时不算证据（可能只是断网、DNS 坏了、某台主机下线）：凑不齐证据就返回
+ *     unknown，由 extractorManager 沿用上次判定（从没测出过就按大陆处理）。
  *
  * 本文件只发请求、不读写任何状态；落盘与生效由 extractorManager 负责。
  */
@@ -36,8 +37,11 @@ export function classifyNetwork(results) {
   const cn = results.filter(r => r.tier === 'cn')
   const cnHk = results.filter(r => r.tier === 'cn-hk')
   if (cn.some(reachable)) return 'cn'
+  // 仅大陆端点只是连不上（不是 403）时，大陆部署也可能这样：不能据此判成香港 / 海外
+  if (!cn.some(denied)) return 'unknown'
   if (cnHk.some(reachable)) return 'hk'
-  if (results.filter(denied).length >= 2) return 'intl'
+  // 香港机房连吉林、无锡偶有超时：两个都只是连不上时分不清香港还是海外
+  if (cnHk.some(denied)) return 'intl'
   return 'unknown'
 }
 

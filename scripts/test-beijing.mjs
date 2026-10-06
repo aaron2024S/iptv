@@ -144,7 +144,7 @@ test('账号接口别的错误只说检查没做完，不冤枉 Cookie，电视�
   clearCache(); resetCredentialState()
   const catalog = await fetchCatalog({ cookie, fetchImpl: fixture({ account: { code: 500, message: '服务繁忙', data: [] } }).fetchImpl, timeoutMs: 1000 })
   assert.equal(catalog.tvRows.length, 9)
-  assert.equal(catalog.credentialRejected, '')
+  assert.equal(catalog.credentialRejected, undefined, '没查成不下结论，后台沿用上一轮')
   assert.match(catalog.warnings.join('\n'), /北京时间 Cookie 检查没有完成：账号接口返回 500 服务繁忙/)
   assert.equal(credentialRejected({ cookie }), '')
 })

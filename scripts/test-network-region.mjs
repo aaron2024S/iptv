@@ -8,7 +8,7 @@
  *   - 咪咕的开关（config.js 的 enableMigu）没设过时同样跟随网络。
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -17,6 +17,7 @@ const tmp = mkdtempSync(join(tmpdir(), 'iptv-network-region-'))
 process.env.mdataDir = tmp
 delete process.env.mnetworkRegion
 delete process.env.menableMigu
+delete process.env.mblank
 
 const { classifyNetwork, probeNetwork, NETWORK_PROBES } = await import('../utils/networkProbe.js')
 const { networkAllows, setNetworkState, getNetworkState, resetNetworkState, NETWORK_TIERS } = await import('../utils/networkRegion.js')
@@ -76,7 +77,7 @@ check('香港：仅大陆端点被拒、大陆和香港端点能通', () => {
   ]), 'hk')
 })
 
-check('海外：至少两个端点明确回地域拒绝（403 / 451）', () => {
+check('海外：两类端点都至少一个明确回地域拒绝（403 / 451）', () => {
   assert.equal(classifyNetwork([
     row('xinjiang', 'cn', 403), row('ningxia', 'cn', 403), row('anhui', 'cn', 403),
     row('jlntv', 'cn-hk', 403), row('wuxi', 'cn-hk', 403),
@@ -88,6 +89,24 @@ check('测不出：全部连不上，或只有一个 403，都不下结论（按
   assert.equal(classifyNetwork([row('a', 'cn', 0), row('b', 'cn', 0), row('c', 'cn-hk', 0)]), 'unknown')
   assert.equal(classifyNetwork([row('a', 'cn', 403), row('b', 'cn', 0), row('c', 'cn-hk', 0)]), 'unknown')
   assert.equal(classifyNetwork([]), 'unknown')
+})
+
+check('连不上不算被拒：仅大陆端点只是连不上时不判香港；吉林、无锡只是连不上时不判海外', () => {
+  // 大陆部署：新疆、宁夏、安徽这一轮都没连上（主机下线、DNS 失效），吉林照常 200
+  assert.equal(classifyNetwork([
+    row('xinjiang', 'cn', 0), row('ningxia', 'cn', 0), row('anhui', 'cn', 0),
+    row('jlntv', 'cn-hk', 200), row('wuxi', 'cn-hk', 0),
+  ]), 'unknown', '没有一个仅大陆端点回 403，不能据此判成香港')
+  // 香港机房：仅大陆端点照常 403，吉林、无锡这一轮都超时
+  assert.equal(classifyNetwork([
+    row('xinjiang', 'cn', 403), row('ningxia', 'cn', 403), row('anhui', 'cn', 403),
+    row('jlntv', 'cn-hk', 0), row('wuxi', 'cn-hk', 0),
+  ]), 'unknown', '分不清香港还是海外，交给「沿用上次判定」')
+  // 只要两类各有一个明确拒绝就是海外，另一台连不上不影响
+  assert.equal(classifyNetwork([
+    row('xinjiang', 'cn', 403), row('ningxia', 'cn', 0), row('anhui', 'cn', 0),
+    row('jlntv', 'cn-hk', 0), row('wuxi', 'cn-hk', 451),
+  ]), 'intl')
 })
 
 check('档位 × 地区：未知按大陆处理；大陆以外档只在香港 / 海外开', () => {
@@ -296,6 +315,114 @@ await checkAsync('咪咕没设过开关时跟随网络：海外 / 香港默认�
   assert.equal(migu.enabledGetter(), true)
   assert.equal(migu.enabledIsDefault(), false)
   resetNetworkState()
+})
+
+/** 读写 config.js 用的那份 system-config.json 的管理器（迁移要改它）。 */
+function managerOnSystemConfig(system, config = { ...freshConfig() }) {
+  const systemPath = join(tmp, 'system-config.json')
+  writeFileSync(systemPath, JSON.stringify(system))
+  const n = ++seq
+  const manager = new ExtractorManager()
+  manager.configPath = join(tmp, `extractors-${n}.json`)
+  manager.cachePath = join(tmp, `extractor-cache-${n}.json`)
+  manager.legacyConfigPath = systemPath
+  writeFileSync(manager.configPath, JSON.stringify(config))
+  return { manager: manager.load(), systemPath }
+}
+
+await checkAsync('老后台保存时写死的 enableMigu:true 迁移成跟随网络；false、空白模式和 menableMigu=false 下的 true 原样保留', async () => {
+  const config = await import('../config.js')
+  const { setSystemFlagAPI } = await import('../utils/systemConfigAPI.js')
+  const migu = getModule('migu')
+  const read = path => JSON.parse(readFileSync(path, 'utf-8'))
+  try {
+    setNetworkState({ region: 'intl' })
+    // v2.2～v3.x 系统配置页改个密码就会顺带写进 enableMigu:true
+    let { manager, systemPath } = managerOnSystemConfig({ pass: 'abc', enableMigu: true })
+    assert.deepEqual(read(systemPath), { pass: 'abc', miguFollowsNetwork: true }, '只删这个键，标记和值在同一个文件')
+    assert.equal(config.enableMiguSource, 'auto')
+    assert.equal(migu.enabledGetter(), false, '海外跟随网络关掉')
+    assert.ok(manager.networkSummary().autoOff.includes('migu'))
+
+    // 迁移之后在卡片上点开：存的 true 带着标记，重启、extractors.json 被重置都不再动它
+    assert.equal(setSystemFlagAPI('enableMigu', true).success, true)
+    assert.equal(read(systemPath).miguFollowsNetwork, true)
+    manager.load()
+    ;({ manager } = managerOnSystemConfig(read(systemPath)))
+    config.reloadConfig()
+    assert.equal(read(systemPath).enableMigu, true)
+    assert.equal(migu.enabledGetter(), true)
+
+    // 导入 v3 老备份（system-config.json 里没有标记）照样会迁
+    ;({ systemPath } = managerOnSystemConfig({ enableMigu: true }, { ...freshConfig(), miguFollowsNetwork: true }))
+    assert.equal(read(systemPath).enableMigu, undefined)
+
+    ;({ systemPath } = managerOnSystemConfig({ enableMigu: false }))
+    config.reloadConfig()
+    assert.equal(read(systemPath).enableMigu, false, '明确关的保留')
+    assert.equal(migu.enabledGetter(), false)
+
+    ;({ systemPath } = managerOnSystemConfig({ blank: true, enableMigu: true }))
+    config.reloadConfig()
+    assert.equal(read(systemPath).enableMigu, true, '空白模式下的 true 与默认相反，是用户开的')
+    assert.equal(migu.enabledGetter(), true)
+
+    process.env.mblank = 'true'
+    ;({ systemPath } = managerOnSystemConfig({ enableMigu: true }))
+    assert.equal(read(systemPath).enableMigu, true, '空白模式经 mblank 开启时同样保留')
+    delete process.env.mblank
+
+    process.env.menableMigu = 'false'
+    ;({ systemPath } = managerOnSystemConfig({ enableMigu: true }))
+    config.reloadConfig()
+    assert.equal(read(systemPath).enableMigu, true, 'compose 关了咪咕、后台又手动打开的保留')
+    assert.equal(migu.enabledGetter(), true)
+    delete process.env.menableMigu
+  } finally {
+    delete process.env.mblank
+    delete process.env.menableMigu
+    writeFileSync(join(tmp, 'system-config.json'), '{}')
+    config.reloadConfig()
+    resetNetworkState()
+  }
+})
+
+await checkAsync('咪咕开关迁移写不进 system-config.json 时不抛、不打标记，下次再试', async () => {
+  const dir = mkdtempSync(join(tmp, 'readonly-'))
+  const systemPath = join(dir, 'system-config.json')
+  writeFileSync(systemPath, JSON.stringify({ enableMigu: true }))
+  const n = ++seq
+  const manager = new ExtractorManager()
+  manager.configPath = join(tmp, `extractors-${n}.json`)
+  manager.cachePath = join(tmp, `extractor-cache-${n}.json`)
+  manager.legacyConfigPath = systemPath
+  chmodSync(dir, 0o555)  // 只读挂载 / 单文件挂载时 rename 失败
+  try {
+    assert.doesNotThrow(() => manager.load())
+    assert.deepEqual(JSON.parse(readFileSync(systemPath, 'utf-8')), { enableMigu: true })
+  } finally {
+    chmodSync(dir, 0o755)
+  }
+  manager.load()
+  assert.deepEqual(JSON.parse(readFileSync(systemPath, 'utf-8')), { miguFollowsNetwork: true }, '恢复可写后照常迁移')
+})
+
+await checkAsync('空白模式关掉的咪咕不说成「按网络自动关闭」', async () => {
+  const config = await import('../config.js')
+  const migu = getModule('migu')
+  try {
+    writeFileSync(join(tmp, 'system-config.json'), JSON.stringify({ blank: true }))
+    config.reloadConfig()
+    setNetworkState({ region: 'intl' })
+    assert.equal(config.enableMiguSource, 'blank')
+    assert.equal(migu.enabledGetter(), false)
+    assert.equal(migu.enabledIsDefault(), false)
+    assert.equal(newManager(freshConfig()).networkSummary().autoOff.includes('migu'), false)
+  } finally {
+    writeFileSync(join(tmp, 'system-config.json'), '{}')
+    config.reloadConfig()
+    resetNetworkState()
+  }
 })
 
 console.log(`\n全部通过：${passed} ✅`)

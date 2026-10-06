@@ -64,7 +64,8 @@
  *       一个模块可以返回多个分组（咪咕将来的「体育赛事」就是同一模块的第二批
  *       分组，不是另一个源）。
  *       meta: { skipped, warnings, credentialRejected? }。credentialRejected 是
- *       官网不认当前登录凭证时给用户看的一句话（空串 = 没问题），后台登录态徽标、
+ *       官网不认当前登录凭证时给用户看的一句话（空串 = 查过、没问题；不给 / undefined =
+ *       这轮没查成，比如超时、502，后台沿用上一轮的结论），后台登录态徽标、
  *       模块卡片和「源管理」导航红点据此提醒；凭证被拒只提示，不该让 fetch 失败。
  *
  *   credentialRejected(config) → string

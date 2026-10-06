@@ -21,12 +21,13 @@
  * 重写——那是要避开的做法，不是要抄的。
  */
 import { existsSync, readFileSync, copyFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { writeJsonFileSync } from "./fileUtil.js"
 import { dataPath } from "./paths.js"
 import { sanitizeOpts } from "./channelOpts.js"
 import { listModules, getModule, sourceIdOf } from "../extractors/registry.js"
 import { printBlue, printGreen, printRed, printYellow } from "./colorOut.js"
-import { enableExtractors } from "../config.js"
+import { enableExtractors, reloadConfig } from "../config.js"
 import { getNetworkState, networkAllows, NETWORK_REGIONS, setNetworkState, REGION_LABELS, TIER_LABELS } from "./networkRegion.js"
 import { probeNetwork } from "./networkProbe.js"
 
@@ -56,6 +57,13 @@ function forcedNetworkRegion() {
   return ['cn', 'hk', 'intl'].includes(raw) ? raw : ''
 }
 
+/** 布尔开关取值，与 config.js 的 parseBool 同一口径（空值回落默认，false/0/off/no 为关）。 */
+function parseFlag(raw, fallback) {
+  if (raw === undefined || raw === null || raw === '') return fallback
+  if (typeof raw === 'boolean') return raw
+  return !['false', '0', 'off', 'no'].includes(String(raw).trim().toLowerCase())
+}
+
 /** 每个模块的健康记录。lastSuccessAt 只表示「上次成功」，永远不许被回拨。 */
 function emptyHealth() {
   return {
@@ -71,7 +79,17 @@ function emptyHealth() {
     // 官网不认模块里配的登录凭证（Token / Cookie）时的提示。后台登录态徽标、模块卡片和
     // 「源管理」导航红点都只看这一项，不再靠匹配警告措辞；空串表示没发现问题。
     credentialRejected: '',
+    // 上面那条结论是按哪份生效配置查出来的（credentialConfigKey 摘要）；对不上就作废
+    credentialConfigKey: '',
   }
+}
+
+/**
+ * 生效配置（含环境变量）的摘要。凭证改了却没经后台保存（改 compose 重启、导入备份）时，
+ * 靠它认出缓存里的「凭证被拒」查的是旧凭证。只存截断摘要，不落明文，也不回传前端。
+ */
+function credentialConfigKey(config) {
+  try { return createHash('sha256').update(JSON.stringify(config ?? {})).digest('hex').slice(0, 16) } catch { return '' }
 }
 
 /** 模块在播放时记下的「凭证被拒」；模块没声明或出错都当没发现问题，不能拖垮整个后台状态接口。 */
@@ -392,7 +410,43 @@ class ExtractorManager {
     this.#migrateLegacyConfig()
     this.#migrateMasterSwitch()
     this.#migrateEnabledDefaults()
+    this.#migrateMiguDefault()
     return this
+  }
+
+  /**
+   * 一次性迁移：咪咕开关的同类历史包袱。v2.2～v3.x 的「系统配置」页每次保存都把复选框的
+   * enableMigu:true 一起写进 system-config.json（v4.0.0 才去掉），从没点过也成了「后台设过」，
+   * 老的海外部署因此永远不跟随网络。只删「去掉后默认值照样是开」的 true：false、以及空白模式
+   * 或 menableMigu 设成关时的 true（与默认值相反，是用户手动打开的）原样保留。
+   *
+   * 标记 miguFollowsNetwork 和被迁移的值放在同一个文件里：extractors.json 被重置、导入只带
+   * 其中一个文件的备份，都不会把迁移之后手动打开的 true 再删一次；导入 v3 老备份（没有标记）
+   * 时照样会迁。后台写入咪咕开关时一并写标记（utils/systemConfigAPI.js）。
+   * 读写失败都不打标记、不抛异常：下次启动再试，不能因此拖垮启动。
+   */
+  #migrateMiguDefault() {
+    let system
+    try {
+      system = existsSync(this.legacyConfigPath)
+        ? JSON.parse(readFileSync(this.legacyConfigPath, 'utf-8'))
+        : {}
+    } catch (error) {
+      printYellow(`系统配置读取失败，咪咕开关迁移本轮跳过（下次启动重试）：${error.message}`)
+      return
+    }
+    if (!isPlainObject(system) || system.miguFollowsNetwork || system.enableMigu !== true) return
+    if (parseFlag(system.blank ?? process.env.mblank, false) || !parseFlag(process.env.menableMigu, true)) return
+    delete system.enableMigu
+    system.miguFollowsNetwork = true
+    try {
+      writeJsonFileSync(this.legacyConfigPath, system)
+    } catch (error) {
+      printYellow(`咪咕开关迁移写入 system-config.json 失败，本轮跳过（下次启动重试）：${error.message}`)
+      return
+    }
+    printBlue('咪咕开关：老版本后台顺带存下的「开启」已去掉，改为跟随部署网络（海外默认关）')
+    reloadConfig()
   }
 
   /**
@@ -741,8 +795,10 @@ class ExtractorManager {
         usingCachedChannels: ['failed', 'risk'].includes(cacheEntry.health.status)
           && cachedChannelCount > 0,
         // 刷新时的检查结果之外，播放时才发现凭证被拒的模块也要立刻反映到后台，不等下一轮刷新
-        credentialRejected: cacheEntry.health.credentialRejected || liveCredentialRejected(module, effective),
+        credentialRejected: (cacheEntry.health.credentialConfigKey === credentialConfigKey(effective)
+          ? cacheEntry.health.credentialRejected : '') || liveCredentialRejected(module, effective),
       }
+      delete health.credentialConfigKey
       const enabled = this.isModuleEnabled(module)
       const { config, secretsSet } = redactConfig(module, effective)
       // 值来自环境变量而非后台时要让用户知道，否则会遇到「后台看着是空的、
@@ -898,7 +954,7 @@ class ExtractorManager {
    * 记账。健康状态是显式结构，不靠把 lastUpdated 往回拨来编码退避——
    * 那样 UI 上的「上次更新」既不是上次成功也不是上次尝试，谁也看不懂。
    */
-  #recordSuccess(id, groups, meta) {
+  #recordSuccess(id, groups, meta, configKey = '') {
     const entry = this.#cacheEntry(id)
     const catalogVersion = getModule(id)?.catalogVersion
     const count = groups.reduce((sum, group) => sum + (group.dataList?.length || 0), 0)
@@ -906,6 +962,8 @@ class ExtractorManager {
     entry.fetchedAt = Date.now()
     if (catalogVersion != null) entry.catalogVersion = catalogVersion
     else delete entry.catalogVersion
+    // 只沿用同一份配置查出来的结论；凭证换过（哪怕没经后台保存）就不算数
+    const previousRejected = entry.health?.credentialConfigKey === configKey ? (entry.health?.credentialRejected || '') : ''
     entry.health = {
       ...emptyHealth(),
       status: count > 0 ? 'ok' : 'empty',
@@ -914,7 +972,11 @@ class ExtractorManager {
       channelCount: count,
       skippedCount: meta?.skipped?.length || 0,
       warnings: (meta?.warnings || []).slice(0, 5),
-      credentialRejected: String(meta?.credentialRejected || '').slice(0, 300),
+      // 这轮凭证没查成（超时、502）不等于没问题：沿用上一轮的结论，免得提醒时有时无
+      credentialRejected: meta?.credentialRejected === undefined
+        ? previousRejected
+        : String(meta.credentialRejected || '').slice(0, 300),
+      credentialConfigKey: configKey,
     }
   }
 
@@ -1042,7 +1104,7 @@ class ExtractorManager {
         `${module.name} 超过 ${MODULE_TIMEOUT_MS / 1000}s 未返回`,
       )
       const groups = normalizeGroups(payload?.groups)
-      this.#recordSuccess(module.id, groups, payload?.meta)
+      this.#recordSuccess(module.id, groups, payload?.meta, credentialConfigKey(config))
       const health = this.#cacheEntry(module.id).health
       const note = health.skippedCount ? `，跳过 ${health.skippedCount}` : ''
       printGreen(`抓取模块 ${module.name}：${health.channelCount} 个频道${note}`)
@@ -1056,8 +1118,10 @@ class ExtractorManager {
       // 本轮开跑后配置又变了：把 updateModuleConfig 置下的「立刻重抓」信号
       // （lastSuccessAt=null）还原——上面的记账整份重建了 health，会把它抹掉；
       // 抹掉的话新配置要等满整个刷新周期（B 站 45 分钟、咪咕 6 小时）才生效。
+      // 凭证结论同理：那是按旧配置查的，updateModuleConfig 已作废，别让它写回来冤枉新凭证。
       if ((this.configGen.get(module.id) || 0) !== genAtStart) {
         this.#cacheEntry(module.id).health.lastSuccessAt = null
+        this.#cacheEntry(module.id).health.credentialRejected = ''
       }
     }
   }

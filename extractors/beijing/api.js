@@ -308,6 +308,8 @@ export async function fetchCatalog(options = {}) {
       } else {
         const reason = error?.name === 'AbortError' || error?.name === 'TimeoutError' ? '请求超时' : (error?.message || String(error))
         warnings.push(`北京时间 Cookie 检查没有完成：${reason}`)
+        // 没查成不下结论，后台沿用上一轮（registry.js）
+        credentialRejected = undefined
       }
     }
   }

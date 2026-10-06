@@ -16,6 +16,8 @@ import { join } from 'node:path'
 // account.js → androidURL.js 间接 import config.js，后者会读数据目录；指到临时目录避免碰真实数据
 process.env.mdataDir = mkdtempSync(join(tmpdir(), 'iptv-migu-account-test-'))
 const { checkAccount, credentialRejected, noteAuth, resetAccountState, TOKEN_REJECTED_NOTICE } = await import('../extractors/migu/account.js')
+const { getAndroidURL, sendsAccount } = await import('../extractors/migu/androidURL.js')
+const { resolve, clearCache } = await import('../extractors/migu/resolve.js')
 // 模块经注册表取：直接 import migu/index.js 会撞上注册表的循环依赖
 const { getModule } = await import('../extractors/registry.js')
 const migu = getModule('migu')
@@ -73,6 +75,38 @@ await test('播放时：只有后台配置的账号回未登录才报，地址�
   noteAuth(config.userId, config.token, config, reply(false))
   noteAuth(config.userId, config.token, config, { message: '网络超时' })
   assert.equal(credentialRejected(config), TOKEN_REJECTED_NOTICE)
+})
+
+await test('标清按游客要：不带账号请求头，播放时的未登录不拿来判 Token 失效', async () => {
+  // resolve.js 只在 sendsAccount 为真时把回应交给 noteAuth；这里钉住它与真实请求头一致
+  for (const rateType of [2, '2', 3, 4, 9]) {
+    const headers = []
+    await getAndroidURL(config.userId, config.token, PID, rateType, {
+      enableHDR: false, enableH265: false,
+      fetchUrl: async (url, opts) => { headers.push(opts.headers); return undefined },
+    })
+    assert.equal(headers.length > 0, true)
+    assert.equal(sendsAccount(config.userId, config.token, rateType), headers[0].UserId === config.userId, `rateType ${rateType}`)
+  }
+  assert.equal(sendsAccount(config.userId, config.token, 2), false, '标清不带账号')
+  assert.equal(sendsAccount(config.userId, config.token, 3), true)
+  assert.equal(sendsAccount('', '', 3), false)
+
+  // 走真实的播放解析：咪咕对不带账号的请求回未登录
+  const playback = async rateType => {
+    clearCache()
+    const sent = []
+    const fetchUrl = async (url, opts) => { sent.push(opts.headers.UserId); return reply(!!opts.headers.UserId) }
+    await resolve(PID, { account: config, config: { ...config, rateType, enableClientDispatch: true }, fetchUrl })
+    return sent
+  }
+  assert.deepEqual(await playback(2), [undefined])
+  assert.equal(credentialRejected(config), '', '标清播放不冤枉 Token')
+  // 对照：带账号去要、咪咕回未登录，才算失效
+  const reject = async () => { clearCache(); await resolve(PID, { account: config, config: { ...config, rateType: 3, enableClientDispatch: true }, fetchUrl: async () => reply(false) }) }
+  await reject()
+  assert.equal(credentialRejected(config), TOKEN_REJECTED_NOTICE)
+  clearCache()
 })
 
 await test('模块把播放时的结论交给后台（credentialRejected 钩子）', async () => {

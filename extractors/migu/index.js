@@ -370,7 +370,8 @@ export default {
           ...(account.warning ? [account.warning] : []),
         ],
         requested: count,
-        credentialRejected: account.rejected || '',
+        // 没查成不下结论，后台沿用上一轮（registry.js）
+        credentialRejected: account.warning ? undefined : (account.rejected || ''),
       },
     }
   },

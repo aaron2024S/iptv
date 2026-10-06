@@ -28,7 +28,7 @@
 2. **必须提醒**：凭证被拒要交给后台提醒中心。刷新时检查的，在 `fetch` 返回的 `meta.credentialRejected` 里写一句给用户看的话；播放时才发现的，实现模块的 `credentialRejected(config)`（凭证换了就返回空）。两条都能做的都做。后台顶部提醒、标签红点、模块卡片、登录徽标都靠它。
 
 - 模块上声明 `credentialCheck: { refresh, playback, degrade }`：刷新时查不查、播放时查不查、失效后播放怎么办（一句话）。契约见 `extractors/registry.js`。
-- 判断「被拒」要拿过期或乱填的凭证实际请求官方接口，看清回应的样子（状态码、字段）再写；网络失败、超时只算「检查没有完成」，不能当成凭证失效。
+- 判断「被拒」要拿过期或乱填的凭证实际请求官方接口，看清回应的样子（状态码、字段）再写；网络失败、超时只算「检查没有完成」，不能当成凭证失效，也不能当成没问题：这时 `meta.credentialRejected` 不给（`undefined`），后台沿用上一轮的结论；查过、通过了才给空串。
 - 后台登录徽标（`web/admin.html` 的 `extractorHelperHtml`）读 `health.credentialRejected`，失效时改成「⚠️ … 已失效」。
 - 测试覆盖：被拒时提醒、网络失败不冤枉、换了凭证或重新检查通过后提醒消失。
 

@@ -129,6 +129,14 @@ function castAccepted(castResp, cast) {
   return { ok: true, why: '' }
 }
 
+/**
+ * 这次取流带不带账号请求头。标清（rateType 2）一律按游客要——回应里的 auth.logined=false
+ * 就不能拿来判 Token 失效（resolve.js 的 noteAuth 据此跳过）。
+ */
+function sendsAccount(userId, token, rateType) {
+  return rateType != 2 && userId != "" && token != ""
+}
+
 async function getAndroidURL(userId, token, pid, rateType, opts = {}) {
   const useHDR = opts.enableHDR ?? enableHDR
   const useH265 = opts.enableH265 ?? enableH265
@@ -155,7 +163,7 @@ async function getAndroidURL(userId, token, pid, rateType, opts = {}) {
     headers["appCode"] = "miguvideo_default_android"
   }
 
-  if (rateType != 2 && userId != "" && token != "") {
+  if (sendsAccount(userId, token, rateType)) {
     headers.UserId = userId
     headers.UserToken = token
   }
@@ -416,4 +424,4 @@ function printStreamInfo(resObj, { cached = false } = {}) {
   }
 }
 
-export { getAndroidURL, getAndroidURL720p, get302URL, printStreamInfo }
+export { getAndroidURL, getAndroidURL720p, get302URL, printStreamInfo, sendsAccount }

@@ -4993,7 +4993,7 @@
             if (net.region === 'unknown' || !offshore) {
                 text = net.region === 'unknown'
                     ? (net.checkedAt
-                        ? '部署网络：未检测出（检测端点都没有响应），按大陆处理。'
+                        ? '部署网络：未检测出（检测端点连不上或超时），按大陆处理。'
                         : '部署网络：还没检测（服务启动时自动检测），目前按大陆处理。')
                     : `部署网络：大陆（${escapeHtml(origin)}）。部署在香港或海外时，只在大陆能用的模块会自动关闭。`;
                 // 在大陆被关的只会是「大陆以外」档（海外频道、澳广视）：连不上或常卡顿
@@ -5470,7 +5470,7 @@
                 </div>
                 <div style="font-size:12px; margin-bottom:12px;">${extractorHealthHtml(m.health || {})}</div>
                 ${m.network === 'non-cn' ? `<div style="font-size:12px; color:#888; margin:-6px 0 12px;">网络：${escapeHtml(m.networkLabel)}——在大陆连不上或常卡顿，部署在香港或海外时默认开启，大陆默认关闭${m.networkReachable === false ? (m.enabled ? '；你已手动打开' : '（想看可以手动打开）') : ''}。</div>`
-                    : m.network && m.network !== 'any' ? `<div style="font-size:12px; color:#888; margin:-6px 0 12px;">网络：${escapeHtml(m.networkLabel)}——官方接口${m.network === 'cn' ? '只对大陆开放' : '只对大陆和香港开放'}，部署在${m.network === 'cn' ? '香港或海外' : '香港以外的海外地区'}时默认关闭${m.networkReachable === false ? (m.enabled ? '；当前网络大概率不通' : '（当前网络已自动关闭）') : ''}。</div>` : ''}
+                    : m.network && m.network !== 'any' ? `<div style="font-size:12px; color:#888; margin:-6px 0 12px;">网络：${escapeHtml(m.networkLabel)}——官方接口${m.network === 'cn' ? '只对大陆开放' : '只对大陆和香港开放'}，部署在${m.network === 'cn' ? '香港或海外' : '香港以外的海外地区'}时默认关闭${m.networkReachable === false ? (m.enabled ? '；当前网络大概率不通' : m.enabledByDefault ? '（当前网络已自动关闭）' : '') : ''}。</div>` : ''}
                 ${extractorChannelsHtml(m)}
                 <div style="border-top:1px solid #f5f5f5; padding-top:12px;">
                     ${m.helperSection ? '' : extractorHelperHtml(m.helper, m.secretsSet || {}, m.config || {}, m.health || {})}

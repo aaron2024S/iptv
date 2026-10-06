@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import { once } from 'node:events'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -168,7 +168,7 @@ test('刷新时检查 Token：被拒只提示不减频道，检查通过清掉�
 
   const down = mockApi({token:'private-test-token', error:'connect failed token=private-test-token'})
   fetched = await module.fetch(config, {fetchImpl:down.fetchImpl})
-  assert.equal(fetched.meta.credentialRejected, '')
+  assert.equal(fetched.meta.credentialRejected, undefined, '没查成不下结论，后台沿用上一轮')
   assert.deepEqual(fetched.meta.warnings, ['凤凰秀 Token 检查没有完成：网络异常或接口超时'])
   assert.equal(JSON.stringify(fetched).includes('private-test-token'), false)
   resetTokenState()
@@ -187,6 +187,63 @@ test('后台状态：播放时发现的失效立刻可见，保存新配置后�
   assert.equal(healthOf().credentialRejected, '')
   manager.updateModuleConfig('fengshows', {token:null})
   resetTokenState()
+})
+
+test('后台状态：凭证没查成时沿用上一轮结论；换凭证时作废旧配置那一轮的结论', async () => {
+  resetTokenState()
+  const original = module.fetch
+  const manager = new ExtractorManager()
+  manager.configPath = join(dir,'extractors-verdict.json'); manager.cachePath = join(dir,'extractor-cache-verdict.json')
+  manager.load(); manager.updateModuleConfig('fengshows', {token:'private-test-token'})
+  const healthOf = () => manager.getState().modules.find(m=>m.id==='fengshows').health
+  const reply = (credentialRejected, warnings = []) => ({ groups: [{ name:'香港', dataList:[{ name:'凤凰资讯', deferredRef:'fengshows-info.flv' }] }],
+    meta: { skipped: [], warnings, credentialRejected } })
+  try {
+    let next
+    module.fetch = async () => next
+    next = reply(TOKEN_REJECTED_NOTICE)
+    await manager.updateAll({ onlyId:'fengshows', forceAll:true })
+    assert.equal(healthOf().credentialRejected, TOKEN_REJECTED_NOTICE)
+    // 这轮检查超时：不是「没问题」，提醒不能消失
+    next = reply(undefined, ['凤凰秀 Token 检查没有完成：网络异常或接口超时'])
+    await manager.updateAll({ onlyId:'fengshows', forceAll:true })
+    assert.equal(healthOf().credentialRejected, TOKEN_REJECTED_NOTICE)
+    // 查过、通过了才清
+    next = reply('')
+    await manager.updateAll({ onlyId:'fengshows', forceAll:true })
+    assert.equal(healthOf().credentialRejected, '')
+
+    // 旧 Token 那一轮还在跑时保存了新 Token：旧那一轮的「被拒」不能写回来冤枉新 Token
+    let release
+    module.fetch = async config => {
+      if (config.token === 'private-test-token') await new Promise(resolve => { release = resolve })
+      return reply(config.token === 'private-test-token' ? TOKEN_REJECTED_NOTICE : '')
+    }
+    const oldRound = manager.updateAll({ onlyId:'fengshows', forceAll:true })
+    for (let i = 0; i < 50 && !release; i++) await delay(5)
+    manager.updateModuleConfig('fengshows', {token:'fresh-test-token'})
+    release()
+    await oldRound
+    assert.equal(healthOf().credentialRejected, '')
+    assert.equal(healthOf().lastSuccessAt, null, '新配置仍要立刻重抓')
+
+    // 凭证没经后台保存就换了（改 compose 重启、导入备份 → reload）：旧凭证的结论不算新凭证的
+    module.fetch = async config => reply(config.token === 'fresh-test-token' ? TOKEN_REJECTED_NOTICE : undefined)
+    await manager.updateAll({ onlyId:'fengshows', forceAll:true })
+    assert.equal(healthOf().credentialRejected, TOKEN_REJECTED_NOTICE)
+    assert.equal('credentialConfigKey' in healthOf(), false, '摘要不回传前端')
+    const saved = JSON.parse(readFileSync(manager.configPath, 'utf-8'))
+    saved.modules.fengshows.config.token = 'imported-test-token'
+    writeFileSync(manager.configPath, JSON.stringify(saved))
+    manager.reload()
+    assert.equal(healthOf().credentialRejected, '', '换了凭证，缓存里的旧结论立刻不显示')
+    await manager.updateAll({ onlyId:'fengshows', forceAll:true })  // 新凭证这轮没查成
+    assert.equal(healthOf().credentialRejected, '', '没查成也不沿用旧凭证的结论')
+  } finally {
+    module.fetch = original
+    manager.updateModuleConfig('fengshows', {token:null})
+    resetTokenState()
+  }
 })
 
 test('模块路由保留签名，明确忽略回看查询；FLV 类型传至主路由', async () => {

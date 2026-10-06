@@ -44,7 +44,8 @@ function sanitizeSegment(value, fallback) {
 let userId, token, port, host, rateType, debug, pass, enableHDR, enableH265, programInfoUpdateInterval, refreshToken, adminPath, externalLogoBase, externalLogoIndex, enableTvgNormalize, enableEpgAggregation, enableLogoCache, enableUserTokens, enableDisplayNameUnify, enableClientDispatch
 // 内容开关：咪咕核心 / 内置单频道源 / 内置订阅源。默认全开（老用户零感知）
 let enableMigu, enableBuiltInSources, enableBuiltInSubscriptions, enableExtractors
-// 咪咕开关的来源：config（后台点过，写进了 system-config.json）/ env（menableMigu）/ auto（默认值）
+// 咪咕开关的来源：config（后台点过，写进了 system-config.json）/ env（menableMigu）/
+// blank（空白模式推出的关，与网络无关）/ auto（默认值，跟随部署网络）
 let enableMiguSource
 
 function applyConfig(systemConfig) {
@@ -120,7 +121,8 @@ function applyConfig(systemConfig) {
   // 一律回「不可在当前地区播放」，开着的话「央视」「卫视」分组排最前、播放器默认选中的全是坏的。
   // 地区变化时下面的监听会重算一次（ESM 实时绑定，各处 import 的 enableMigu 跟着变）。
   enableMiguSource = systemConfig.enableMigu !== undefined ? 'config'
-    : (process.env.menableMigu !== undefined && process.env.menableMigu !== '' ? 'env' : 'auto')
+    : process.env.menableMigu !== undefined && process.env.menableMigu !== '' ? 'env'
+      : blank ? 'blank' : 'auto'
   enableMigu = systemConfig.enableMigu !== undefined
     ? systemConfig.enableMigu
     : parseBool(process.env.menableMigu, defOn && networkAllows('cn'))

@@ -341,7 +341,7 @@ await checkAsync('刷新时试换签检验 Token：不认就记为凭证失效�
   auth = () => response('bad gateway', 502)
   fetched = await sichuan.fetch({ accessToken }, { fetchImpl, now: 1788666000000 })
   assert.deepEqual(tokenWarnings(fetched), ['四川 Token 检查没有完成：HTTP 502'])
-  assert.equal(fetched.meta.credentialRejected, '')
+  assert.equal(fetched.meta.credentialRejected, undefined, '没查成不下结论，后台沿用上一轮')
   assert.equal(fetched.groups[0].dataList.length, 8)
 })
 

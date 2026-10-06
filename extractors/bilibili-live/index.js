@@ -281,6 +281,8 @@ export default {
       checkLogin(cookie, { timeoutMs: ctx.timeoutMs || 10000, fetchImpl: ctx.fetchImpl }),
     ])
     const loginWarnings = login.warning ? [login.warning] : []
+    // 没查成（超时、412）不下结论，后台沿用上一轮（registry.js）
+    const credentialRejected = login.warning ? undefined : (login.rejected || '')
 
     const refs = mergeRoomRefs(manualRefs, autoResult.rooms)
 
@@ -297,7 +299,7 @@ export default {
         meta: {
           skipped: [],
           warnings: [...autoResult.warnings, ...loginWarnings, '没有可抓的直播间——填几个房间号，或在「自动加入热门直播间的分区」里填个分区名'],
-          credentialRejected: login.rejected || '',
+          credentialRejected,
         },
       }
     }
@@ -361,7 +363,7 @@ export default {
 
     return {
       groups,
-      meta: { skipped, warnings, requested: refs.length, hardErrors, credentialRejected: login.rejected || '' },
+      meta: { skipped, warnings, requested: refs.length, hardErrors, credentialRejected },
     }
   },
 

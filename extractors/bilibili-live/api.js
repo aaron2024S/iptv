@@ -323,7 +323,7 @@ export async function checkLogin(cookie, { timeoutMs = 10000, fetchImpl } = {}) 
       headers: { 'User-Agent': UA, Referer: 'https://www.bilibili.com/', Accept: 'application/json', Cookie: cookie },
       signal: controller.signal,
     })
-    if (!response.ok) { await response.body?.cancel(); return { warning: `B 站登录态检查没有完成：HTTP ${response.status}` } }
+    if (!response.ok) { await response.body?.cancel?.().catch(() => {}); return { warning: `B 站登录态检查没有完成：HTTP ${response.status}` } }
     const body = await response.json()
     if (body?.code === -101 || (body?.code === 0 && body?.data?.isLogin === false)) return { rejected: SESSDATA_REJECTED_NOTICE }
     if (body?.code === 0) return {}

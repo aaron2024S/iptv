@@ -24,11 +24,12 @@ export default {
   epg,
   async fetch(config, ctx = {}) {
     parseToken(config?.token || '')
-    // 校验结果只做提示，频道照常输出（Token 被拒时播放自动退回游客 480p）
+    // 校验结果只做提示，频道照常输出（Token 被拒时播放自动退回游客 480p）；
+    // 没查成不下结论，后台沿用上一轮（registry.js）
     const { rejected, warning } = await checkToken(config, ctx)
     return {
       groups: buildGroups(),
-      meta: { skipped: [], warnings: warning ? [warning] : [], credentialRejected: rejected || '' },
+      meta: { skipped: [], warnings: warning ? [warning] : [], credentialRejected: warning ? undefined : (rejected || '') },
     }
   },
   claimsRef,

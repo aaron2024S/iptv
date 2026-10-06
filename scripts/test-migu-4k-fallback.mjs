@@ -2,9 +2,10 @@
 /**
  * 咪咕取流档位与降级链回归测试（issue #117）。
  *
- * 一律按手机端策略请求，不带 `ott=true`。大屏策略在三屏会员上被拒、在四屏会员上虽能通过，
- * 但咪咕随即无视 h265N / vivid 只给 H.264 SDR，投屏档也要不到（2026-10-06 同场对照实测），
- * 所以整条去掉。被拒时按咪咕愿意给的档位降到蓝光 / 高清，日志带咪咕原话。
+ * 先按手机端策略请求，不带 `ott=true`：单带 ott 咪咕会无视 h265N / vivid 只给 H.264 SDR
+ * （2026-10-06 同场对照实测）。画质选 4K、手机端回应里列着「超清4K (投屏专享)」时，再按 App
+ * 投屏的取法（ott=true + ottPrior=mp4、rateType 8）要一次，真给了才替换。被拒时按咪咕愿意给的
+ * 档位降到蓝光 / 高清，日志带咪咕原话。
  *
  * 这里把 fetchUrl 换成按 rateType 查表的假请求函数，钉住请求顺序、请求参数、最终档位与日志措辞。
  *
@@ -31,7 +32,13 @@ const ok = (rt, extra = {}, urlInfoExtra = {}) => ({
     ...extra,
   },
 })
-const RATE_DESC = { 3: '高清 720P', 4: '蓝光 1080P', 7: '原画 HDR', 9: '臻享 超高清' }
+const RATE_DESC = { 3: '高清 720P', 4: '蓝光 1080P', 7: '原画 HDR', 8: '超清4K (投屏专享)', 9: '臻享 超高清' }
+// 2026-10-06 会员账号实测的赛事流档位表形状：手机表顶档原画，ottMediaFiles 里另列投屏专享
+const tier = (rt, usageCode, extra = {}) => ({ rateType: String(rt), rateDesc: RATE_DESC[rt], usageCode: String(usageCode), needAuth: rt >= 4, ...extra })
+const MATCH = {
+  mediaFiles: [tier(3, 54), tier(4, 55), tier(7, 221306)],
+  ottMediaFiles: [tier(8, 221416, { currentTerminalCanSwitch: null })],
+}
 // offered：咪咕拒绝时在 urlInfo.rateType 里给出的「它愿意给的档位」
 const needMember = (offered, message = '该内容需开通电视会员') => ({
   rid: 'TIPS_NEED_MEMBER', message,
@@ -43,8 +50,11 @@ function fakeFetch(table) {
   const urls = []
   const fn = async (url) => {
     const q = new URL(url).searchParams
-    assert.equal(q.get('ott'), null, `不该再带 ott：${url}`)
-    const key = q.get('rateType')
+    // ott 只能出现在投屏档那一次，而且必须带着 ottPrior=mp4——单带 ott 拿到的是 H.264 那套
+    const cast = q.get('ott') !== null
+    if (cast) assert.ok(q.get('ott') === 'true' && q.get('ottPrior') === 'mp4' && q.get('rateType') === '8', `ott 只能和 ottPrior=mp4 一起按投屏档要：${url}`)
+    else assert.equal(q.get('ottPrior'), null, `ottPrior 不能单独出现：${url}`)
+    const key = q.get('rateType') + (cast ? '+cast' : '')
     calls.push(key)
     urls.push(url)
     const resp = table[key]
@@ -68,7 +78,7 @@ async function check(name, fn) {
 }
 
 try {
-  await check('4K 只按手机策略要一次：不带 ott，H.265 / HDR 参数照带', async () => {
+  await check('4K 先按手机策略要：不带 ott，H.265 / HDR 参数照带', async () => {
     const { fn, calls, urls } = fakeFetch({ '9': ok(9) })
     const res = await getAndroidURL('u', 't', PID, 9, { enableHDR: true, enableH265: true, fetchUrl: fn })
     assert.deepEqual(calls, ['9'])
@@ -83,6 +93,59 @@ try {
     assert.deepEqual(calls, ['9'])
     assert.equal(res.rateType, 7)
     assert.ok(!logs.some(l => l.includes('\x1B[33m')), '正常取到不该有黄字')
+  })
+
+  await check('★ 含电视端权益：手机端列着投屏专享 → 带 ott + ottPrior 按投屏档再要一次，拿到 4K', async () => {
+    for (const first of [7, 9]) {
+      const { fn, calls, urls } = fakeFetch({ '9': ok(first, MATCH), '8+cast': ok(8) })
+      const res = await getAndroidURL('u', 't', PID, 9, { enableHDR: true, enableH265: true, fetchUrl: fn })
+      assert.deepEqual(calls, ['9', '8+cast'])
+      assert.equal(res.rateType, 8)
+      assert.equal(res.content.body.urlInfo.rateDesc, '超清4K (投屏专享)')
+      assert.ok(res.url.includes('&ddCalcu='), '投屏档地址同样要算 ddCalcu')
+      assert.ok(urls[1].includes('&ott=true&ottPrior=mp4'), 'App 投屏的取法：ott 加 ottPrior=mp4')
+    }
+  })
+
+  await check('★ 没有电视端权益：投屏档被拒 / 静默回原画 / 只给试看 / 网络失败，都沿用手机端的流', async () => {
+    const failures = [
+      needMember(7, '开通钻石会员即可免费畅看哦~'),
+      ok(7),
+      ok(8, {}, { trySeeDuration: '300' }),
+      () => undefined,
+    ]
+    for (const castResp of failures) {
+      const { fn, calls } = fakeFetch({ '9': ok(7, MATCH), '8+cast': castResp })
+      const res = await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: fn })
+      assert.deepEqual(calls, ['9', '8+cast'])
+      assert.equal(res.rateType, 7)
+      assert.ok(res.url.includes('&ddCalcu='))
+      assert.ok(!logs.some(l => l.includes('\x1B[33m')), '三屏会员每看一场都会走到这里，不能刷黄字')
+    }
+  })
+
+  await check('不多请求：普通频道没有投屏档 / 画质没选 4K / 只列着低档「投屏」/ 已经是投屏档', async () => {
+    const plain = fakeFetch({ '9': ok(4, { mediaFiles: [tier(3, 54), tier(4, 55)], ottMediaFiles: null }) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: plain.fn })).rateType, 4)
+    assert.deepEqual(plain.calls, ['9'])
+
+    const notFourK = fakeFetch({ '7': ok(7, MATCH) })
+    assert.equal((await getAndroidURL('u', 't', PID, 7, { ...OPTS, fetchUrl: notFourK.fn })).rateType, 7)
+    assert.deepEqual(notFourK.calls, ['7'], '选原画的人要的就是原画')
+
+    const lowOnly = fakeFetch({ '9': ok(7, { ottMediaFiles: [{ rateType: '4', rateDesc: '蓝光 1080P (投屏)', usageCode: '55' }] }) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: lowOnly.fn })).rateType, 7)
+    assert.deepEqual(lowOnly.calls, ['9'])
+
+    const already = fakeFetch({ '9': ok(8, MATCH) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: already.fn })).rateType, 8)
+    assert.deepEqual(already.calls, ['9'])
+  })
+
+  await check('手机端被拒降级后不再要投屏档', async () => {
+    const { fn, calls } = fakeFetch({ '9': needMember(4), '4': ok(4, MATCH) })
+    assert.equal((await getAndroidURL('u', 't', PID, 9, { ...OPTS, fetchUrl: fn })).rateType, 4)
+    assert.deepEqual(calls, ['9', '4'])
   })
 
   await check('账号不含 4K：被拒后按咪咕愿意给的档位降到蓝光，日志带咪咕原话', async () => {

@@ -13,6 +13,7 @@ export default {
   id: 'kankanews',
   name: '上海',
   description: '东方卫视、新闻综合等 SMG 官方电视直播，以及陆家嘴、外滩等上海景观慢直播。按官网当前节目验签取流并全代理防盗链请求；版权屏蔽时段以官网为准。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '上海',
   preserveGroupSuffixes: ['景观'],

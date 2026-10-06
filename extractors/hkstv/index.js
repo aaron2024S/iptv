@@ -11,6 +11,7 @@ export default {
   id: 'hkstv',
   name: '香港卫视',
   description: '香港卫视官网公开的一路电视直播，归入香港分组；无需登录，播放时动态获取当前入口并由本机中继实时清单。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '香港',

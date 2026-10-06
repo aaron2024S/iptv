@@ -5,6 +5,7 @@ export default {
   id: 'songjiang',
   name: '上海松江',
   description: '上海松江客户端「松江融媒慢直播」，官方多机位画面按节目编排滚动切换。',
+  network: 'any',  // 未验证（普查时源站断流），不默认关（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false },
   outputGroupName: '上海景观',
   defaultRefreshMinutes: 10,

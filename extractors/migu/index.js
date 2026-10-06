@@ -31,7 +31,7 @@
  */
 import { dataList } from "../../utils/fetchList.js"
 import { resolve, clearCache } from "./resolve.js"
-import { enableMigu } from "../../config.js"
+import { enableMigu, enableMiguSource } from "../../config.js"
 import { setSystemFlagAPI } from "../../utils/systemConfigAPI.js"
 import { checkAccount, credentialRejected } from "./account.js"
 
@@ -205,6 +205,7 @@ export default {
   // 收编前咪咕是现抓，失败会让 getAllChannels 返回空、0 频道守卫触发、一个字节都不写；
   // 收编后失败被吞在模块内，而外部源撑着总数不为 0，守卫就失效了——那份保护是靠
   // 「咪咕失败 = 全局 0 条」这个巧合得来的，收编后必须显式声明才能保住。
+  network: 'cn',  // 海外换签回「不可在当前地区播放」，83 台只剩 1 台（OVERSEAS.md）
   capabilities: { cache: 'memory', resolve: true, epg: true, critical: true },
 
   // 与 app.js 的整点更新同频；咪咕地址是播放时才解析的，不存在过期问题
@@ -301,6 +302,8 @@ export default {
   // 六处直接 import，还带着 menableMigu 环境变量与 mblank 空白模式语义，
   // 不能在 extractors.json 里另开一份。这里只是把读写入口挪到模块名下。
   enabledGetter: () => enableMigu,
+  // 没在后台点过、也没设 menableMigu：开关跟随部署网络（海外默认关），卡片据此显示「按网络自动关闭」
+  enabledIsDefault: () => enableMiguSource === 'auto',
   enabledEnv: 'menableMigu',
   enabledSetter: (on) => {
     const result = setSystemFlagAPI('enableMigu', on)

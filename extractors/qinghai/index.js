@@ -6,6 +6,7 @@ export default {
   name: '青海',
   description: '青海藏语网络广播电视台官网的安多卫视；无需登录，播放时动态取当前签名地址，本机只中继清单、分片由播放器直连官方 CDN。',
   // 官网节目单接口对任何日期都只回 24 条整点「精彩节目」占位，没有可用的官方节目单（见 EPG.md）
+  network: 'cn',  // 换签接口海外（含香港）连不上（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: '青海',

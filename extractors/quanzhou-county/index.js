@@ -6,6 +6,7 @@ export default {
   id: 'quanzhou-county',
   name: '晋江、石狮',
   description: '晋江市、石狮市融媒体中心官网直播的两路电视频道，固定官方 HLS 地址。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '福建',

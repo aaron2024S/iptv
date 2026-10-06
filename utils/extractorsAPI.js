@@ -14,7 +14,7 @@ import { setSystemFlagAPI } from "./systemConfigAPI.js"
 import { enableBuiltInSources, enableBuiltInSubscriptions } from "../config.js"
 import { updateExtractors } from "./channelMerger.js"
 import update from "./updateData.js"
-import { printRed } from "./colorOut.js"
+import { printGreen, printRed, printYellow } from "./colorOut.js"
 import { reseedBuiltInSubscriptions } from "./externalSources.js"
 import { externalSourceManager } from "./channelMerger.js"
 
@@ -215,6 +215,62 @@ export const importBrowserLoginAPI = (id, payload) => {
   if (typeof payload !== 'string' || !payload.trim()) return fail(new Error('请先粘贴登录态内容'))
   if (payload.length > 64 * 1024) return fail(new Error('登录态内容过长'))
   return runBrowserLoginAction(id, 'import', payload)
+}
+
+/**
+ * 部署网络变了之后让播放列表跟上：先用缓存重生成（被关掉的模块的频道立刻下架），
+ * 再把新打开、还没抓过的模块抓一轮（咪咕也在其中），抓完再生成一次。
+ */
+function refreshAfterNetworkChange() {
+  regeneratePlaylist()
+  updateExtractors({ autoOnly: true })
+    .then(() => regeneratePlaylist())
+    .catch(error => printRed(`部署网络变化后抓取模块失败: ${error.message}`))
+}
+
+function moduleNames(ids) {
+  return ids.map(id => getModule(id)?.name || id).join('、')
+}
+
+/**
+ * 探测部署网络并打一行日志（启动时、每轮定时更新前）。返回 extractorManager.detectNetwork 的结果。
+ * 地区变了不在这里重生成：启动那次后面紧跟首轮抓取，定时那次后面紧跟完整更新。
+ */
+export async function detectDeploymentNetwork() {
+  const manager = getExtractorManager()
+  const result = await manager.detectNetwork()
+  const summary = manager.networkSummary()
+  const source = summary.source === 'env' ? '（环境变量 mnetworkRegion 指定）' : ''
+  if (result.failed) {
+    printYellow(`部署网络探测这次没有结果（各端点均无响应），沿用上次判定：${summary.regionLabel}`)
+  } else if (summary.region === 'unknown') {
+    printYellow('部署网络未能检测（各端点均无响应），按大陆处理，所有模块照常默认开启')
+  } else if (summary.autoOff.length || summary.unreachableOn.length) {
+    printYellow(`部署网络：${summary.regionLabel}${source}`
+      + (summary.autoOff.length ? `。已按网络默认关闭 ${summary.autoOff.length} 个模块：${moduleNames(summary.autoOff)}` : '')
+      + (summary.unreachableOn.length ? `。手动开着、在当前网络大概率不通：${moduleNames(summary.unreachableOn)}` : ''))
+  } else {
+    printGreen(`部署网络：${summary.regionLabel}${source}`)
+  }
+  return result
+}
+
+/** 后台「重新检测」。地区变了立刻让播放列表跟上。 */
+export async function detectNetworkAPI() {
+  try {
+    const manager = getExtractorManager()
+    const result = await detectDeploymentNetwork()
+    if (result.changed) refreshAfterNetworkChange()
+    const summary = manager.networkSummary()
+    const message = result.failed
+      ? `这次各端点都没有响应，沿用上次判定：${summary.regionLabel}`
+      : result.changed
+        ? `部署网络已变为「${summary.regionLabel}」，模块默认开关已按新网络调整，正在更新播放列表`
+        : `部署网络：${summary.regionLabel}（没有变化）`
+    return { ...ok(manager), message }
+  } catch (error) {
+    return fail(error)
+  }
 }
 
 /** 单模块开关。 */

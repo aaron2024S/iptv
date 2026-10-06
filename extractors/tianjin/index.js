@@ -6,6 +6,7 @@ export default {
   id: 'tianjin',
   name: '天津',
   description: '津云 App 的天津卫视、新闻、文艺、影视、都市、体育、教育 7 路电视频道；无需登录，播放时按 App 协议签发短效地址，清单与分片由本机代理。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '天津',

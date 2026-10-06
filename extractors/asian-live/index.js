@@ -7,6 +7,7 @@ export default {
   id: 'asian-live',
   name: '亚洲与国际直播',
   description: `来自独立实验台验证的 ${SOURCES.length} 个动态公开直播频道；固定直连源由内置 IPTV.m3u 提供。`,
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   // v1：频道表补上官方台标。此前未声明，老缓存没有版本号，启动时会按新表重建一次
   catalogVersion: 1,

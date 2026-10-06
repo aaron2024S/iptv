@@ -14,7 +14,7 @@ import { dataPath } from "./utils/paths.js";
 import { cachedLogoFile } from "./utils/logoCache.js";
 import { packLogoFile } from "./utils/logoPack.js";
 import { getExtractorManager, getModuleConfig } from "./utils/extractorManager.js";
-import { getExtractorsAPI, startModuleLoginAPI, pollModuleLoginAPI, setExtractorEnabledAPI,
+import { getExtractorsAPI, startModuleLoginAPI, pollModuleLoginAPI, setExtractorEnabledAPI, detectNetworkAPI, detectDeploymentNetwork,
   updateExtractorConfigAPI, runExtractorNowAPI, setContentFlagAPI, startBrowserLoginAPI,
   getBrowserLoginStatusAPI, checkBrowserLoginAPI, cancelBrowserLoginAPI,
   closeBrowserLoginAPI, importBrowserLoginAPI } from "./utils/extractorsAPI.js";
@@ -687,6 +687,9 @@ async function handleRequest(req, res) {
             break
           case 'contentFlag':
             result = setContentFlagAPI(data.key, data.enabled !== false)
+            break
+          case 'detectNetwork':
+            result = await detectNetworkAPI()
             break
           default:
             result = { success: false, message: `未知操作: ${data.action}` }
@@ -1535,6 +1538,8 @@ server.listen(port, async () => {
     printBlue(`准备更新文件 ${getDateTimeStr(new Date())}`)
     hours += updateInterval
     try {
+      // 部署网络偶尔会变（搬机房、换代理出口）；测完再更新，新开的模块这轮就能抓到
+      await detectDeploymentNetwork()
       await update(hours)
     } catch (error) {
       console.log(error)
@@ -1601,6 +1606,10 @@ server.listen(port, async () => {
       printRed(`内置源启动抓取失败: ${error?.message || error}`)
     }
   }
+
+  // 部署网络决定「仅大陆」「大陆和香港」档模块的默认开关（OVERSEAS.md）。必须赶在首轮抓取前：
+  // 海外首次部署时不先测，第一轮就会把十来个必然失败的模块挨个抓到超时。探测最多 8 秒、不抛异常。
+  await detectDeploymentNetwork()
 
   try {
     // 初始化数据（启动模式）

@@ -5,6 +5,7 @@ export default {
   id: 'gzstv',
   name: '贵州',
   description: '贵州广电官网 8 路公开频道；无需登录，播放时获取短效签名，清单和媒体全代理。',
+  network: 'cn',  // 清单海外（含香港）403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   // v2：八路频道带上官方台标
   catalogVersion: 2,

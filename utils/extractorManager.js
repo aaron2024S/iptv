@@ -6,8 +6,10 @@
  *
  * 模块开关关掉后都是「不联网、不出现在播放列表、磁盘数据原样保留、
  * 开回来即恢复」：
- *   单模块 enabled（extractors.json）—— 就是唯一真相。
- *   代理开关的模块（咪咕→config.js:enableMigu）走自己的 getter。
+ *   单模块 enabled（extractors.json）—— 用户在卡片上点过就是唯一真相。
+ *   没点过的不存 enabled，跟随部署网络：模块声明的 network 档位在当前网络
+ *   （utils/networkRegion.js，启动时由 utils/networkProbe.js 探测）不可用就默认关。
+ *   代理开关的模块（咪咕→config.js:enableMigu）走自己的 getter，网络默认值在 config.js 里算。
  *   历史上还有「部署级 enableExtractors」和「文件级 enabled」两层，都已撤：
  *   前者的显式关闭态只在升级时迁移一次（见 #migrateMasterSwitch），后者与前者
  *   同名同义、纯属困惑源。
@@ -25,6 +27,8 @@ import { sanitizeOpts } from "./channelOpts.js"
 import { listModules, getModule, sourceIdOf } from "../extractors/registry.js"
 import { printBlue, printGreen, printRed, printYellow } from "./colorOut.js"
 import { enableExtractors } from "../config.js"
+import { getNetworkState, networkAllows, NETWORK_REGIONS, setNetworkState, REGION_LABELS, TIER_LABELS } from "./networkRegion.js"
+import { probeNetwork } from "./networkProbe.js"
 
 const CONFIG_FILE = 'extractors.json'
 const CACHE_FILE = 'extractor-cache.json'
@@ -44,6 +48,12 @@ function defaultConfig() {
 
 function defaultCache() {
   return { modules: {} }
+}
+
+/** 环境变量 mnetworkRegion 指定的地区（cn / hk / intl），没设或不认识返回空串。 */
+function forcedNetworkRegion() {
+  const raw = String(process.env.mnetworkRegion || '').trim().toLowerCase()
+  return ['cn', 'hk', 'intl'].includes(raw) ? raw : ''
 }
 
 /** 每个模块的健康记录。lastSuccessAt 只表示「上次成功」，永远不许被回拨。 */
@@ -374,13 +384,38 @@ class ExtractorManager {
       }
     }
     this.loaded = true
+    this.#restoreNetworkState()
     if (cacheChanged) this.#saveCache()
     // 放在 load() 而不是启动流程里：配置导入会调 reload()，用户导入一份「搬家之前
     // 导出的备份」时，包里 extractors.json 没有这些字段、system-config.json 有，
     // 那时也必须搬一次，否则导入完就是当场降档。
     this.#migrateLegacyConfig()
     this.#migrateMasterSwitch()
+    this.#migrateEnabledDefaults()
     return this
+  }
+
+  /**
+   * 一次性迁移：把「从没点过、只是被写成默认值」的 enabled:true 去掉，让它们跟随部署网络。
+   *
+   * 以前 #entry 会把没设过的开关当场落成 true，一保存就进了 extractors.json，于是存量
+   * 文件里几乎每个模块都是 enabled:true，分不清是用户开的还是默认的。本功能之前默认就是
+   * 开，「存了 true」和「没存」语义完全一样，去掉不丢任何信息；存了 false 的是用户明确
+   * 关的（或总开关迁移固化的），原样保留。
+   *
+   * 幂等，靠 config.enabledFollowsNetwork 标记。备份导入走 reload→load，导入一份老备份
+   * 时会再迁一次，同样无损。
+   */
+  #migrateEnabledDefaults() {
+    if (this.corrupt) return
+    if (this.config.enabledFollowsNetwork) return
+    for (const module of listModules()) {
+      if (typeof module.enabledGetter === 'function') continue
+      const entry = this.config.modules[module.id]
+      if (entry && entry.enabled === true) delete entry.enabled
+    }
+    this.config.enabledFollowsNetwork = true
+    this.#saveConfig()
   }
 
   /**
@@ -519,6 +554,7 @@ class ExtractorManager {
    */
   #saveCache() {
     const persisted = { modules: {} }
+    if (isPlainObject(this.cache.network)) persisted.network = this.cache.network
     for (const [id, entry] of Object.entries(this.cache.modules)) {
       const module = getModule(id)
       const memoryOnly = module?.capabilities?.cache === 'memory'
@@ -532,6 +568,74 @@ class ExtractorManager {
         : entry
     }
     writeJsonFileSync(this.cachePath, persisted)
+  }
+
+  // ---- 部署网络 ----
+
+  /**
+   * 启动 / 重载时恢复上次的网络判定，让第一轮抓取不必等探测就能按网络排除模块。
+   * 环境变量 mnetworkRegion（cn / hk / intl）优先：探测端点哪天全改了、或者用户就是
+   * 想固定某个地区时的逃生口，设了就不再探测。
+   */
+  #restoreNetworkState() {
+    const forced = forcedNetworkRegion()
+    if (forced) {
+      setNetworkState({ region: forced, source: 'env', checkedAt: null })
+      return
+    }
+    const saved = this.cache.network
+    if (isPlainObject(saved) && NETWORK_REGIONS.includes(saved.region)) {
+      setNetworkState({ ...saved, source: 'cache' })
+    }
+  }
+
+  /**
+   * 探测一次部署网络并生效（启动时、定时更新前、后台「重新检测」）。
+   *
+   * 测不出（unknown）时不覆盖已有的判定：一次断网不该把「海外」翻回「按大陆处理」、
+   * 重新打开一堆必然失败的模块。从没测出过时才记成 unknown（后台能看到每个端点的结果）。
+   * 返回 { changed, previous, state }；绝不抛异常。
+   */
+  async detectNetwork({ fetchImpl } = {}) {
+    const previous = getNetworkState().region
+    if (forcedNetworkRegion()) return { changed: false, previous, state: getNetworkState() }
+    const result = await probeNetwork(fetchImpl ? { fetchImpl } : {})
+    if (result.region === 'unknown' && previous !== 'unknown') {
+      this.cache.network = { ...(this.cache.network || {}), lastFailedAt: result.checkedAt, lastFailedDetails: result.details }
+      this.#trySaveCache()
+      return { changed: false, previous, state: getNetworkState(), failed: true }
+    }
+    const state = setNetworkState({ ...result, source: 'probe' })
+    this.cache.network = { region: state.region, checkedAt: state.checkedAt, details: state.details }
+    this.#trySaveCache()
+    return { changed: state.region !== previous, previous, state }
+  }
+
+  /** 探测结果落盘失败不该打断启动；下次探测会再写。 */
+  #trySaveCache() {
+    try { this.#saveCache() } catch (error) { printYellow(`网络探测结果落盘失败：${error.message}`) }
+  }
+
+  /** 后台用：当前网络判定 + 按网络被自动关掉、或手动开着但大概率不通的模块。 */
+  networkSummary() {
+    const state = getNetworkState()
+    const autoOff = []
+    const unreachableOn = []
+    for (const module of listModules()) {
+      if (networkAllows(module.network)) continue
+      if (this.isModuleEnabled(module)) unreachableOn.push(module.id)
+      else if (this.isEnabledByDefault(module)) autoOff.push(module.id)
+    }
+    return {
+      region: state.region,
+      regionLabel: REGION_LABELS[state.region] || state.region,
+      source: state.source,
+      checkedAt: state.checkedAt,
+      details: state.details,
+      lastFailedAt: this.cache.network?.lastFailedAt || null,
+      autoOff,
+      unreachableOn,
+    }
   }
 
   // ---- 模块状态 ----
@@ -553,7 +657,17 @@ class ExtractorManager {
     }
     // 这里原先还有一道 `if (!enableExtractors) return false`。已撤——旧关闭态只在
     // 升级时一次性折进各模块，运行期每张卡片的开关就是唯一真相。详见迁移注释。
-    return this.#entry(module.id).enabled
+    const { enabled } = this.#entry(module.id)
+    if (typeof enabled === 'boolean') return enabled
+    return networkAllows(module.network)
+  }
+
+  /** 开关是否还在跟随默认值（用户没在卡片上点过）。 */
+  isEnabledByDefault(module) {
+    if (typeof module.enabledGetter === 'function') {
+      return typeof module.enabledIsDefault === 'function' ? !!module.enabledIsDefault() : false
+    }
+    return typeof this.#entry(module.id).enabled !== 'boolean'
   }
 
   #setModuleEnabledValue(module, on) {
@@ -576,9 +690,9 @@ class ExtractorManager {
     // 存了也不会被读（isModuleEnabled 走 getter），只会让看 extractors.json 的人
     // 以为模块被禁用了。
     const proxied = typeof getModule(id)?.enabledGetter === 'function'
-    if (proxied) delete entry.enabled
-    // 新模块和从未保存过开关的存量模块默认启用；用户已经明确保存的 false 原样保留。
-    else if (typeof entry.enabled !== 'boolean') entry.enabled = true
+    // 没点过的不落值：默认开关跟随部署网络（见 isModuleEnabled），落成 true 就再也分不清
+    // 是用户开的还是默认的（#migrateEnabledDefaults 就是在收拾这个历史包袱）。
+    if (proxied || (entry.enabled !== undefined && typeof entry.enabled !== 'boolean')) delete entry.enabled
     if (!isPlainObject(entry.config)) entry.config = {}
     normalizeLegacyConfig(getModule(id), entry.config)
     return entry
@@ -651,6 +765,11 @@ class ExtractorManager {
         // 助手挂在哪一段（不声明就渲染在表单最上面，咪咕就是这样）
         helperSection: module.helperSection || '',
         enabled,
+        // 开关还在跟随默认值（没在卡片上点过）：卡片据此区分「按网络自动关」和「手动关」
+        enabledByDefault: this.isEnabledByDefault(module),
+        network: module.network || 'cn',
+        networkLabel: TIER_LABELS[module.network] || '',
+        networkReachable: networkAllows(module.network),
         // 开关代理到别处（如咪咕代理到 config.js 的 enableMigu）时告诉前端。
         // 现在两边都能改，所以不再是「只读」，只是多一条「也可用环境变量控制」的说明。
         enabledProxied: typeof module.enabledGetter === 'function',
@@ -679,6 +798,7 @@ class ExtractorManager {
       // 历史上这里回传过 enableExtractors，前端据此画一个顶在卡片上方的总开关；
       // 它管不到走 enabledGetter 的咪咕，还会覆盖卡片自身的明确选择。见迁移注释。
       corrupt: this.corrupt,
+      network: this.networkSummary(),
       modules,
     }
   }
@@ -701,7 +821,8 @@ class ExtractorManager {
     } catch (error) {
       // 写盘被拒（配置文件损坏）：内存回滚，保证「接口报失败 ⇒ 开关没变」——
       // 否则开关在内存里已翻转并即刻影响抓取，重启后又弹回，与报错自相矛盾。
-      entry.enabled = prev
+      if (prev === undefined) delete entry.enabled
+      else entry.enabled = prev
       throw error
     }
     return this.getState()

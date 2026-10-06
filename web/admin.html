@@ -2935,6 +2935,11 @@
         /* 登录凭证失效：红框浅红底，在一屏几十张卡片里一眼找到；打开着的卡片仍以「选中」为准 */
         .source-card.needs-attention:not(.active) { border-color: var(--ui-danger); background: var(--ui-danger-soft); }
         .credential-flag { color: var(--ui-danger); font-weight: 600; }
+        /* 部署网络（OVERSEAS.md）：大陆部署只占一行灰字；香港 / 海外换成提示框 */
+        .network-note { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; color: var(--ui-muted); font-size: 12px; line-height: 1.7; }
+        .network-note.is-offshore { padding: 10px 14px; border: 1px solid var(--ui-warning-line); border-left: 4px solid var(--ui-warning); border-radius: 12px; background: var(--ui-warning-soft); color: var(--ui-warning); font-size: 13px; }
+        .network-note-text { flex: 1; min-width: 0; }
+        .network-flag { color: var(--ui-warning); font-weight: 600; }
         /* 顶部提醒条：有异常（error）为红，只有提醒（warning）为橙 */
         .alert-bar {
             display: flex;
@@ -4964,7 +4969,55 @@
                     <span style="font-size:12px;">${escapeHtml(extractorsState.corrupt.message || '')}</span>
                 </div>`;
             }
+            html += extractorNetworkNoteHtml(extractorsState.network);
             box.innerHTML = html;
+        }
+
+        /**
+         * 部署网络一行（OVERSEAS.md）。「仅大陆」「大陆和香港」档的模块在香港 / 海外部署时默认关，
+         * 这里说明为什么一批模块是关的、哪些手动开着却大概率不通，并给「重新检测」。
+         */
+        function extractorNetworkNoteHtml(net) {
+            if (!net) return '';
+            const names = ids => ids.map(id => {
+                const m = (extractorsState.modules || []).find(x => x.id === id);
+                return m ? m.name : id;
+            }).join('、');
+            const when = net.checkedAt ? new Date(net.checkedAt).toLocaleString() : '';
+            const fromEnv = net.source === 'env';
+            const origin = fromEnv ? '环境变量 mnetworkRegion 指定' : (when ? `自动检测于 ${when}` : '自动检测');
+            const button = fromEnv ? '' : '<button class="btn btn-sm" id="detectNetworkBtn" onclick="detectNetworkNow()">重新检测</button>';
+            const offshore = net.region === 'hk' || net.region === 'intl';
+            let text;
+            if (net.region === 'unknown') {
+                text = net.checkedAt
+                    ? '部署网络：未检测出（检测端点都没有响应），按大陆处理，所有模块照常默认开启。'
+                    : '部署网络：还没检测（服务启动时自动检测），目前按大陆处理。';
+            } else if (!offshore) {
+                text = `部署网络：大陆（${escapeHtml(origin)}）。部署在香港或海外时，只在大陆能用的模块会自动关闭。`;
+            } else {
+                text = `部署网络：${escapeHtml(net.regionLabel)}（${escapeHtml(origin)}）。`;
+                if (net.autoOff && net.autoOff.length) {
+                    text += `已按网络自动关闭 ${net.autoOff.length} 个模块（${escapeHtml(names(net.autoOff))}），它们的官方接口不对${net.region === 'hk' ? '香港' : '海外'}开放；想试仍可手动打开。`;
+                }
+                if (net.unreachableOn && net.unreachableOn.length) {
+                    text += `${escapeHtml(names(net.unreachableOn))}是手动开着的，在当前网络大概率播不了。`;
+                }
+            }
+            return `<div class="network-note${offshore ? ' is-offshore' : ''}">
+                <span class="network-note-text">${text}</span>${button}
+            </div>`;
+        }
+
+        async function detectNetworkNow() {
+            const btn = document.getElementById('detectNetworkBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '检测中…'; }
+            try {
+                applyExtractorResult(await extractorPost({ action: 'detectNetwork' }), '检测完成');
+            } catch (error) {
+                showStatus(`检测失败：${error.message}`, 'error');
+                if (btn) { btn.disabled = false; btn.textContent = '重新检测'; }
+            }
         }
 
         /** 模块卡片上那一行状态：● 正常 · 175 频道 · 2 分钟前。详细报错留给展开区。 */
@@ -5281,10 +5334,14 @@
                     <div class="source-card-desc">${escapeHtml(m.description || '')}</div>
                     <div class="source-card-foot">
                         ${m.enabled
-                            ? `<span title="上次成功抓取：${escapeHtml(when)}">${h.credentialRejected
+                            ? `<span title="上次成功抓取：${escapeHtml(when)}">${m.networkReachable === false
+                                ? `<span class="network-flag" title="${escapeHtml(m.networkLabel)}：官方接口不对当前部署网络开放，开着大概率播不了">⚠️ 当前网络大概率不通</span> · `
+                                : ''}${h.credentialRejected
                                 ? `<span class="credential-flag" title="${escapeHtml(h.credentialRejected)}">⚠️ 登录凭证已失效</span>`
                                 : extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>`
-                            : '<span class="module-off-label">○ 已关闭</span>'}
+                            : (m.networkReachable === false && m.enabledByDefault
+                                ? `<span class="module-off-label" title="没手动设过开关，按部署网络自动关闭；勾选「启用」即可手动打开">○ ${escapeHtml(m.networkLabel)} · 已按网络自动关闭</span>`
+                                : '<span class="module-off-label">○ 已关闭</span>')}
                         <span class="card-open-hint">${hasEditableConfig ? '配置 ›' : '详情 ›'}</span>
                     </div>
                 </div>`;
@@ -5402,6 +5459,7 @@
                     ${canManualRefresh ? `<button class="btn btn-sm" onclick="refreshExtractorNow('${escapeHtml(m.id)}')">立即刷新</button>` : ''}
                 </div>
                 <div style="font-size:12px; margin-bottom:12px;">${extractorHealthHtml(m.health || {})}</div>
+                ${m.network && m.network !== 'any' ? `<div style="font-size:12px; color:#888; margin:-6px 0 12px;">网络：${escapeHtml(m.networkLabel)}——官方接口${m.network === 'cn' ? '只对大陆开放' : '只对大陆和香港开放'}，部署在${m.network === 'cn' ? '香港或海外' : '香港以外的海外地区'}时默认关闭${m.networkReachable === false ? (m.enabled ? '；当前网络大概率不通' : '（当前网络已自动关闭）') : ''}。</div>` : ''}
                 ${extractorChannelsHtml(m)}
                 <div style="border-top:1px solid #f5f5f5; padding-top:12px;">
                     ${m.helperSection ? '' : extractorHelperHtml(m.helper, m.secretsSet || {}, m.config || {}, m.health || {})}

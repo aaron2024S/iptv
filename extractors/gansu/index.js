@@ -11,6 +11,7 @@ export default {
   id: 'gansu',
   name: '甘肃',
   description: '甘肃广电官网 6 路公开频道；无需登录，播放时动态获取当前 HLS，并由本机中继实时清单。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '甘肃',

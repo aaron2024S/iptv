@@ -6,6 +6,7 @@ export default {
   id: 'ipanda',
   name: 'iPanda 官方直播',
   description: `iPanda 官网 ${SOURCES.length} 路公开直播；无需登录，最高 720p（官网标注“超清”）。`,
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: 'iPanda',

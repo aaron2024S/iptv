@@ -6,6 +6,7 @@ export default {
   id: 'yangzhou',
   name: '扬州',
   description: '扬州发布 App 直播的扬州新闻、民生与江都、邗江四路电视频道，固定官方 HLS 地址。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '江苏',

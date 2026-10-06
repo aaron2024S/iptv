@@ -147,6 +147,7 @@ export default {
   category: 'live',
 
   // 结果小（一个房间一条）、只有房间名单没有短效地址，可以落盘缓存，失败时用它兜底。
+  network: 'any',  // 海外会分到 ov 海外节点，机房 IP 上常超时；家宽未验证，不默认关（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false },
 
   // 刷新周期只决定多久重挑一次直播间（热门榜换人、主播下播）；播放地址在播放时

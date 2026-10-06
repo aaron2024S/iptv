@@ -5,6 +5,7 @@ export default {
   id: 'jiaxing',
   name: '嘉兴',
   description: '嘉兴在线三套电视直播；播放时从趣看公开接口获取签名 HLS，由本机中继实时清单。',
+  network: 'any',  // 未验证（普查时官网无信号），不默认关（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: '浙江',

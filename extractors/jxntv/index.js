@@ -10,6 +10,7 @@ export default {
   id: 'jxntv',
   name: '江西',
   description: '江西广电官网 8 路公开频道；无需登录，播放时自动换取匿名短效凭证并持续刷新清单。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   // v2：八路频道带上官方台标
   catalogVersion: 2,

@@ -8,6 +8,7 @@ export default {
   id: 'hbtv',
   name: '湖北',
   description: '湖北卫视、经视、综合、影视、教育、垄上六套官网公开直播；自动处理短效签名与防盗链。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '湖北',
   defaultRefreshMinutes: 240,

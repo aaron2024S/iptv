@@ -11,6 +11,7 @@ export default {
   id: 'xinjiang',
   name: '新疆',
   description: '新疆广播电视台官网 7 路公开频道；无需登录，播放时解析当天签名配置并获取短效 HLS。',
+  network: 'cn',  // 换签接口海外（含香港）403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   // v2：官网撤掉禁播的汉语综艺、维吾尔语影视重新收录
   catalogVersion: 2,

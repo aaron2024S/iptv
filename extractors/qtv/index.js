@@ -5,6 +5,7 @@ export default {
   id: 'qtv',
   name: '青岛',
   description: '五四广场、奥帆中心及三路主干道官方城市直播。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: false },
   outputGroupName: '青岛',
   preserveGroupSuffixes: ['景观'],

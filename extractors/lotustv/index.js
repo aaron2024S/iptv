@@ -6,6 +6,7 @@ export default {
   id: 'lotustv',
   name: '澳门莲花卫视',
   description: '从莲花卫视官网播放器动态获取带签名的直播入口，实时转发清单，媒体分片由播放器直连官方 CDN。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '澳门',

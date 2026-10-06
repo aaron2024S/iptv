@@ -7,6 +7,7 @@ export default {
   id: 'beidou',
   name: '辽宁',
   description: '北斗融媒官方辽宁省台与沈阳台直播；固定排除购物频道，只收录当前确认为 live 的频道。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false },
   outputGroupName: '辽宁',
   defaultRefreshMinutes: 10,

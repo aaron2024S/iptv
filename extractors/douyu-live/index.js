@@ -57,6 +57,7 @@ export default {
   name: '斗鱼直播',
   description: '按斗鱼官网分类加入热门直播间，也可手动指定房间；匿名播放时即时生成短效 HLS。',
   category: 'live',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false },
   defaultRefreshMinutes: 30,
   minRefreshMinutes: 15,

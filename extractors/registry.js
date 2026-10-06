@@ -19,6 +19,11 @@
  *   category              string  可选；后台源管理分组。'account' 表示带账号/
  *                                 授权能力，'live' 表示网络直播平台；不声明即
  *                                 'standard'（免账号的普通官方抓取模块）
+ *   network               string  必需；在哪种网络下能用：'any' 不限 / 'cn-hk' 大陆和香港 /
+ *                                 'cn' 仅大陆。只决定默认开关——部署网络探测为香港或海外时，
+ *                                 用户没手动设过开关的模块按它自动关（规则见 utils/networkRegion.js）。
+ *                                 按频道的版权拦截不算，照样 'any'。新模块要先在海外实测
+ *                                 （scripts/probe-modules.mjs），依据记在仓库根目录 OVERSEAS.md
  *   capabilities          object  { cache: 'disk'|'memory'|'none',
  *                                   resolve: boolean, epg: boolean }
  *   catalogVersion        number  可选；代码内置频道表变更时递增。缓存版本不一致会在
@@ -193,6 +198,7 @@ import xizang from './xizang/index.js'
 import wuxi from './wuxi/index.js'
 import yangzhou from './yangzhou/index.js'
 import yunnan from './yunnan/index.js'
+import { NETWORK_TIERS } from '../utils/networkRegion.js'
 
 // 模块 id 会进 sourceId 并写进 EXTINF 属性值，不消毒就是注入面。
 // 与 utils/configBackupAPI.js 的文件名白名单同款约束。
@@ -271,6 +277,9 @@ export function validateModule(module) {
   if (typeof module.fetch !== 'function') {
     throw new Error(`抓取模块 ${module.id} 没有实现 fetch()`)
   }
+  if (module.network != null && !NETWORK_TIERS.includes(module.network)) {
+    throw new Error(`抓取模块 ${module.id} 的 network 非法: ${JSON.stringify(module.network)}`)
+  }
   if (module.category != null && !MODULE_CATEGORIES.has(module.category)) {
     throw new Error(`抓取模块 ${module.id} 的 category 非法: ${JSON.stringify(module.category)}`)
   }
@@ -312,6 +321,10 @@ export function validateModule(module) {
 const registry = new Map()
 for (const module of MODULES) {
   validateModule(module)
+  // 注册进来的模块必须表态。validateModule 不管有没有（测试里拼的临时模块不带），只管取值合法
+  if (module.network == null) {
+    throw new Error(`抓取模块 ${module.id} 没有声明 network（在哪种网络下能用，见 OVERSEAS.md）`)
+  }
   if (registry.has(module.id)) {
     throw new Error(`抓取模块 id 重复: ${module.id}`)
   }

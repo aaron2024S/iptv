@@ -5,6 +5,7 @@ export default {
   id: 'heilongjiang',
   name: '黑龙江',
   description: '黑龙江广播电视台七套公开频道（极光新闻 App 在用的官方入口）；无需登录，地址固定且上游不设防盗链，由播放器直连官方 CDN。',
+  network: 'cn-hk',  // 清单香港放行，日本 / 新加坡 / 美国连不上（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: false, epg: false, catchup: false },
   // v2：七套频道带上官方台标
   catalogVersion: 2,

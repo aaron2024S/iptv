@@ -6,6 +6,7 @@ export default {
   id: 'ningxia',
   name: '宁夏',
   description: '宁夏广播电视台三套公开频道（宁夏卫视、公共、文旅）；无需登录，地址固定且上游不设防盗链，由播放器直连官方 CDN；节目单取自黄河云官方接口。',
+  network: 'cn',  // 清单海外（含香港）403 / 超时（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: false, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '宁夏',

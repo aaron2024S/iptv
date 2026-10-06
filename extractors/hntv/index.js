@@ -6,6 +6,7 @@ export default {
   id: 'hntv',
   name: '河南',
   description: '河南卫视及十二个地面、专业频道官方直播。自动排除购物频道并刷新短效地址。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '河南',
   defaultRefreshMinutes: 120,

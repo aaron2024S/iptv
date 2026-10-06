@@ -5,6 +5,7 @@ export default {
   id: 'xizang',
   name: '西藏',
   description: '西藏广播电视台「珠峰云」App 的西藏卫视、藏语卫视、影视文化 3 路频道；无需登录，播放时取当前签名地址，本机只中继清单、分片由播放器直连官方 CDN。',
+  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 2,
   outputGroupName: '西藏',

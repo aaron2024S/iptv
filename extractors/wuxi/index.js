@@ -6,6 +6,7 @@ export default {
   id: 'wuxi',
   name: '无锡',
   description: '无锡博报 App 直播页的五路电视频道；播放时从官方分享页取签名 HLS，由本机中继实时清单。',
+  network: 'cn-hk',  // 换签香港放行，日本 / 新加坡 / 美国 403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '江苏',

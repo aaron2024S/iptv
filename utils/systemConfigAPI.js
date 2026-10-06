@@ -111,9 +111,7 @@ export function setSystemFlagAPI(key, value) {
     if (existsSync(SYSTEM_CONFIG_PATH)) {
       try { existing = JSON.parse(readFileSync(SYSTEM_CONFIG_PATH, 'utf-8')) } catch { existing = {} }
     }
-    // 咪咕开关带上迁移标记：之后存的 true 是用户点的，别被 #migrateMiguDefault 当老包袱删掉
-    const marker = key === 'enableMigu' ? { miguFollowsNetwork: true } : {}
-    writeJsonFileSync(SYSTEM_CONFIG_PATH, { ...existing, [key]: value !== false, ...marker })
+    writeJsonFileSync(SYSTEM_CONFIG_PATH, { ...existing, [key]: value !== false })
     reloadConfig()
     return { success: true }
   } catch (error) {
@@ -161,7 +159,6 @@ export function saveSystemConfigAPI(config) {
     // 内容开关：显式提交才写入（避免不带这些字段的旧调用把它们重置）
     if (config.enableMigu !== undefined) {
       validated.enableMigu = config.enableMigu !== false
-      validated.miguFollowsNetwork = true  // 同 setSystemFlagAPI
     }
     if (config.enableBuiltInSources !== undefined) {
       validated.enableBuiltInSources = config.enableBuiltInSources !== false

@@ -153,9 +153,6 @@ import {
   ExtractorManager, validateConfig, redactConfig, resolveConfig, normalizeGroups, emptyHealth,
 } from '../utils/extractorManager.js'
 
-// 默认开关的用例都假定地区未检测：shell 里为测海外设过 mnetworkRegion 也别带进来
-delete process.env.mnetworkRegion
-
 let passed = 0
 const check = (name, fn) => { fn(); passed++; console.log(`  ✅ ${name}`) }
 
@@ -983,9 +980,9 @@ try {
 
   check('★ 所有非代理抓取模块首次出现默认开启，显式关闭后保持关闭', () => {
     // 跳过旧总开关迁移，只验证当前版本的模块默认值；代理模块继续听自己的 getter。
-    // 「大陆以外」档（海外频道）未检测网络时按大陆处理、默认关，另见 test-network-region.mjs
+    // 声明了 defaultEnabled:false 的（海外频道、澳门）默认关，见下一条
     const manager = newManager(undefined, { modules: {}, masterSwitchRetired: true })
-    const regular = listModules().filter(module => typeof module.enabledGetter !== 'function' && module.network !== 'non-cn')
+    const regular = listModules().filter(module => typeof module.enabledGetter !== 'function' && module.defaultEnabled !== false)
     assert.ok(regular.length > 0)
     assert.deepEqual(
       regular.filter(module => !manager.isModuleEnabled(module)).map(module => module.id),
@@ -997,6 +994,22 @@ try {
     manager.load()
     assert.equal(manager.isModuleEnabled(getModule('kankanews')), false,
       '用户明确保存的关闭态不能被默认值覆盖')
+  })
+
+  check('★ 海外频道、澳门默认关闭，用户打开后保持打开；没点过的开关不落盘', () => {
+    const optIn = listModules().filter(module => module.defaultEnabled === false).map(module => module.id)
+    assert.deepEqual(optIn.sort(), ['overseas', 'tdm'], '默认关的只有面向海外的这两个；新增要想清楚')
+    const manager = newManager(undefined, { modules: {}, masterSwitchRetired: true })
+    for (const id of optIn) assert.equal(manager.isModuleEnabled(getModule(id)), false, id)
+    manager.setModuleEnabled('overseas', true)
+    manager.load()
+    assert.equal(manager.isModuleEnabled(getModule('overseas')), true)
+    assert.equal(manager.isModuleEnabled(getModule('tdm')), false)
+    const saved = JSON.parse(readFileSync(manager.configPath, 'utf-8')).modules
+    assert.equal(saved.overseas.enabled, true)
+    assert.equal(saved.tdm?.enabled, undefined, '没点过的不落值，以后改这个模块的默认值时存量用户跟得上')
+    assert.equal(saved.kankanews?.enabled, undefined)
+    assert.throws(() => validateModule({ id: 'probe', name: 'probe', defaultEnabled: 'no', fetch: async () => ({ groups: [] }) }), /defaultEnabled/)
   })
 
   check('代理开关的模块不受抓取子系统总开关约束', () => {

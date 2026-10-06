@@ -11,7 +11,6 @@ export default {
   category: 'account',
   // catchup: false —— 只做直播。官方接口虽有 playbacktime 时移，但按频道/时段受版权门控
   //（CCTV13 全时段拒、CCTV1 部分时段拒），回看需求交给同台的咪咕源承担（issue #119）。
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   // v2：在原有 63 个公开频道之外加入 10 个官网会员频道。递增后会让存量部署
   // 在启动生成播放列表前重建缓存，不必等待默认 24 小时刷新周期。

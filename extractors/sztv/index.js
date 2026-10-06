@@ -6,7 +6,6 @@ export default {
   id: 'sztv',
   name: '深圳',
   description: '深圳卫视4K及六个地面频道官方直播。播放时自动完成官网鉴权、换取直播 Key 并续签分片。',
-  network: 'cn',  // 清单海外 403 / 超时（签名绑请求方 IP，香港未能验证）（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '广东',
   defaultRefreshMinutes: 240,

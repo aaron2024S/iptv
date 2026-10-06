@@ -5,7 +5,6 @@ export default {
   id: 'ningde',
   name: '宁德',
   description: '宁德台官方直播的新闻综合、文化旅游两路电视频道，每轮刷新从官方接口取 HLS 地址。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: '福建',

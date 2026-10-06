@@ -5,7 +5,7 @@
  * - GET www.tdm.com.mo/api/v1/common/get-domain 按访问者网络返回路由：sourceLiveDomain（官网写的
  *   live3）先换成 liveDomain（locallive），再按 domains 表换一次——澳门本地映射到自己（live3 / locallive），
  *   香港、台湾、日本、美国映射到海外 CDN（live5 / globallive）。
- * - 大陆连官网和海外 CDN 都是 TCP 超时，live3 只有澳门本地能连。所以模块档位是「大陆以外」。
+ * - 大陆连官网和海外 CDN 都是 TCP 超时，live3 只有澳门本地能连。所以模块默认关闭（defaultEnabled: false），部署在大陆以外的用户自己打开。
  * - 海外 CDN 不看 Referer、UA，地址不带签名：给播放器 302 直连，视频不经过本机。
  *
  * 路由缓存 5 分钟；接口一时取不到时沿用上一次的路由（域名几个月不变），从没取到过才报错。

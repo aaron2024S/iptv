@@ -19,12 +19,11 @@
  *   category              string  可选；后台源管理分组。'account' 表示带账号/
  *                                 授权能力，'live' 表示网络直播平台；不声明即
  *                                 'standard'（免账号的普通官方抓取模块）
- *   network               string  必需；在哪种网络下能用：'any' 不限 / 'cn-hk' 大陆和香港 /
- *                                 'cn' 仅大陆 / 'non-cn' 大陆以外（大陆连不上或常卡顿）。
- *                                 只决定默认开关——用户没手动设过开关的模块，在部署网络里用不了
- *                                 就默认关（规则见 utils/networkRegion.js）。
- *                                 按频道的版权拦截不算，照样 'any'。新模块要先在海外实测
- *                                 （scripts/probe-modules.mjs），依据记在仓库根目录 OVERSEAS.md
+ *   defaultEnabled        boolean 可选；用户没在卡片上点过开关时开不开，不声明即开。
+ *                                 只有面向海外、在大陆连不上或常卡顿的模块写 false
+ *                                 （海外频道、澳门），由用户自己打开；各模块在海外的
+ *                                 实测见仓库根目录 OVERSEAS.md。v4.29.0 及以前已有的模块
+ *                                 在存量配置里多已落成 enabled:true，改它们的默认值要另写迁移
  *   capabilities          object  { cache: 'disk'|'memory'|'none',
  *                                   resolve: boolean, epg: boolean }
  *   catalogVersion        number  可选；代码内置频道表变更时递增。缓存版本不一致会在
@@ -204,7 +203,6 @@ import yangzhou from './yangzhou/index.js'
 import yunnan from './yunnan/index.js'
 import tdm from './tdm/index.js'
 import overseas from './overseas/index.js'
-import { NETWORK_TIERS } from '../utils/networkRegion.js'
 
 // 模块 id 会进 sourceId 并写进 EXTINF 属性值，不消毒就是注入面。
 // 与 utils/configBackupAPI.js 的文件名白名单同款约束。
@@ -286,8 +284,8 @@ export function validateModule(module) {
   if (typeof module.fetch !== 'function') {
     throw new Error(`抓取模块 ${module.id} 没有实现 fetch()`)
   }
-  if (module.network != null && !NETWORK_TIERS.includes(module.network)) {
-    throw new Error(`抓取模块 ${module.id} 的 network 非法: ${JSON.stringify(module.network)}`)
+  if (module.defaultEnabled != null && typeof module.defaultEnabled !== 'boolean') {
+    throw new Error(`抓取模块 ${module.id} 的 defaultEnabled 必须是布尔值`)
   }
   if (module.category != null && !MODULE_CATEGORIES.has(module.category)) {
     throw new Error(`抓取模块 ${module.id} 的 category 非法: ${JSON.stringify(module.category)}`)
@@ -330,10 +328,6 @@ export function validateModule(module) {
 const registry = new Map()
 for (const module of MODULES) {
   validateModule(module)
-  // 注册进来的模块必须表态。validateModule 不管有没有（测试里拼的临时模块不带），只管取值合法
-  if (module.network == null) {
-    throw new Error(`抓取模块 ${module.id} 没有声明 network（在哪种网络下能用，见 OVERSEAS.md）`)
-  }
   if (registry.has(module.id)) {
     throw new Error(`抓取模块 id 重复: ${module.id}`)
   }

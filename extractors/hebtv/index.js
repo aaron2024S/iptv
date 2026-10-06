@@ -6,7 +6,6 @@ export default {
   id: 'hebtv',
   name: '河北',
   description: '河北广播电视台六套非购物电视频道与「美丽河北」城市景观慢直播，播放时自动续签。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '河北',
   preserveGroupSuffixes: ['景观'],

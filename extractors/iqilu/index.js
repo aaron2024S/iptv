@@ -12,7 +12,6 @@ export default {
   id: 'iqilu',
   name: '山东',
   description: '山东卫视及八个地面频道官方直播。播放时自动完成官网 AES 鉴权并获取最新地址。',
-  network: 'cn',  // 换签海外回 HTTP 567（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '山东',
   defaultRefreshMinutes: 240,

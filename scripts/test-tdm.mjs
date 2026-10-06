@@ -35,10 +35,10 @@ const jsonResponse = (body, status = 200) => ({ ok: status >= 200 && status < 30
 
 console.log('澳广视（TDM）模块测试')
 
-check('模块定义：六套自办台、档位「大陆以外」、并进「澳门」组、播放时取流', () => {
+check('模块定义：六套自办台、默认关闭、并进「澳门」组、播放时取流', () => {
   const module = getModule('tdm')
   assert.doesNotThrow(() => validateModule(module))
-  assert.equal(module.network, 'non-cn')
+  assert.equal(module.defaultEnabled, false, '取流要服务端连官网，大陆连不上，交给用户打开')
   assert.equal(module.outputGroupName, '澳门')
   assert.equal(module.capabilities.resolve, true)
   assert.equal(module.channelHlsMode, undefined, '海外 CDN 不看来源头，302 直连即可')

@@ -7,7 +7,6 @@ export default {
   id: 'gdtv',
   name: '广东',
   description: '广东卫视及地面频道官方直播。自动排除购物频道，播放时无感续签官网短效地址。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '广东',
   // 频道表写在代码里、一天才刷新一次：改了频道或台标就递增，存量缓存在启动时重建

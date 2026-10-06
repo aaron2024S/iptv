@@ -16,7 +16,6 @@ export default {
   name: '四川',
   description: '四川广电官网 9 个电视频道与当前公开活动直播；活动有则显示、无则隐藏，电视台需关联本人官网登录 Token。',
   category: 'account',
-  network: 'any',  // 未验证（普查时没配 Token），不默认关（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   outputGroupName: '四川',
   channelHlsMode: 'proxy',

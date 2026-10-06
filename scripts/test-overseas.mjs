@@ -4,7 +4,7 @@
  *   - 频道表完整：33 台、台名不重复、只进约定的现有分组、地址都是 https 的固定 HLS；
  *   - 不和精选列表 IPTV.m3u 重复收台；
  *   - 台标：除了暂无出处的 Tennis Channel International，要么写了 tvg-logo，要么内置台标库按台名有图；
- *   - 模块：档位「大陆以外」、排在注册表最后；先从仓库拉，拉不到用镜像自带的那份；频道排到组尾。
+ *   - 模块：默认关闭（defaultEnabled: false）、排在注册表最后；先从仓库拉，拉不到用镜像自带的那份；频道排到组尾。
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -30,10 +30,10 @@ const CHANNELS = parsePlaylistContent(read(`../${PLAYLIST_FILE}`))
 
 console.log('海外频道模块测试')
 
-check('模块定义合法，档位是「大陆以外」，排在注册表最后', () => {
+check('模块定义合法，默认关闭，排在注册表最后', () => {
   assert.ok(module)
   assert.doesNotThrow(() => validateModule(module))
-  assert.equal(module.network, 'non-cn')
+  assert.equal(module.defaultEnabled, false, '播放器直连海外 CDN，能不能看看播放设备的网络，交给用户打开')
   assert.equal(module.capabilities.resolve, false, '固定直链，不需要换签')
   assert.equal(module.defaultRefreshMinutes, 360, '和精选列表同周期从仓库拉')
   assert.equal(listModules().at(-1).id, 'overseas')

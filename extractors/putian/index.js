@@ -6,7 +6,6 @@ export default {
   id: 'putian',
   name: '莆田',
   description: '莆田TV 官方直播的新闻综合、文旅生活与仙游电视台三路电视频道；播放时取官方签名 HLS，由本机中继实时清单。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '福建',

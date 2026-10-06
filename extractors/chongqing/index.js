@@ -11,7 +11,6 @@ export default {
   id: 'chongqing',
   name: '重庆',
   description: '重庆广电官网公开频道；无需登录，播放时自动换取匿名短效地址并中转加密 HLS。',
-  network: 'cn',  // 取列表接口海外（含香港）连接被重置（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   outputGroupName: '重庆',
   channelHlsMode: 'proxy',

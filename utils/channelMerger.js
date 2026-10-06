@@ -194,8 +194,8 @@ function consolidateLocalChannels(groups, { targetGroup, matches, keyOf }) {
 
 /**
  * 海外频道模块（extractors/overseas）的台标了 trailing：在任何分组里都排到最后，跟在各台官方
- * 频道与精选列表之后。它们是部署在香港 / 海外时额外补的海外免费频道，不该抢在各组原有频道前面
- * （海外部署时咪咕关着，它会是体育组里的第一个模块）。
+ * 频道与精选列表之后。它们是用户自己打开的海外免费频道，不该抢在各组原有频道前面
+ * （咪咕关着时它会是体育组里的第一个模块）。
  */
 function moveTrailingChannelsLast(groups) {
   return groups.map(group => {

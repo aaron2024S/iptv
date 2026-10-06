@@ -1,5 +1,5 @@
 /**
- * 海外频道：在大陆连得上但常卡顿、海外播放流畅的免费直播频道，部署在香港或海外时默认开启。
+ * 海外频道：在大陆连得上但常卡顿、海外播放流畅的免费直播频道，默认关闭，用户自己打开。
  *
  * 频道表是仓库根目录的 IPTV-overseas.m3u（格式同精选列表 IPTV.m3u，维护规则写在文件头）：运行时从仓库拉，
  * GitHub 镜像回退与精选列表同一套，改文件推送即生效、不用发版；远程都拉不到时读镜像里自带的那份。
@@ -34,8 +34,9 @@ export async function loadChannels({ url = PLAYLIST_URL } = {}) {
 export default {
   id: 'overseas',
   name: '海外频道',
-  description: '海外免费直播频道（体育、娱乐时尚、文旅、国际、韩国），并入现有分组。在大陆连得上但常卡顿，部署在香港或海外时默认开启。',
-  network: 'non-cn',
+  description: '海外免费直播频道（体育、娱乐时尚、文旅、国际、韩国），并入现有分组。在大陆连得上但常卡顿，默认关闭；播放器直连各平台 CDN，能不能看取决于播放设备的网络。',
+  // 播放器直连海外 CDN：能不能看取决于看的人的网络，服务端判断不了，交给用户自己打开
+  defaultEnabled: false,
   capabilities: { cache: 'disk', resolve: false, epg: false, catchup: false },
   defaultRefreshMinutes: 360,
   refreshConfigurable: false,

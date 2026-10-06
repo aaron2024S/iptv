@@ -6,7 +6,6 @@ export default {
   id: 'shaanxi',
   name: '陕西',
   description: '陕西广电官网 8 套频道（陕西卫视、农林卫视与新闻资讯、都市青春、银龄、秦腔、体育休闲、移动电视）；无需登录，播放时动态取当前地址，本机只中继清单、分片由播放器直连官方 CDN。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 1,
   outputGroupName: '陕西',

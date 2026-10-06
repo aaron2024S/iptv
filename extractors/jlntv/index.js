@@ -6,7 +6,6 @@ export default {
   id: 'jlntv',
   name: '吉林',
   description: '吉林广电官网 15 路电视和 13 路慢直播；无需登录，动态签名自动刷新，清单和媒体全代理。',
-  network: 'cn-hk',  // 取列表接口香港放行，日本 / 新加坡 / 美国 403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 2,
   outputGroupName: '吉林',

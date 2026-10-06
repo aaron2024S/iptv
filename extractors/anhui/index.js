@@ -10,7 +10,6 @@ export default {
   id: 'anhui',
   name: '安徽',
   description: '安徽视讯 App 公开的 7 路电视频道；无需登录，播放时按 App 公开算法生成短效签名，清单与分片由本机以 App 播放器标识全代理。',
-  network: 'cn',  // 换签接口海外（含香港）403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: '安徽',

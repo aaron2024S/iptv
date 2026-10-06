@@ -1,6 +1,5 @@
 import { readFileSync, existsSync } from "node:fs"
 import { dataPath } from "./utils/paths.js"
-import { networkAllows, onNetworkRegionChange } from "./utils/networkRegion.js"
 
 const SYSTEM_CONFIG_PATH = dataPath('system-config.json')
 
@@ -44,9 +43,6 @@ function sanitizeSegment(value, fallback) {
 let userId, token, port, host, rateType, debug, pass, enableHDR, enableH265, programInfoUpdateInterval, refreshToken, adminPath, externalLogoBase, externalLogoIndex, enableTvgNormalize, enableEpgAggregation, enableLogoCache, enableUserTokens, enableDisplayNameUnify, enableClientDispatch
 // 内容开关：咪咕核心 / 内置单频道源 / 内置订阅源。默认全开（老用户零感知）
 let enableMigu, enableBuiltInSources, enableBuiltInSubscriptions, enableExtractors
-// 咪咕开关的来源：config（后台点过，写进了 system-config.json）/ env（menableMigu）/
-// blank（空白模式推出的关，与网络无关）/ auto（默认值，跟随部署网络）
-let enableMiguSource
 
 function applyConfig(systemConfig) {
   // 用户id
@@ -117,15 +113,7 @@ function applyConfig(systemConfig) {
   const blank = parseBool(systemConfig.blank ?? process.env.mblank, false)
   const defOn = !blank
   // 咪咕核心（CCTV/卫视抓取 + 体育赛事 + EPG + token刷新）
-  // 没显式设过时还要看部署网络：咪咕是「仅大陆」档（extractors/migu 的 network），海外换签
-  // 一律回「不可在当前地区播放」，开着的话「央视」「卫视」分组排最前、播放器默认选中的全是坏的。
-  // 地区变化时下面的监听会重算一次（ESM 实时绑定，各处 import 的 enableMigu 跟着变）。
-  enableMiguSource = systemConfig.enableMigu !== undefined ? 'config'
-    : process.env.menableMigu !== undefined && process.env.menableMigu !== '' ? 'env'
-      : blank ? 'blank' : 'auto'
-  enableMigu = systemConfig.enableMigu !== undefined
-    ? systemConfig.enableMigu
-    : parseBool(process.env.menableMigu, defOn && networkAllows('cn'))
+  enableMigu = systemConfig.enableMigu !== undefined ? systemConfig.enableMigu : parseBool(process.env.menableMigu, defOn)
   // 内置单频道源（built-in-sources.json：纬来体育/RedBull/4K卫视等）
   enableBuiltInSources = systemConfig.enableBuiltInSources !== undefined ? systemConfig.enableBuiltInSources : parseBool(process.env.menableBuiltInSources, defOn)
   // 内置订阅源（精选频道）
@@ -143,7 +131,6 @@ function applyConfig(systemConfig) {
 }
 
 applyConfig(loadSystemConfig())
-onNetworkRegionChange(() => applyConfig(loadSystemConfig()))
 
 // 重新加载系统配置（保存系统配置后调用，避免必须重启进程）
 function reloadConfig() {
@@ -151,4 +138,4 @@ function reloadConfig() {
   return { userId, token, port, host, rateType, pass, enableHDR, enableH265, programInfoUpdateInterval, refreshToken, adminPath, externalLogoBase, externalLogoIndex, enableTvgNormalize, enableEpgAggregation, enableLogoCache, enableUserTokens, enableDisplayNameUnify, enableClientDispatch, enableMigu, enableBuiltInSources, enableBuiltInSubscriptions, enableExtractors }
 }
 
-export { userId, token, port, host, rateType, debug, pass, enableHDR, programInfoUpdateInterval, enableH265, refreshToken, adminPath, externalLogoBase, externalLogoIndex, enableTvgNormalize, enableEpgAggregation, enableLogoCache, enableUserTokens, enableDisplayNameUnify, enableClientDispatch, enableMigu, enableMiguSource, enableBuiltInSources, enableBuiltInSubscriptions, enableExtractors, reloadConfig, sanitizeSegment }
+export { userId, token, port, host, rateType, debug, pass, enableHDR, programInfoUpdateInterval, enableH265, refreshToken, adminPath, externalLogoBase, externalLogoIndex, enableTvgNormalize, enableEpgAggregation, enableLogoCache, enableUserTokens, enableDisplayNameUnify, enableClientDispatch, enableMigu, enableBuiltInSources, enableBuiltInSubscriptions, enableExtractors, reloadConfig, sanitizeSegment }

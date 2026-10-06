@@ -6,7 +6,6 @@ export default {
   id: 'shanxi',
   name: '山西',
   description: '山西广电官网 6 套省级频道，以及太原、晋中、运城等 10 个地市频道；无需登录，播放时动态取当前地址，本机只中继清单、分片由播放器直连官方 CDN。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   catalogVersion: 2,
   outputGroupName: '山西',

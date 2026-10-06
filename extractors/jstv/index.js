@@ -6,7 +6,6 @@ export default {
   id: 'jstv',
   name: '江苏',
   description: '江苏卫视及地面频道官方直播。播放时自动生成短效签名并代理官网防盗链请求头。',
-  network: 'cn-hk',  // 清单香港放行，日本 / 美国 403（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '江苏',
   defaultRefreshMinutes: 240,

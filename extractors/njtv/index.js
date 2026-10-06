@@ -6,7 +6,6 @@ export default {
   id: 'njtv',
   name: '南京',
   description: '南京四个电视频道与 Live 南京城市景观官方直播，自动去除重复电视流。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: true },
   outputGroupName: '南京',
   preserveGroupSuffixes: ['景观'],

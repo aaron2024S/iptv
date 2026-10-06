@@ -5,7 +5,6 @@ export default {
   id: 'meizhou-hakka',
   name: '梅州',
   description: '梅州市广播电视台客家生活频道的公开 HLS 直播。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: false, epg: false, catchup: false },
   catalogVersion: 1,
   outputGroupName: '广东',

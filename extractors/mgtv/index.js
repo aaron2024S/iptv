@@ -5,7 +5,6 @@ export default {
   id: 'mgtv',
   name: '湖南',
   description: '湖南广电及长沙频道官方直播。自动排除购物频道并选择官网当前最高画质。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false },
   outputGroupName: '湖南',
   defaultRefreshMinutes: 240,

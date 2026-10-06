@@ -47,7 +47,6 @@ export default {
   name: '抖音直播',
   description: '公开网页直播：按所选分类轮选或保留“全部”页顺序；支持手填房间号，默认 FLV，也可选 HLS。',
   category: 'live',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   streamType: 'flv',
   defaultRefreshMinutes: 30,

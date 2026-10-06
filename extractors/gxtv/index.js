@@ -12,7 +12,6 @@ export default {
   id: 'gxtv',
   name: '广西',
   description: '广西卫视及地面频道官方直播。只收录官网正式频道，自动排除测试流和矩阵号。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: true },
   outputGroupName: '广西',
   defaultRefreshMinutes: 30,

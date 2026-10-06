@@ -6,7 +6,6 @@ export default {
   id: 'quanzhou-minnan',
   name: '泉州',
   description: '从泉州广播电视台公开播放接口获取新闻综合、闽南语频道的短期签名 HLS。',
-  network: 'cn',  // 换签海外 403（签名绑请求方 IP，香港未能验证）（OVERSEAS.md）
   capabilities: { cache: 'disk', resolve: true, epg: true, catchup: false },
   // 2：加入泉州新闻综合
   catalogVersion: 2,

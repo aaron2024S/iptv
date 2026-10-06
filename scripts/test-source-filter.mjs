@@ -228,7 +228,7 @@ check('体育组里外部订阅的频道排在地方官方体育频道之后，�
 })
 
 check('体育组里海外频道模块（trailing）的台排在组尾：地方官方体育频道、精选列表之后', () => {
-  // 海外部署时咪咕关着，海外频道模块是体育组里第一个模块，不处理就会排到最前
+  // 咪咕关着时（海外部署常见），海外频道模块是体育组里第一个模块，不处理就会排到最前
   const output = consolidateLocalSportsChannels([
     { name: '体育', dataList: [
       { name: 'Sky Racing 1', sourceId: 'xt:overseas', trailing: true },

@@ -5,7 +5,6 @@ export default {
   id: 'nmtv',
   name: '内蒙古',
   description: '内蒙古广电官网 20 路公开频道；无需登录，播放时从加密接口动态取流，清单和媒体全代理。',
-  network: 'any',
   capabilities: { cache: 'disk', resolve: true, epg: false, catchup: false },
   catalogVersion: 3,
   outputGroupName: '内蒙古',

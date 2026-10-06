@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 「海外频道」模块（extractors/overseas）与它的频道表 IPTV-overseas.m3u：
- *   - 频道表完整：33 台、台名不重复、只进约定的现有分组、地址都是 https 的固定 HLS；
+ *   - 频道表完整：42 台、台名不重复、只进约定的现有分组、地址都是 https 的固定 HLS；
  *   - 不和精选列表 IPTV.m3u 重复收台；
  *   - 台标：除了暂无出处的 Tennis Channel International，要么写了 tvg-logo，要么内置台标库按台名有图；
  *   - 模块：默认关闭（defaultEnabled: false）、排在注册表最后；先从仓库拉，拉不到用镜像自带的那份；频道排到组尾。
@@ -39,8 +39,8 @@ check('模块定义合法，默认关闭，排在注册表最后', () => {
   assert.equal(listModules().at(-1).id, 'overseas')
 })
 
-check('频道表：33 台、台名不重复、只进约定分组、地址都是 https HLS', () => {
-  assert.equal(CHANNELS.length, 33)
+check('频道表：42 台、台名不重复、只进约定分组、地址都是 https HLS', () => {
+  assert.equal(CHANNELS.length, 42)
   const names = CHANNELS.map(channel => channel.name)
   assert.equal(new Set(names).size, names.length, '台名重复')
   for (const channel of CHANNELS) {
@@ -71,7 +71,7 @@ await checkAsync('fetch 按分组输出，频道排到组尾、不透传回看�
   const { groups, meta } = await module.fetch()
   assert.deepEqual(meta, { skipped: [], warnings: [] })
   assert.deepEqual(groups.map(group => [group.name, group.dataList.length]),
-    [['体育', 13], ['娱乐时尚', 12], ['文旅', 5], ['国际', 2], ['韩国', 1]])
+    [['体育', 13], ['娱乐时尚', 12], ['文旅', 7], ['国际', 9], ['韩国', 1]])
   for (const group of groups) {
     for (const channel of group.dataList) {
       assert.ok(channel.url && channel.name)
@@ -98,7 +98,7 @@ await checkAsync('先从仓库拉：拉到就用仓库的（推送即生效）�
 
     const fallback = await loadChannels({ url: `${base}/missing.m3u` })
     assert.equal(fallback.from, 'bundled')
-    assert.equal(fallback.channels.length, 33)
+    assert.equal(fallback.channels.length, 42)
     assert.match(fallback.warnings[0], /拉不到，先用镜像自带的/)
   } finally {
     server.close()

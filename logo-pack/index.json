@@ -3332,6 +3332,17 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "Al Jazeera English": {
+   "file": "Al Jazeera English.png",
+   "hash": "752759d133",
+   "height": 111,
+   "kind": "official",
+   "note": "Al Jazeera 官网页头矢量台标，原图纯白（fill #fff），浅色界面上看不见，铺黑底。官网只有这一版，favicon_aje.ico 只有 32x32。",
+   "origin": "manual",
+   "source": "https://www.aljazeera.com/live",
+   "updated": "2026-10-06",
+   "width": 256
+  },
   "Arirang": {
    "file": "Arirang.png",
    "hash": "90c982ad41",
@@ -3351,6 +3362,39 @@
    "source": "https://image.xumo.com/v1/channels/channel/99991387/168x168.png?type=color_onBlack",
    "updated": "2026-10-06",
    "width": 168
+  },
+  "Bloomberg TV Asia": {
+   "file": "Bloomberg TV Asia.png",
+   "hash": "535cef2314",
+   "height": 80,
+   "kind": "library",
+   "note": "黑字「Bloomberg Television」字标，512x160 透明 PNG，三个地区版共用。bloomberg.com 对非浏览器请求一律 403、大陆连不上，官网直播页的台标取不到；iptv-org 给 Bloomberg TV 的就是这张。黑字在深色界面上看不清，铺白底。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 BloombergTV.us）",
+   "updated": "2026-10-06",
+   "width": 256
+  },
+  "Bloomberg TV Europe": {
+   "file": "Bloomberg TV Europe.png",
+   "hash": "535cef2314",
+   "height": 80,
+   "kind": "library",
+   "note": "同 Bloomberg TV Asia：黑字「Bloomberg Television」字标，三个地区版共用，铺白底。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 BloombergTV.us）",
+   "updated": "2026-10-06",
+   "width": 256
+  },
+  "Bloomberg TV US": {
+   "file": "Bloomberg TV US.png",
+   "hash": "535cef2314",
+   "height": 80,
+   "kind": "library",
+   "note": "同 Bloomberg TV Asia：黑字「Bloomberg Television」字标，三个地区版共用，铺白底。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 BloombergTV.us）",
+   "updated": "2026-10-06",
+   "width": 256
   },
   "BRTV i生活": {
    "file": "BRTV i生活.png",
@@ -3934,6 +3978,17 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "DW English": {
+   "file": "DW English.png",
+   "hash": "0b5889fb5d",
+   "height": 180,
+   "kind": "official",
+   "note": "DW 官网 apple-touch 图标（180x180，蓝底白圈 DW），直播页 <link rel=icon> 引用。",
+   "origin": "manual",
+   "source": "https://www.dw.com/en/live-tv/channel-english",
+   "updated": "2026-10-06",
+   "width": 180
+  },
   "Estrella TV": {
    "file": "Estrella TV.png",
    "hash": "6be2a36749",
@@ -4071,6 +4126,17 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "Gusto TV": {
+   "file": "Gusto TV.png",
+   "hash": "40321e7185",
+   "height": 168,
+   "kind": "platform",
+   "note": "Xumo 频道卡（168x168，黑色「gustotv」字标，透明底），浅色版；本频道的直播地址也取自 Xumo。gustotv.com 对非浏览器请求回 403。黑字在深色界面上看不清，铺白底。",
+   "origin": "manual",
+   "source": "https://play.xumo.com/networks/gustotv/99991328",
+   "updated": "2026-10-06",
+   "width": 168
+  },
   "History Hit": {
    "file": "History Hit.png",
    "hash": "97c35de4dc",
@@ -4135,6 +4201,17 @@
    "origin": "manual",
    "source": "https://gizmo.rakuten.tv/v3/live_channels?classification_id=18&device_identifier=web&locale=en&market_code=uk&per_page=50 （Rakuten TV 英国区直播频道接口，频道 id mystery-tv）",
    "updated": "2026-09-25",
+   "width": 256
+  },
+  "NASA+": {
+   "file": "NASA+.png",
+   "hash": "a5a12c7140",
+   "height": 214,
+   "kind": "official",
+   "note": "NASA+ 没有单独的频道台标：plus.nasa.gov 的图标都是 nasa-png-placeholder 占位图。按所属机构台标的规则，用 NASA+ 页面引用的 NASA 官方矢量徽标（蓝圆红箭，nasa.gov 主题资源）。",
+   "origin": "manual",
+   "source": "https://plus.nasa.gov/",
+   "updated": "2026-10-06",
    "width": 256
   },
   "NEWS1": {
@@ -4277,6 +4354,17 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "Thai PBS": {
+   "file": "Thai PBS.png",
+   "hash": "e1a0b312bf",
+   "height": 192,
+   "kind": "official",
+   "note": "Thai PBS 官网 PWA 图标（192x192，橙底白色飞鸟台标），官网直播页 <link rel=icon> 引用；同目录的横版 thaipbs-logo-horizontal-white.png 是纯白字。",
+   "origin": "manual",
+   "source": "https://www.thaipbs.or.th/live",
+   "updated": "2026-10-06",
+   "width": 192
+  },
   "Totalmusic Concerts": {
    "file": "Totalmusic Concerts.png",
    "hash": "b6b1e7fce2",
@@ -4297,6 +4385,17 @@
    "origin": "manual",
    "source": "Samsung TV Plus 印度区频道表（https://i.mjh.nz/SamsungTVPlus/.channels.json.gz，频道 IN8000085E「TRACE Sport Stars」）",
    "updated": "2026-09-25",
+   "width": 256
+  },
+  "TRT World": {
+   "file": "TRT World.png",
+   "hash": "dc5759d668",
+   "height": 256,
+   "kind": "official",
+   "note": "TRT World 官网直播页图标（文件名写 48，实际 732x732），深灰圆底加银蓝圆环台标，透明底。",
+   "origin": "manual",
+   "source": "https://www.trtworld.com/live/europe",
+   "updated": "2026-10-06",
    "width": 256
   },
   "TVBS亚洲": {

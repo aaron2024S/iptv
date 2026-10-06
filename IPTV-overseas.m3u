@@ -1,13 +1,16 @@
 #EXTM3U
-# iPTV 海外频道：在大陆连得上但常卡顿、海外播放流畅的免费直播频道。
+# iPTV 海外频道：在大陆常卡顿或连不上、海外播放流畅的免费直播频道。
 # 用途：「海外频道」抓取模块（extractors/overseas）运行时从仓库拉这份文件，改了推送即生效、不用发版；
 #       默认关闭，用户在后台自己打开；播放器直连，能不能看取决于播放设备的网络。频道按 group-title 并进现有分组、排在组尾。
 # 分工：在大陆也播得顺的放精选列表 IPTV.m3u；只在海外顺的放这里。一台换了归属就把那几行剪过去。
 # 来源：亚洲直播实验台（asian-live-lab）验证过的分发源——Samsung TV Plus、Plex、Rakuten TV、LG Channels、Xumo 等
-#       免费流媒体（FAST）平台，以及 France 24、Arirang 官方。新增前先在海外出口取一遍主清单、子清单和分片。
+#       免费流媒体（FAST）平台，以及 France 24、Arirang 官方；公共直播实验台（public-live-lab）验证过的广播机构
+#       官方入口（Thai PBS、Bloomberg、DW、TRT World、NASA+、Al Jazeera）和 Xumo 上的 Gusto TV。
+#       新增前先在海外出口取一遍主清单、子清单和分片。
 # 地址：主清单把最低档排在最前的，播放器会从最低档起播、先糊一阵；最高档地址固定不变的就直接写最高档（同精选
 #       列表的 NHL FAST），代价是没有自动降档。最高档地址带会话参数的（FUEL TV、MTRSPT1、Terra Mater WILD、
-#       Wipeout Xtra、MovieSphere）和带会话 ID 样串的（FIFA+、Qello Concerts）仍写主清单。
+#       Wipeout Xtra、MovieSphere、Gusto TV）和带会话 ID 样串的（FIFA+、Qello Concerts）仍写主清单。
+#       主清单里挂着独立字幕轨的（Thai PBS 泰 / 英字幕、DW English 英文字幕）也写主清单，写死一档字幕就没了。
 # 台标：留空时按台名用内置台标库 logo-pack（规则见 LOGO.md）；beIN Sports Xtra 用 Xumo 频道卡，Tennis Channel International 暂无。
 # 实验台备注：澳大利亚赛马直播频道，720p
 #EXTINF:-1 group-title="体育",Sky Racing 1
@@ -99,12 +102,42 @@ https://ef79b15c8c7c46c7a9de9d33001dbd07.mediatailor.us-west-2.amazonaws.com/v1/
 # 实验台备注：英语国际旅行与生活方式频道，最高 1080p
 #EXTINF:-1 group-title="文旅",InTravel
 https://amg00861-amg00861c10-rakuten-uk-3152.playouts.now.amagi.tv/1080p/index.m3u8
+# 公共直播实验台：NASA 官方线性频道（航天、科学与 NASA 原创节目），英语；主清单最低档 416x234 排第一，
+# 直接用 1080p 档（NASA 官方接口给的 NASAPrime 频道，地址不带会话参数）；字幕是内嵌的 CEA-608，跟着视频走
+#EXTINF:-1 group-title="文旅",NASA+
+https://ee119c17e6ed643893ff6ae377fe0693.7wzuvg.channel-assembly.mediatailor.us-east-1.amazonaws.com/v1/channel/NASAPrime/NASAPlus/8.m3u8
+# 公共直播实验台：加拿大英语美食烹饪频道，Xumo 官方分发（直播条目 SIMULCAST、有效期到 2038 年），最高 1080p；
+# 子清单带会话 ID，写主清单
+#EXTINF:-1 group-title="文旅",Gusto TV
+https://dbrb49pjoymg4.cloudfront.net/10001/99991328/hls/playlist.m3u8?ads.xumo_channelId=99991328
 # 实验台备注：泰国新闻频道，官方自适应直播最高约 2 Mbps
 #EXTINF:-1 group-title="国际",NEWS1
 https://server1.streamssl.com/stream/news1_mid.m3u8
 # 实验台备注：西班牙语国际新闻高码率直播
 #EXTINF:-1 group-title="国际",France 24 Español
 https://live.france24.com/hls/live/2037220-b/F24_ES_HI_HLS/master_5000.m3u8
+# 公共直播实验台：泰国公共电视，新闻、教育与文娱，泰语；最高 1080p；主清单带泰语、英语字幕轨，写主清单
+#EXTINF:-1 group-title="国际",Thai PBS
+https://thaipbs-mcx0wm.cdn.byteark.com/vtt-live/playlist.m3u8
+# 公共直播实验台：Bloomberg 官方亚太版英语财经直播，最高 720p，主清单最高档排第一；入口在 bloomberg.com，大陆连不上
+#EXTINF:-1 group-title="国际",Bloomberg TV Asia
+https://www.bloomberg.com/media-manifest/streams/asia.m3u8
+# 公共直播实验台：Bloomberg 官方欧洲版英语财经直播，最高 720p
+#EXTINF:-1 group-title="国际",Bloomberg TV Europe
+https://www.bloomberg.com/media-manifest/streams/eu.m3u8
+# 公共直播实验台：Bloomberg 官方美国版英语财经直播，最高 720p
+#EXTINF:-1 group-title="国际",Bloomberg TV US
+https://www.bloomberg.com/media-manifest/streams/us.m3u8
+# 公共直播实验台：德国之声英语频道，国际新闻、纪录与文化专题，最高 1080p / 50 帧；主清单带英文字幕轨和 -b 备用线路，写主清单
+#EXTINF:-1 group-title="国际",DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/master.m3u8
+# 公共直播实验台：土耳其广播公司 TRT 的英语国际新闻频道，主清单 1080p 排第一、最高 1440p
+#EXTINF:-1 group-title="国际",TRT World
+https://tv-trtworld.medya.trt.com.tr/master.m3u8
+# 公共直播实验台：半岛电视台英语频道，官网直播播放器经 Brightcove 公开播放接口给出的固定入口（不带签名），
+# 主清单 1080p 排第一
+#EXTINF:-1 group-title="国际",Al Jazeera English
+https://live-hls-web-aje-gcp.thehlive.com/AJE/index.m3u8
 # 实验台备注：官方自适应 360p / 540p / 720p
 #EXTINF:-1 group-title="韩国",Arirang
 https://amdlive-ch01-g-ctnd-com.akamaized.net/arirang_1gch/smil:arirang_1gch.smil/chunklist_b2256000_sleng.m3u8

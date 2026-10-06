@@ -159,6 +159,7 @@ import fjtv from './fjtv/index.js'
 import fengshows from './fengshows/index.js'
 import gansu from './gansu/index.js'
 import gdtv from './gdtv/index.js'
+import gdsportEvents from './gdsport-events/index.js'
 import gztv from './gztv/index.js'
 import gzstv from './gzstv/index.js'
 import gxtv from './gxtv/index.js'
@@ -230,6 +231,7 @@ const MODULES = [
   dalian,
   gansu,
   gdtv,
+  gdsportEvents,
   gztv,
   gzstv,
   gxtv,

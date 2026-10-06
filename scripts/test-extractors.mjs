@@ -105,6 +105,7 @@ import {
   resolveChannel as resolveIqiluChannel,
 } from '../extractors/iqilu/api.js'
 import {
+  CHANNEL_LIST_TIMEOUT_MS as HNNTV_LIST_TIMEOUT_MS,
   buildChannels as buildHnntvChannels,
   clearCache as clearHnntvCache,
   resolveChannel as resolveHnntvChannel,
@@ -2692,6 +2693,22 @@ await checkAsync('海南：抓取七套频道，播放时签名并在有效期�
   assert.equal(first.upstreamHeaders, undefined)
   assert.equal(listCalls, 1)
   assert.equal(playCalls, 1)
+})
+
+await checkAsync('海南：频道列表接口常要 12～13 秒才回，等 20 秒，不跟随通用的单次请求超时', async () => {
+  assert.equal(HNNTV_LIST_TIMEOUT_MS, 20 * 1000)
+  clearHnntvCache()
+  // 管理器给每个模块传 timeoutMs:10000；这里把它压到 50ms，接口 150ms 才回，照样要抓到
+  const fetchImpl = async (requestUrl, options = {}) => {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 150)
+      options.signal?.addEventListener('abort', () => { clearTimeout(timer); reject(Object.assign(new Error('aborted'), { name: 'AbortError' })) })
+    })
+    return fakeResponse({ businessCode: '00000', resultSet: hnntvRows() })
+  }
+  const result = await getModule('hnntv').fetch({}, { fetchImpl, timeoutMs: 50, now: 1720000000000 })
+  assert.equal(result.groups[0].dataList.length, 7)
+  clearHnntvCache()
 })
 
 // ---- 河南大象新闻 ----

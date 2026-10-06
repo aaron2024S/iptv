@@ -112,6 +112,7 @@
 
 - 10-06 实测：洛杉矶出口主清单 → 子清单 → 分片 33/33 都通；Globalping 大陆家宽探针取子清单和分片也都通（部分分片回 307 跳到别的 CDN）。
 - 10-06 新收 9 台：洛杉矶出口 9/9 连续解码 30 秒（NASA+ 72 秒）音视频都正常，最高档 TRT World 2560×1440，Thai PBS、DW、NASA+、Al Jazeera、Gusto TV 1920×1080，Bloomberg 1280×720。Globalping 大陆探针（家宽 4 + 腾讯 / 阿里云机房 2）取主清单、最高档子清单和分片：Thai PBS、TRT World、NASA+、Al Jazeera、Gusto TV 三跳都通；Bloomberg 三台主清单在 www.bloomberg.com，大陆 DNS 被污染或连接超时，DW 的 dwamdstream102.akamaized.net 同样连不上——这 4 台在大陆不挂代理看不了。大陆能连上的 5 台流畅度没有大陆实测，先都放在这里，作者在大陆播放顺的再剪到精选列表。
+- 网页播放（后台和独立播放页）：Thai PBS 的 CDN 只放行官网自己的 Origin，浏览器跨域请求必带 Origin，网页里播不了，外部播放器正常；NASA+ 的分片拒绝别家来源头、放行不带来源的请求，播放页加了 `no-referrer` 后网页可播。
 - 没收的：港台电视 31 只放行香港（香港三类网络 200，大陆、台湾、日本、美国 403）；面包台大陆、海外都 404，源已挂，已从精选列表删除。
 - 台标按台名用内置台标库（9 月手工收的），beIN Sports Xtra 用 Xumo 频道卡，Tennis Channel International 暂无。
 - 起播清晰度：主清单把最低档排第一的，AVPlayer 等会从最低档起播、先糊一阵（实验台网页播放器锁最高档，所以那边清楚）。最高档地址固定的 14 台（加精选列表的 Red Bull TV、CNA、Pet Club TV）10-06 改成直接写最高档，和 NHL FAST、WildEarth 一样，代价是没了自动降档；最高档地址带会话参数的 8 台（World Poker Tour、FUEL TV、MTRSPT1、Terra Mater WILD、Wipeout Xtra、MovieSphere、FIFA+、Qello Concerts）仍是主清单，要一开就清楚得服务端转发时把最高档挪到第一位。

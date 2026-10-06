@@ -12,7 +12,7 @@ process.env.mdataDir = dir
 process.env.mFengshowsToken = ''
 process.on('exit', () => rmSync(dir, { recursive:true, force:true }))
 const { default: module } = await import('../extractors/fengshows/index.js')
-const { CHANNELS, parseToken, officialMediaUrl, resolveChannel } = await import('../extractors/fengshows/api.js')
+const { CHANNELS, parseToken, officialMediaUrl, resolveChannel, checkToken, credentialRejected, resetTokenState, TOKEN_REJECTED_NOTICE } = await import('../extractors/fengshows/api.js')
 const { getModule, resolverFor } = await import('../extractors/registry.js')
 const { redactConfig, validateConfig, resolveConfig, ExtractorManager } = await import('../utils/extractorManager.js')
 const { parseInterfaceTxt, generateM3u8, applyConfig } = await import('../utils/playlistConfig.js')
@@ -98,16 +98,95 @@ test('访客 HD、账号 FHD；仅对官方 API 带 Token，签名不改写也�
   }
 })
 
-test('访问限制、凭证过期和错误信息均正确收口，不静默回退为 480p', async () => {
+// 官网对过期 Token 要 720p 回 10005；不带 Token 要 480p 照常放行（2026-10-06 实测）
+function expiringApi() {
+  const calls = []
+  const fetchImpl = async (url, options) => {
+    url = new URL(url); calls.push({ url, token: options.headers.token })
+    assert.equal(options.redirect, 'error')
+    if (url.pathname.endsWith('auth-url')) {
+      return Response.json(options.headers.token
+        ? { status:'10005', message:'賬號已過期，請重新登錄' }
+        : { status:'0', data:{ live_url:signed } })
+    }
+    return Response.json({ status:'0', data:{ live_type:'tv' } })
+  }
+  return { calls, fetchImpl }
+}
+
+test('访问限制和错误信息正确收口', async () => {
   const blocked = mockApi({blocked:true})
   assert.equal((await resolveChannel(ref, {fetchImpl:blocked.fetchImpl})).url, '')
   assert.equal(blocked.calls.length, 1)
-  const expired = mockApi({token:'private-test-token',status:'10005'})
-  const result = await resolveChannel(ref, {fetchImpl:expired.fetchImpl,config:{token:'private-test-token'}})
-  assert.equal(result.url, ''); assert.match(result.desc, /已过期/); assert.equal(expired.calls.length, 2)
   const failure = mockApi({error:'request headers token=private-test-token'})
   assert.equal(JSON.stringify(await resolveChannel(ref,{fetchImpl:failure.fetchImpl})).includes('private-test-token'), false)
   assert.equal((await resolveChannel('fengshows-movie.flv',{fetchImpl:()=>assert.fail('invalid ref must not fetch')})).url, '')
+})
+
+test('Token 过期改走游客 480p 不断播，记下后之后直接走游客；换 Token 即恢复', async () => {
+  resetTokenState()
+  const config = {token:'private-test-token'}
+  assert.equal(credentialRejected(config), '')
+  const api = expiringApi()
+  const first = await resolveChannel(ref, {fetchImpl:api.fetchImpl, config})
+  assert.equal(first.url, signed); assert.equal(first.quality, 'hd')
+  // 带 Token 撞一次 10005，再不带 Token 重取；游客那两次绝不能带上被拒的 Token
+  assert.deepEqual(api.calls.map(c=>[c.url.pathname.split('/').pop(), c.url.searchParams.get('live_qa'), c.token]),
+    [[CHANNELS[0].id,null,'private-test-token'],['auth-url','fhd','private-test-token'],[CHANNELS[0].id,null,undefined],['auth-url','hd',undefined]])
+  assert.equal(credentialRejected(config), TOKEN_REJECTED_NOTICE)
+  assert.match(TOKEN_REJECTED_NOTICE, /480p/)
+
+  api.calls.length = 0
+  const again = await resolveChannel('fengshows-chinese.flv', {fetchImpl:api.fetchImpl, config})
+  assert.equal(again.url, signed); assert.equal(again.quality, 'hd')
+  assert.equal(api.calls.length, 2)
+  assert.ok(api.calls.every(c=>c.token === undefined))
+
+  // 换了 Token 不再算被拒，会重新尝试 720p
+  assert.equal(credentialRejected({token:'fresh-test-token'}), '')
+  assert.equal(credentialRejected({}), '')
+  resetTokenState()
+})
+
+test('刷新时检查 Token：被拒只提示不减频道，检查通过清掉记录，网络异常不冤枉 Token', async () => {
+  resetTokenState()
+  const config = {token:'private-test-token'}
+  assert.deepEqual(await checkToken({}, {fetchImpl:()=>assert.fail('no token must not fetch')}), {})
+
+  const expired = expiringApi()
+  let fetched = await module.fetch(config, {fetchImpl:expired.fetchImpl})
+  assert.equal(fetched.groups[0].dataList.length, 3)
+  assert.equal(fetched.meta.credentialRejected, TOKEN_REJECTED_NOTICE)
+  assert.deepEqual(fetched.meta.warnings, [])
+  assert.deepEqual(expired.calls.map(c=>[c.url.searchParams.get('live_qa'), c.token]), [['fhd','private-test-token']])
+  assert.equal(credentialRejected(config), TOKEN_REJECTED_NOTICE)
+
+  const valid = mockApi({token:'private-test-token'})
+  fetched = await module.fetch(config, {fetchImpl:valid.fetchImpl})
+  assert.equal(fetched.meta.credentialRejected, '')
+  assert.equal(credentialRejected(config), '')
+
+  const down = mockApi({token:'private-test-token', error:'connect failed token=private-test-token'})
+  fetched = await module.fetch(config, {fetchImpl:down.fetchImpl})
+  assert.equal(fetched.meta.credentialRejected, '')
+  assert.deepEqual(fetched.meta.warnings, ['凤凰秀 Token 检查没有完成：网络异常或接口超时'])
+  assert.equal(JSON.stringify(fetched).includes('private-test-token'), false)
+  resetTokenState()
+})
+
+test('后台状态：播放时发现的失效立刻可见，保存新配置后清掉旧结论', async () => {
+  resetTokenState()
+  const manager = new ExtractorManager()
+  manager.configPath = join(dir,'extractors-alert.json'); manager.cachePath = join(dir,'extractor-cache-alert.json')
+  manager.load(); manager.updateModuleConfig('fengshows', {token:'private-test-token'})
+  const healthOf = () => manager.getState().modules.find(m=>m.id==='fengshows').health
+  assert.equal(healthOf().credentialRejected, '')
+  await resolveChannel(ref, {fetchImpl:expiringApi().fetchImpl, config:manager.effectiveConfig(module)})
+  assert.equal(healthOf().credentialRejected, TOKEN_REJECTED_NOTICE)
+  manager.updateModuleConfig('fengshows', {token:'fresh-test-token'})
+  assert.equal(healthOf().credentialRejected, '')
+  manager.updateModuleConfig('fengshows', {token:null})
+  resetTokenState()
 })
 
 test('模块路由保留签名，明确忽略回看查询；FLV 类型传至主路由', async () => {

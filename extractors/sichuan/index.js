@@ -39,6 +39,7 @@ export default {
   async fetch(config, ctx = {}) {
     const accessToken = parseCredential(config?.accessToken)
     const warnings = []
+    let credentialRejected = ''
     let rows = []
     let liveRows = []
     if (!accessToken) warnings.push('尚未配置四川官网登录 Token，9 个电视频道暂不加入；公开活动直播不受影响')
@@ -50,8 +51,9 @@ export default {
         warnings.push(error?.message || String(error))
       }
       // 校验结果只做提示，不增删播放列表里的频道
-      const tokenWarning = await checkToken(rows, accessToken, options)
-      if (tokenWarning) warnings.push(tokenWarning)
+      const check = await checkToken(rows, accessToken, options)
+      if (check.warning) warnings.push(check.warning)
+      credentialRejected = check.rejected || ''
     }
     try {
       liveRows = await fetchLiveEvents({ timeoutMs: ctx.timeoutMs, fetchImpl: ctx.fetchImpl })
@@ -61,7 +63,7 @@ export default {
     const dataList = [...buildChannels(rows), ...buildLiveChannels(liveRows)]
     return {
       groups: dataList.length ? [{ name: '四川', dataList }] : [],
-      meta: { skipped: [], warnings },
+      meta: { skipped: [], warnings, credentialRejected },
     }
   },
 

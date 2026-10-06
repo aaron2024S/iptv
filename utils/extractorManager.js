@@ -58,7 +58,16 @@ function emptyHealth() {
     channelCount: 0,
     skippedCount: 0,
     warnings: [],
+    // 官网不认模块里配的登录凭证（Token / Cookie）时的提示。后台登录态徽标、模块卡片和
+    // 「源管理」导航红点都只看这一项，不再靠匹配警告措辞；空串表示没发现问题。
+    credentialRejected: '',
   }
+}
+
+/** 模块在播放时记下的「凭证被拒」；模块没声明或出错都当没发现问题，不能拖垮整个后台状态接口。 */
+function liveCredentialRejected(module, config) {
+  if (typeof module.credentialRejected !== 'function') return ''
+  try { return String(module.credentialRejected(config) || '').slice(0, 300) } catch { return '' }
 }
 
 /**
@@ -609,6 +618,7 @@ class ExtractorManager {
       const cacheEntry = this.#cacheEntry(module.id)
       const cachedChannelCount = cacheEntry.groups.reduce(
         (sum, group) => sum + (group?.dataList?.length || 0), 0)
+      const effective = this.effectiveConfig(module)
       const health = {
         ...emptyHealth(),
         ...cacheEntry.health,
@@ -616,8 +626,9 @@ class ExtractorManager {
         // 显式告诉前端，避免卡片出现「失败 · 16 频道」却不解释链接为何还在。
         usingCachedChannels: ['failed', 'risk'].includes(cacheEntry.health.status)
           && cachedChannelCount > 0,
+        // 刷新时的检查结果之外，播放时才发现凭证被拒的模块也要立刻反映到后台，不等下一轮刷新
+        credentialRejected: cacheEntry.health.credentialRejected || liveCredentialRejected(module, effective),
       }
-      const effective = this.effectiveConfig(module)
       const enabled = this.isModuleEnabled(module)
       const { config, secretsSet } = redactConfig(module, effective)
       // 值来自环境变量而非后台时要让用户知道，否则会遇到「后台看着是空的、
@@ -747,6 +758,8 @@ class ExtractorManager {
     cacheEntry.health.lastSuccessAt = null
     cacheEntry.health.nextRetryAt = null
     cacheEntry.health.consecutiveFailures = 0
+    // 凭证可能刚换过：旧结论作废，紧接着那轮重抓会重新检查
+    cacheEntry.health.credentialRejected = ''
     this.#saveCache()
     return this.getState()
   }
@@ -780,6 +793,7 @@ class ExtractorManager {
       channelCount: count,
       skippedCount: meta?.skipped?.length || 0,
       warnings: (meta?.warnings || []).slice(0, 5),
+      credentialRejected: String(meta?.credentialRejected || '').slice(0, 300),
     }
   }
 

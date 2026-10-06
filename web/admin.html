@@ -1253,6 +1253,19 @@
             opacity: 0.85;
         }
 
+        /* 登录凭证失效提醒：挂在「源管理」「内置抓取模块」标签文字后面 */
+        .attention-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-left: 6px;
+            border-radius: 50%;
+            background: #ff4d4f;
+            vertical-align: middle;
+        }
+        .attention-dot[hidden] { display: none; }
+        .attention-dot.is-warning { background: #fa8c16; }
+
         .external-item-body {
             padding: 16px;
             flex: 1;
@@ -1449,55 +1462,6 @@
             font-size: 12px;
             color: #888;
             margin-top: 4px;
-        }
-
-        /* 「东西搬走了」的全局指路条。临时性质，见 markup 处的注释。 */
-        .moved-notice {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-            padding: 9px 14px;
-            background: #f0f9ff;
-            border: 1px solid #91d5ff;
-            border-left: 4px solid #1890ff;
-            border-radius: 6px;
-            color: #003a8c;
-            font-size: 13px;
-            line-height: 1.7;
-        }
-
-        .moved-notice-text {
-            flex: 1 1 320px;
-            min-width: 0;
-        }
-
-        .moved-notice a {
-            color: #1890ff;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .moved-notice a:hover {
-            text-decoration: underline;
-        }
-
-        .moved-notice-close {
-            flex-shrink: 0;
-            padding: 4px 12px;
-            font-size: 12px;
-            color: #1890ff;
-            background: #fff;
-            border: 1px solid #91d5ff;
-            border-radius: 4px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .moved-notice-close:hover {
-            background: #1890ff;
-            color: #fff;
         }
 
         /* 自定义分组与同名订阅分组合并显示时的提示（建组时源里没有该分组，之后源恢复就会撞在一起） */
@@ -2973,6 +2937,62 @@
         .source-card.is-off .source-card-desc { opacity: .5; }
         .source-card.is-off .source-badge { filter: grayscale(1); opacity: .45; }
         .module-off-label { color: var(--ui-muted); font-weight: 600; }
+        /* 登录凭证失效：红框浅红底，在一屏几十张卡片里一眼找到；打开着的卡片仍以「选中」为准 */
+        .source-card.needs-attention:not(.active) { border-color: var(--ui-danger); background: var(--ui-danger-soft); }
+        .credential-flag { color: var(--ui-danger); font-weight: 600; }
+        /* 顶部提醒条：有异常（error）为红，只有提醒（warning）为橙 */
+        .alert-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 11px 14px;
+            border: 1px solid var(--ui-danger-line);
+            border-left: 4px solid var(--ui-danger);
+            border-radius: 12px;
+            background: var(--ui-danger-soft);
+            color: var(--ui-danger);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .alert-bar[hidden] { display: none; }
+        .alert-bar.is-warning { border-color: var(--ui-warning-line); border-left-color: var(--ui-warning); background: var(--ui-warning-soft); color: var(--ui-warning); }
+        /* 只占一行：条目多了在行尾省略，完整列表点「查看」 */
+        .alert-bar-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .alert-bar-btn {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            border: 1px solid var(--ui-danger);
+            border-radius: 8px;
+            background: var(--ui-danger);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .alert-bar-btn:hover { filter: brightness(1.12); }
+        .alert-bar.is-warning .alert-bar-btn,
+        .alert-item.is-warning .alert-bar-btn { border-color: var(--ui-warning); background: var(--ui-warning); }
+        .alert-center-content { max-height: 80vh; overflow-y: auto; }
+        .alert-center-list { display: flex; flex-direction: column; gap: 10px; }
+        .alert-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 12px 14px;
+            border: 1px solid var(--ui-danger-line);
+            border-left: 4px solid var(--ui-danger);
+            border-radius: 10px;
+            background: var(--ui-danger-soft);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .alert-item.is-warning { border-color: var(--ui-warning-line); border-left-color: var(--ui-warning); background: var(--ui-warning-soft); }
+        .alert-item-title { color: var(--ui-danger); }
+        .alert-item.is-warning .alert-item-title { color: var(--ui-warning); }
+        .alert-item-text { color: var(--ui-text-secondary); }
         /* 模块开关：拨动开关代替勾选框——开是实心主题绿、关是灰，扫一眼就分得清；
            「点了立刻生效」也比勾选框（像要按保存的表单项）更贴切。
            单个 input 用 appearance:none + 背景渐变画滑块，不靠伪元素，键盘与读屏照常。 */
@@ -3239,18 +3259,6 @@
         .bookmarklet-help-btn:hover { border-color: var(--ui-cyan); background: var(--ui-cyan); box-shadow: none; transform: none; }
 
         /* 全局通知与状态 */
-        .moved-notice {
-            margin-top: 12px;
-            padding: 11px 14px;
-            border: 1px solid var(--ui-accent-line);
-            border-left: 1px solid var(--ui-accent-line);
-            border-radius: 12px;
-            background: var(--ui-accent-soft);
-            color: var(--ui-accent);
-        }
-        .moved-notice a { color: var(--ui-accent); }
-        .moved-notice-close { color: var(--ui-accent); border-color: var(--ui-accent-line); border-radius: 8px; }
-        .moved-notice-close:hover { border-color: var(--ui-accent); background: var(--ui-accent); }
         .group-merge-notice { border-radius: 12px; border-left-width: 1px; }
         .status {
             padding: 16px 22px;
@@ -3846,6 +3854,15 @@
         </div>
     </div>
 
+    <!-- 提醒列表：顶部提醒条只是一行入口，逐条说明和处理按钮都在这里，条目再多也不挤占页面 -->
+    <div class="modal" id="alertCenterModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="alertCenterTitle">
+        <div class="modal-content alert-center-content" style="width: 560px; max-width: 92%;">
+            <button type="button" class="extractor-modal-close" onclick="closeAlertCenter()" aria-label="关闭提醒列表">×</button>
+            <h3 id="alertCenterTitle">需要处理的提醒</h3>
+            <div class="alert-center-list" id="alertCenterList"></div>
+        </div>
+    </div>
+
     <!-- Bookmarklet 添加引导弹窗 -->
     <!-- B 站扫码登录（issue：SESSDATA 是 HttpOnly，咪咕那种书签读 cookie 的招在这里行不通） -->
     <div class="modal" id="biliQrModal">
@@ -3973,8 +3990,8 @@
                     </div>
                     <div class="tabs-left">
                         <button class="tab active" onclick="switchTab(0)">我的频道</button>
-                        <button class="tab" onclick="switchTab(1)">源管理</button>
-                        <button class="tab" onclick="switchTab(2)">设置</button>
+                        <button class="tab" onclick="switchTab(1)">源管理<span class="attention-dot" data-alert-where="extractors" role="img" hidden></span></button>
+                        <button class="tab" onclick="switchTab(2)">设置<span class="attention-dot" data-alert-where="epg system" role="img" hidden></span></button>
                         <button class="tab" onclick="switchTab(3)">关于我们</button>
                     </div>
                     <div class="tabs-right">
@@ -3982,19 +3999,10 @@
                     </div>
                 </div>
 
-                <!-- 搬家指路。放在全局 header 里而不是某一页，是因为找不到东西的人可能停在
-                     任何子页面上（「设置」下面就有 5 个）。默认显示，点「知道了」写
-                     localStorage 后不再出现。
-                     键名带版本号：将来若要再公告一次，换个键即可，不会被这次的已读状态吃掉。
-                     **临时性质**——约两个版本（v3.19 前后）没人再问就把这一段和它的 CSS、
-                     dismissMovedNotice()、以及 loadData 里的那次调用一起摘掉，别让它长住。 -->
-                <div class="moved-notice" id="movedNotice" style="display:none;">
-                    <span class="moved-notice-text">
-                        <strong>咪咕账号 / 画质</strong>、<strong>内容开关</strong>、<strong>源模块</strong>已从「设置」移到
-                        <a href="javascript:void(0)" onclick="switchTab(1)">源管理</a> 页。
-                    </span>
-                    <button class="moved-notice-close" onclick="dismissMovedNotice()" title="不再显示">知道了</button>
-                </div>
+                <!-- 需要处理的提醒（登录凭证失效、模块抓取失败、EPG 源失败、没设访问密码等，由 renderAlerts()
+                     汇总）。放在全局 header 里，停在哪个页面都看得到；问题解决就自动消失，所以不给「知道了」——
+                     问题还在就该一直提醒。header 是固定的，所以不论几条都只占一行，逐条说明在「提醒列表」弹窗里。 -->
+                <div class="alert-bar" id="alertBar" hidden></div>
             </div>
         </div>
 
@@ -4066,7 +4074,7 @@
                 </div>
                 <div class="source-subtabs" role="tablist" aria-label="源管理分类">
                     <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub0" onclick="switchSourceTab(0)">自定义源 <span class="source-tab-count" id="sourceTabExternalCount"></span></button>
-                    <button type="button" class="mode-switch-btn active" role="tab" aria-selected="true" aria-controls="sourceSub1" onclick="switchSourceTab(1)">内置抓取模块 <span class="source-tab-count" id="sourceTabExtractorCount"></span></button>
+                    <button type="button" class="mode-switch-btn active" role="tab" aria-selected="true" aria-controls="sourceSub1" onclick="switchSourceTab(1)">内置抓取模块 <span class="source-tab-count" id="sourceTabExtractorCount"></span><span class="attention-dot" data-alert-where="extractors" role="img" hidden></span></button>
                     <button type="button" class="mode-switch-btn" role="tab" aria-selected="false" aria-controls="sourceSub2" onclick="switchSourceTab(2)">内置源 <span class="source-tab-count" id="sourceTabBuiltInCount"></span></button>
                 </div>
 
@@ -4182,10 +4190,10 @@
                 </div>
                 <!-- 设置页二级标签（issue #72）：功能卡片分区，免长页滚动 -->
                 <div class="settings-subtabs">
-                    <button class="mode-switch-btn active" onclick="switchSettingsTab(0)">系统配置</button>
+                    <button class="mode-switch-btn active" onclick="switchSettingsTab(0)">系统配置<span class="attention-dot" data-alert-where="system" role="img" hidden></span></button>
                     <button class="mode-switch-btn" onclick="switchSettingsTab(1)">频道别名</button>
                     <button class="mode-switch-btn" onclick="switchSettingsTab(2)">自动分组</button>
-                    <button class="mode-switch-btn" onclick="switchSettingsTab(3)">EPG 聚合</button>
+                    <button class="mode-switch-btn" onclick="switchSettingsTab(3)">EPG 聚合<span class="attention-dot" data-alert-where="epg" role="img" hidden></span></button>
                     <button class="mode-switch-btn" onclick="switchSettingsTab(4)">用户管理</button>
                 </div>
 
@@ -4654,6 +4662,9 @@
             if (h.consecutiveFailures) extra += ' · 连续失败 ' + h.consecutiveFailures + ' 次';
             let line = `<span style="color:${color};">● ${escapeHtml(text)}</span>` +
                 `<span style="color:#888;"> · ${escapeHtml(extractorChannelSummary(h))}${escapeHtml(extra)} · 上次成功 ${escapeHtml(when)}</span>`;
+            if (h.credentialRejected) {
+                line += `<div style="color:#ff4d4f; font-size:12px; margin-top:4px; word-break:break-all;">⚠️ ${escapeHtml(h.credentialRejected)}</div>`;
+            }
             if (h.lastError) {
                 line += `<div style="color:#ff4d4f; font-size:12px; margin-top:4px; word-break:break-all;">${escapeHtml(h.lastError)}</div>`;
             }
@@ -4840,9 +4851,12 @@
         function extractorHelperHtml(key, secretsSet, config, health) {
             if (key === 'fengshows-bookmarklet') {
                 const configured = !!secretsSet.token;
+                // 刷新检查或播放时官网回「账号已过期」，服务端会改走游客 480p 并在这里亮出来
+                const rejected = configured && !!(health && health.credentialRejected);
+                const badge = rejected ? '⚠️ Token 已失效（已改用游客 480p，请重新获取）' : (configured ? '已配置 Token · 自动请求 720p' : '访客模式 · 480p');
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title"><span>凤凰秀账号</span>
-                        <span class="login-state-badge ${configured ? 'on' : 'off'}">${configured ? '已配置 Token · 自动请求 720p' : '访客模式 · 480p'}</span>
+                        <span class="login-state-badge ${configured && !rejected ? 'on' : 'off'}">${badge}</span>
                     </div>
                     <div class="bookmarklet-actions"><a id="fengshowsBookmarklet" class="bookmarklet-link" draggable="true">获取凤凰秀 Token</a>
                         <a href="https://www.fengshows.com/live" target="_blank" rel="noreferrer">打开凤凰秀官网 ↗</a></div>
@@ -4923,9 +4937,9 @@
             }
             if (key === 'sichuan-token') {
                 const loggedIn = !!(secretsSet && secretsSet.accessToken);
-                // 模块每轮刷新会拿 Token 试换一次签，官网不认时写进健康警告；徽标跟着变，
+                // 模块每轮刷新会拿 Token 试换一次签，官网不认时记进 health.credentialRejected；徽标跟着变，
                 // 否则失效的 Token 仍显示「已配置」，要等播放才报错（#150）。
-                const rejected = loggedIn && ((health && health.warnings) || []).some(w => String(w).includes('官网不认当前 Token'));
+                const rejected = loggedIn && !!(health && health.credentialRejected);
                 const badge = rejected ? '⚠️ Token 已失效（请重新获取）' : (loggedIn ? '✅ 已配置 Token（启用 9 个频道）' : '未登录（频道暂不加入）');
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
@@ -5085,6 +5099,143 @@
                 </button>`).join('') : '';
         }
 
+        // ===== 提醒中心 =====
+        // 后台各处「现在确实有问题、用户能处理」的事汇总到页面顶部一个入口：顶部不论几条都只占一行，
+        // 逐条说明和处理按钮在「需要处理的提醒」弹窗里。纯说明性的提示（环境变量覆盖、空白模式）
+        // 不收；各页原位的提示照旧保留，这里是汇总不是搬走。新增一类提醒只需在 collectAlerts 里加一段。
+        let usersPassSet = true;   // /api/users 回传的 passSet，loadUsers 回填
+        let currentAlerts = [];    // 本次渲染的提醒，按钮按下标取
+
+        /**
+         * 每条：{ level: 'error'|'warning', title: 顶部一行用的短句, text: 列表里的说明,
+         *        action: 按钮文字, run: 点按钮做什么, where: 红点挂在哪（对应 data-alert-where） }
+         */
+        function collectAlerts() {
+            const alerts = [];
+            if (extractorsState && extractorsState.corrupt) {
+                alerts.push({ level: 'error', where: 'extractors', title: '抓取模块配置文件损坏', action: '查看',
+                    text: '配置文件损坏，已保留原文件并另存 .corrupt 副本；修复前模块的所有改动都会被拒绝，以免覆盖原数据。',
+                    run: () => openAlertTarget('extractors') });
+            }
+            for (const m of (extractorsState && extractorsState.modules) || []) {
+                if (!m.enabled) continue;
+                const h = m.health || {};
+                if (h.credentialRejected) {
+                    alerts.push({ level: 'error', where: 'extractors', title: `${m.name}登录凭证已失效`, action: '去更新',
+                        text: h.credentialRejected, run: () => openAlertTarget('module', m.id) });
+                } else if (h.status === 'failed' || h.status === 'risk') {
+                    const kept = h.usingCachedChannels ? `；暂时沿用上次抓到的 ${h.channelCount || 0} 个频道` : '';
+                    alerts.push({ level: 'error', where: 'extractors', title: `${m.name}${h.status === 'risk' ? '被风控' : '抓取失败'}`, action: '查看',
+                        text: `${h.lastError || '最近一次抓取没有成功'}${kept}。会自动重试；长期失败又用不到的话，可以关掉这个模块。`,
+                        run: () => openAlertTarget('module', m.id) });
+                }
+            }
+            if (epgConfig && epgConfig.enabled !== false) {
+                for (const src of epgConfig.sources || []) {
+                    if (src.enabled === false) continue;
+                    const name = src.name || '未命名';
+                    if (epgLegacyUrls.includes(String(src.url || '').trim())) {
+                        alerts.push({ level: 'warning', where: 'epg', title: `EPG 源「${name}」已停用`, action: '去设置',
+                            text: '这是停用的老默认源：51zmt 只剩央视和卫视，erw 已停止免费下载。节目单现由咪咕和各模块的官方接口提供，这条留着只会挂上过期节目单，建议删掉。',
+                            run: () => openAlertTarget('epg') });
+                    } else if (typeof src.lastStatus === 'string' && src.lastStatus.indexOf('失败') >= 0) {
+                        alerts.push({ level: 'error', where: 'epg', title: `EPG 源「${name}」抓取失败`, action: '去设置',
+                            text: src.lastStatus, run: () => openAlertTarget('epg') });
+                    }
+                }
+            }
+            // 只在已经加了一人一源用户时提醒：没加用户、不设密码是很多局域网用户的正常用法，不该常亮
+            if (!usersPassSet && ((usersConfig && usersConfig.users) || []).length) {
+                alerts.push({ level: 'warning', where: 'system', title: '没设访问密码，一人一源没生效', action: '去设置',
+                    text: '已经添加了一人一源用户，但没设访问密码：去掉令牌的地址谁都能直接用，后台也没上锁。设置访问密码后，已发出去的 /u/<令牌>/… 链接不受影响。',
+                    run: () => openAlertTarget('password') });
+            }
+            const rank = a => a.level === 'error' ? 0 : 1;
+            return alerts.sort((a, b) => rank(a) - rank(b));
+        }
+
+        /** 重算全部提醒：顶部提醒条、标签红点、提醒列表。任何一份相关数据变了都调它。 */
+        function renderAlerts() {
+            currentAlerts = collectAlerts();
+            const errors = currentAlerts.filter(a => a.level === 'error').length;
+
+            // 红点挂在问题所在的标签上（顶层标签和二级标签都标），鼠标停上去看是哪几条
+            document.querySelectorAll('[data-alert-where]').forEach(dot => {
+                const wheres = dot.dataset.alertWhere.split(' ');
+                const hits = currentAlerts.filter(a => wheres.includes(a.where));
+                dot.hidden = !hits.length;
+                dot.classList.toggle('is-warning', hits.length > 0 && hits.every(a => a.level === 'warning'));
+                const label = hits.map(a => a.title).join('、');
+                dot.title = label;
+                dot.setAttribute('aria-label', label);
+            });
+
+            const bar = document.getElementById('alertBar');
+            if (bar) {
+                bar.hidden = !currentAlerts.length;
+                bar.classList.toggle('is-warning', !errors);
+                const summary = currentAlerts.length === 1
+                    ? `<strong>${escapeHtml(currentAlerts[0].title)}</strong>`
+                    : `<strong>${currentAlerts.length} 条需要处理的提醒</strong>：${escapeHtml(currentAlerts.map(a => a.title).join('、'))}`;
+                bar.innerHTML = currentAlerts.length ? `<span class="alert-bar-text">⚠️ ${summary}</span>
+                    <button type="button" class="alert-bar-btn" onclick="openAlertCenter()">查看 ›</button>` : '';
+            }
+
+            const list = document.getElementById('alertCenterList');
+            if (list) {
+                list.innerHTML = currentAlerts.length ? currentAlerts.map((a, i) => `<div class="alert-item${a.level === 'warning' ? ' is-warning' : ''}">
+                    <strong class="alert-item-title">${escapeHtml(a.title)}</strong>
+                    <div class="alert-item-text">${escapeHtml(a.text)}</div>
+                    <button type="button" class="alert-bar-btn" onclick="runAlert(${i})">${escapeHtml(a.action)} ›</button>
+                </div>`).join('') : '<div class="system-config-hint" style="margin:0;">没有需要处理的提醒了。</div>';
+            }
+        }
+
+        function runAlert(i) {
+            const alert = currentAlerts[i];
+            if (alert) alert.run();
+        }
+
+        function openAlertCenter() {
+            renderAlerts();
+            const modal = document.getElementById('alertCenterModal');
+            if (!modal) return;
+            modal.style.display = 'block';
+            modal.setAttribute('aria-hidden', 'false');
+            setTimeout(() => {
+                const closeButton = modal.querySelector('.extractor-modal-close');
+                if (closeButton) closeButton.focus();
+            }, 0);
+        }
+
+        function closeAlertCenter() {
+            const modal = document.getElementById('alertCenterModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        /** 提醒列表里的按钮：关掉列表，从任何页面直接跳到能处理这件事的地方。 */
+        async function openAlertTarget(kind, moduleId) {
+            closeAlertCenter();
+            if (kind === 'module' || kind === 'extractors') {
+                await switchTab(1);
+                switchSourceTab(1, false);
+                if (kind === 'module') selectExtractorModule(moduleId);
+                return;
+            }
+            await switchTab(2);
+            if (kind === 'epg') {
+                switchSettingsTab(3);
+                const list = document.getElementById('epgSourceList');
+                if (list) list.scrollIntoView({ block: 'center' });
+            } else if (kind === 'password') {
+                switchSettingsTab(0);
+                const input = document.getElementById('sysPass');
+                if (input) { input.scrollIntoView({ block: 'center' }); input.focus(); }
+            }
+        }
+
         function renderExtractors() {
             renderExtractorNotice();
             renderContentFlags();
@@ -5097,6 +5248,7 @@
                 const enabledCount = modules.filter(module => module.enabled).length;
                 tabCount.textContent = modules.length ? `${enabledCount}/${modules.length}` : '0';
             }
+            renderAlerts();
             renderExtractorFilter(modules);
             if (!modules.length) {
                 box.innerHTML = '<div class="system-config-hint" style="margin:0;">本版本没有内置任何抓取模块。</div>';
@@ -5136,6 +5288,7 @@
                 const hasEditableConfig = extractorHasEditableConfig(m);
                 const classes = ['source-card'];
                 if (!m.enabled) classes.push('is-off');
+                if (m.enabled && h.credentialRejected) classes.push('needs-attention');
                 if (m.id === selectedExtractorId) classes.push('active');
                 return `
                 <div class="${classes.join(' ')}" data-extractor-id="${escapeHtml(m.id)}"
@@ -5152,7 +5305,9 @@
                     <div class="source-card-desc">${escapeHtml(m.description || '')}</div>
                     <div class="source-card-foot">
                         ${m.enabled
-                            ? `<span title="上次成功抓取：${escapeHtml(when)}">${extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>`
+                            ? `<span title="上次成功抓取：${escapeHtml(when)}">${h.credentialRejected
+                                ? `<span class="credential-flag" title="${escapeHtml(h.credentialRejected)}">⚠️ 登录凭证已失效</span>`
+                                : extractorCardStatus(h)} · ${extractorChannelSummary(h)}</span>`
                             : '<span class="module-off-label">○ 已关闭</span>'}
                         <span class="card-open-hint">${hasEditableConfig ? '配置 ›' : '详情 ›'}</span>
                     </div>
@@ -5751,6 +5906,7 @@
         }
 
         function renderEpgSources() {
+            renderAlerts();   // EPG 源的失败 / 停用老源提醒
             const box = document.getElementById('epgSourceList');
             if (!box) return;
             const cb = document.getElementById('epgEnabled');
@@ -5818,7 +5974,7 @@
 
         async function toggleEpgSource(i, enabled) {
             const r = await epgPost({ action: 'update', index: i, fields: { enabled } });
-            if (r.success) { epgConfig = r.data; toastSaved(); } else { showStatus(r.message || '操作失败', 'error'); loadEpgSources(); }
+            if (r.success) { epgConfig = r.data; renderAlerts(); toastSaved(); } else { showStatus(r.message || '操作失败', 'error'); loadEpgSources(); }
         }
 
         async function updateEpgSource(i, fields) {
@@ -5861,6 +6017,7 @@
                     if (!Array.isArray(usersConfig.users)) usersConfig.users = [];
                     const passWarn = document.getElementById('userPassWarning');
                     if (passWarn) passWarn.style.display = payload.passSet === false ? '' : 'none';
+                    usersPassSet = payload.passSet !== false;
                     renderUsers();
                     fillUserProfileSelect(document.getElementById('userNewProfile'), '');
                 }
@@ -5888,6 +6045,7 @@
         }
 
         function renderUsers() {
+            renderAlerts();   // 用户增删会改变「没设访问密码」那条提醒
             const box = document.getElementById('userList');
             if (!box) return;
             const users = usersConfig.users || [];
@@ -6467,7 +6625,6 @@
                 systemConfig = await systemRes.json();
                 console.log('系统配置加载成功');
                 renderSubscribeBar();  // 配置加载后重渲染订阅栏，让「公网地址」按钮按 mhost 出现（issue #62）
-                initMovedNotice();     // 搬家指路条（临时，见 markup 处注释）
 
                 // 加载 EPG 聚合源配置（issue #38）；失败不影响其余加载
                 loadEpgSources();
@@ -7971,26 +8128,6 @@
         }
 
         // 显示状态消息（Toast 通知）
-        // ===== 「东西搬走了」全局指路条（临时，约 v3.19 摘掉，见 markup 处注释）=====
-        // 键名带版本号：将来若要再公告别的事，换个键就行，不会被这次的已读状态吃掉。
-        const MOVED_NOTICE_KEY = 'iptv.notice.sources-moved.v3.18';
-
-        function initMovedNotice() {
-            const el = document.getElementById('movedNotice');
-            if (!el) return;
-            // localStorage 在隐私模式 / 被禁用时读写都会抛，不能让它带崩整个初始化。
-            // 读不到就当没读过——多显示一次远好过整页 JS 挂掉。
-            let dismissed = false;
-            try { dismissed = localStorage.getItem(MOVED_NOTICE_KEY) === '1'; } catch (e) {}
-            el.style.display = dismissed ? 'none' : 'flex';
-        }
-
-        function dismissMovedNotice() {
-            const el = document.getElementById('movedNotice');
-            if (el) el.style.display = 'none';
-            try { localStorage.setItem(MOVED_NOTICE_KEY, '1'); } catch (e) {}
-        }
-
         // ===== 「有未保存的改动」标记 =====
         //
         // 全站规则是「这一块底下有按钮，就必须按那个按钮；没有按钮的，改一下就已经存好了」。
@@ -11360,6 +11497,15 @@ if(success){
             if (event.target === extractorModal) {
                 closeExtractorDetailModal();
             }
+        });
+
+        // 提醒列表：点遮罩或按 Esc 关闭
+        document.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('alertCenterModal')) closeAlertCenter();
+        });
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('alertCenterModal');
+            if (event.key === 'Escape' && modal && modal.style.display === 'block') closeAlertCenter();
         });
 
         // 抓取模块详情支持 Esc 关闭；若上面还叠着登录/帮助等子弹窗，则先留给子弹窗处理。

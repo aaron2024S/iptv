@@ -50,6 +50,13 @@
  *       groupTitle→分组 的映射重新发明一遍。
  *       一个模块可以返回多个分组（咪咕将来的「体育赛事」就是同一模块的第二批
  *       分组，不是另一个源）。
+ *       meta: { skipped, warnings, credentialRejected? }。credentialRejected 是
+ *       官网不认当前登录凭证时给用户看的一句话（空串 = 没问题），后台登录态徽标、
+ *       模块卡片和「源管理」导航红点据此提醒；凭证被拒只提示，不该让 fetch 失败。
+ *
+ *   credentialRejected(config) → string
+ *       可选。播放时才发现凭证被拒的模块用它把结论立刻交给后台，不等下一轮刷新；
+ *       config 是生效配置，凭证换了就该返回空串。不能抛异常。
  *
  *   async resolve(ref, ctx) → { url, desc, segmentTransform?, upstreamHeaders?,
  *                                upstreamUrlTransform?, manifestText?, manifestUrl? }

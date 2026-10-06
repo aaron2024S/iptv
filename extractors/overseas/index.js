@@ -34,6 +34,7 @@ export async function loadChannels({ url = PLAYLIST_URL } = {}) {
 export default {
   id: 'overseas',
   name: '海外频道',
+  category: 'overseas',
   description: '海外免费直播频道（体育、娱乐时尚、文旅、国际、韩国），并入现有分组。在大陆连得上但常卡顿，默认关闭；播放器直连各平台 CDN，能不能看取决于播放设备的网络。',
   // 播放器直连海外 CDN：能不能看取决于看的人的网络，服务端判断不了，交给用户自己打开
   defaultEnabled: false,

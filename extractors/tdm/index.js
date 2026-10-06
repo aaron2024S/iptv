@@ -5,6 +5,7 @@ import epg from './epg.js'
 export default {
   id: 'tdm',
   name: '澳门',
+  category: 'overseas',
   description: '澳广视（TDM）自办的六套电视：澳视澳门、澳视葡文、澳门体育、澳门资讯、澳门综艺、澳门-Macau。官网与视频只对大陆以外开放：播放前本机要查官网，视频由播放器直连，部署的机器和播放设备都要能连到大陆以外。默认关闭，需要时手动打开。',
   // 播放前服务端要查官网路由接口，大陆连不上：默认关，部署在大陆以外的用户自己打开
   defaultEnabled: false,

@@ -17,7 +17,8 @@
  *   name                  string  后台显示名
  *   description           string  后台一句话说明
  *   category              string  可选；后台源管理分组。'account' 表示带账号/
- *                                 授权能力，'live' 表示网络直播平台；不声明即
+ *                                 授权能力，'live' 表示网络直播平台，'overseas' 表示
+ *                                 面向大陆以外、默认关闭的海外模块；不声明即
  *                                 'standard'（免账号的普通官方抓取模块）
  *   defaultEnabled        boolean 可选；用户没在卡片上点过开关时开不开，不声明即开。
  *                                 只有面向海外、在大陆连不上或常卡顿的模块写 false
@@ -208,7 +209,7 @@ import overseas from './overseas/index.js'
 // 模块 id 会进 sourceId 并写进 EXTINF 属性值，不消毒就是注入面。
 // 与 utils/configBackupAPI.js 的文件名白名单同款约束。
 export const MODULE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,31}$/
-export const MODULE_CATEGORIES = new Set(['account', 'live', 'standard'])
+export const MODULE_CATEGORIES = new Set(['account', 'live', 'standard', 'overseas'])
 
 const MODULES = [
   // 顺序即后台展示顺序，也是 channelMerger 的合并顺序（先到的分组优先保留）

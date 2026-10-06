@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 
-import { listModules, getModule, sourceIdOf, resolverFor, validateModule, MODULE_ID_RE } from '../extractors/registry.js'
+import { listModules, getModule, sourceIdOf, resolverFor, validateModule, MODULE_ID_RE, MODULE_CATEGORIES } from '../extractors/registry.js'
 import { clearUrlCache } from '../utils/appUtils.js'
 import {
   selectFromPlayurl, parseRoomList, normalizeRoom, mapLimit, selectTopRooms, RoomError, BILIBILI_GROUP, DEFAULT_MIN_ONLINE,
@@ -978,6 +978,20 @@ try {
     for (const id of ['bilibili-live', 'huya-live', 'douyu-live']) {
       assert.equal(modules.find(module => module.id === id)?.category, 'live', `${id} 应归入网络直播平台`)
     }
+    // 「海外」小节就是默认关、由用户自己打开的那几个，两边不能各说各的
+    assert.deepEqual(
+      modules.filter(module => module.category === 'overseas').map(module => module.id).sort(),
+      listModules().filter(module => module.defaultEnabled === false).map(module => module.id).sort(),
+    )
+    assert.deepEqual(modules.filter(module => module.category === 'overseas').map(module => module.id).sort(), ['overseas', 'tdm'])
+  })
+
+  check('注册表允许的每个分类，后台源管理都有对应的小节（漏了的话那类卡片整片不显示）', () => {
+    const admin = readFileSync(new URL('../web/admin.html', import.meta.url), 'utf8')
+    const start = admin.indexOf('const categories = [')
+    const block = admin.slice(start, admin.indexOf('];', start))
+    for (const id of MODULE_CATEGORIES) assert.match(block, new RegExp(`id: '${id}'`), `后台缺「${id}」小节`)
+    assert.match(admin, /\.source-badge\.overseas/, '海外小节的角标要有样式')
   })
 
   check('★ 所有非代理抓取模块首次出现默认开启，显式关闭后保持关闭', () => {

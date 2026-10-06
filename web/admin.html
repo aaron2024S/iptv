@@ -906,6 +906,12 @@
             border-color: #b7eb8f;
         }
 
+        .source-badge.overseas {
+            background: #fff0f6;
+            color: #c41d7f;
+            border-color: #ffadd2;
+        }
+
         /* 自定义源的展开详情区。280px 那一栏是使用说明。 */
         .external-detail-wrap {
             display: grid;
@@ -3091,6 +3097,7 @@
             border-color: var(--ui-success-line);
             background: var(--ui-success-soft);
         }
+        .source-badge.overseas,
         .external-mode-badge.subscription,
         .mode-badge.mode-subscription {
             color: var(--ui-pink);
@@ -5227,6 +5234,12 @@
                     title: '免账号模块',
                     badge: '免账号',
                     description: '无需填写账号凭据，启用后即可自动抓取官方公开频道。',
+                },
+                {
+                    id: 'overseas',
+                    title: '海外',
+                    badge: '海外',
+                    description: '面向大陆以外的频道，默认关闭，需要时手动打开。能不能看取决于网络：海外频道由播放器直连，看播放设备；澳门还要部署的机器能连到大陆以外。',
                 },
             ];
 

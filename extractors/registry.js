@@ -43,6 +43,13 @@
  *                                 FLV resolve 须返回 validateMediaUrl 校验官方调度跳转。
  *   capabilities.catchup boolean 可选；false 表示纯直播，不透传回看查询参数。
  *   configSchema          array   字段描述，后台据此渲染表单、后端据此校验
+ *   credentialCheck       object  要登录的模块（有 secret 字段或 browserLoginFlow）必需：
+ *                                 { refresh: 刷新时检查凭证并报 meta.credentialRejected,
+ *                                   playback: 播放时发现并经 credentialRejected(config) 上报,
+ *                                   degrade: 一句话，凭证失效后播放怎么办 }。
+ *                                 规矩：能降级到游客档就降级接着播；没有游客版的频道照留、
+ *                                 不许从播放列表悄悄消失；两种都必须让后台提醒中心知道。
+ *                                 见 ADD-CHANNELS.md「登录凭证」，测试在 test-extractors.mjs
  *
  *   async fetch(config, ctx) → { groups: [{ name, dataList }], meta }
  *       必需。返回**分组树**而不是扁平频道数组——channelMerger 的合并算法是

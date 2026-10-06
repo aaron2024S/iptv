@@ -4868,10 +4868,11 @@
                 // 和 Token（secret，只回传有没有值）都填了；画质后果直接写在徽标上——
                 // 那才是用户填账号的理由。
                 const miguLoggedIn = !!(config && config.userId) && !!(secretsSet && secretsSet.token);
+                const miguRejected = miguLoggedIn && !!(health && health.credentialRejected);
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
                         <span>咪咕账号</span>
-                        <span class="login-state-badge ${miguLoggedIn ? 'on' : 'off'}">${miguLoggedIn ? '✅ 已登录（按账号档位解锁画质）' : '未登录（游客最高 540p）'}</span>
+                        <span class="login-state-badge ${miguLoggedIn && !miguRejected ? 'on' : 'off'}">${miguRejected ? '⚠️ Token 已失效（已按游客播放，最高 540p，请重新获取）' : (miguLoggedIn ? '✅ 已登录（按账号档位解锁画质）' : '未登录（游客最高 540p）')}</span>
                     </div>
                     <div class="bookmarklet-actions">
                         <a id="miguBookmarklet" class="bookmarklet-link" draggable="true">获取咪咕账号</a>
@@ -4884,13 +4885,14 @@
                 // 「已设置，留空则不修改」—— 藏在一个看起来空空如也的输入框里，
                 // 用户扫码成功后回到表单，完全看不出到底成没成。
                 const loggedIn = !!(secretsSet && secretsSet.sessdata);
+                const rejected = loggedIn && !!(health && health.credentialRejected);
                 // 两个入口并排，与咪咕的形态对齐：主按钮做常规操作，「?」给说明。
                 // 这里的「?」不是说明而是备用方案——B 站的 SESSDATA 是 HttpOnly，
                 // 咪咕那种「书签读 document.cookie」的招读不到，只能扫码或手动翻 DevTools。
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
                         <span>B 站登录态</span>
-                        <span id="biliLoginState" class="login-state-badge ${loggedIn ? 'on' : 'off'}">${loggedIn ? '✅ 已登录（画质可达原画）' : '未登录（画质封顶超清）'}</span>
+                        <span id="biliLoginState" class="login-state-badge ${loggedIn && !rejected ? 'on' : 'off'}">${rejected ? '⚠️ 登录已失效（画质已降到超清，请重新扫码）' : (loggedIn ? '✅ 已登录（画质可达原画）' : '未登录（画质封顶超清）')}</span>
                     </div>
                     <div class="bookmarklet-actions">
                         <button class="btn btn-sm btn-primary" onclick="openBiliQrLogin()">📱 ${loggedIn ? '重新扫码登录' : '扫码登录'}</button>
@@ -4924,10 +4926,12 @@
             }
             if (key === 'beijing-cookie') {
                 const loggedIn = !!(secretsSet && secretsSet.cookie);
+                const rejected = loggedIn && !!(health && health.credentialRejected);
+                const badge = rejected ? '⚠️ Cookie 已失效（9 个电视台暂时播不了，请重新导入）' : (loggedIn ? '✅ 已导入 Cookie（启用 9 个电视台）' : '未登录（仍可看公开直播）');
                 return `<div class="bookmarklet-section" style="margin:0 0 12px;">
                     <div class="bookmarklet-title">
                         <span>北京时间登录态</span>
-                        <span class="login-state-badge ${loggedIn ? 'on' : 'off'}">${loggedIn ? '✅ 已导入 Cookie（启用 9 个电视台）' : '未登录（仍可看公开直播）'}</span>
+                        <span class="login-state-badge ${loggedIn && !rejected ? 'on' : 'off'}">${badge}</span>
                     </div>
                     <div class="bookmarklet-actions">
                         <a href="https://www.btime.com/btv/btvsy_index" target="_blank" rel="noreferrer">打开北京时间官网 ↗</a>

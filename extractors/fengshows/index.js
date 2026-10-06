@@ -13,6 +13,7 @@ export default {
   refreshConfigurable: false,
   refreshDescription: '频道固定为三个电视直播；每 6 小时检查一次凤凰秀 Token 是否仍被官网认可。播放时实时向官方取址，自动跟随地区调度，无需定时刷新播放签名。',
   helper: 'fengshows-bookmarklet',
+  credentialCheck: { refresh: true, playback: true, degrade: 'Token 被拒时三台自动改用游客 480p 继续播' },
   configSchema: [{
     key: 'token', section: '凤凰秀账号（选填）', label: '凤凰秀 Token / Cookie',
     type: 'text', secret: true, env: 'mFengshowsToken', default: '',

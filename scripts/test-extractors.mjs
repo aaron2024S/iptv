@@ -29,6 +29,8 @@ import {
   resolveRoom as resolveBiliRoom,
   claimsRef as biliClaimsRef,
   clearResolveCache as clearBiliResolveCache,
+  checkLogin as checkBiliLogin,
+  SESSDATA_REJECTED_NOTICE,
 } from '../extractors/bilibili-live/api.js'
 import { shouldFailRound, parseAreaNames, mergeRoomRefs, groupBilibiliResults } from '../extractors/bilibili-live/index.js'
 import {
@@ -942,6 +944,29 @@ try {
     assert.equal(typeof getModule('yangshipin').browserLoginFlow?.start, 'function')
   })
 
+  check('★ 要登录的模块都声明凭证失效怎么办，并能让后台提醒中心知道（ADD-CHANNELS.md「登录凭证」）', () => {
+    // 凭证一定会过期：能降级就降级接着播，播不了的频道照留，两种都必须让后台提醒中心知道。
+    // 新加的模块只要有 secret 字段或浏览器登录，就会被这里拦下来要求补齐。
+    const needsLogin = m => (m.configSchema || []).some(field => field.secret) || typeof m.browserLoginFlow?.start === 'function'
+    const loginModules = listModules().filter(needsLogin)
+    assert.ok(loginModules.length >= 6, '至少凤凰、四川、咪咕、B 站、央视频、北京')
+    const admin = readFileSync(new URL('../web/admin.html', import.meta.url), 'utf8')
+    for (const m of loginModules) {
+      const c = m.credentialCheck
+      assert.ok(c && typeof c === 'object', `${m.id} 要登录却没声明 credentialCheck`)
+      assert.ok(c.refresh === true || c.playback === true, `${m.id} 刷新时和播放时都不检查凭证，失效了后台无从得知`)
+      assert.ok(typeof c.degrade === 'string' && c.degrade.trim(), `${m.id} 没写凭证失效后播放怎么办`)
+      if (c.playback) assert.equal(typeof m.credentialRejected, 'function', `${m.id} 声明播放时检查，却没实现 credentialRejected(config)`)
+      // 登录徽标跟着失效状态变（央视频的徽标由后台实时检查登录态驱动，不在此列）
+      if (m.helper && m.helper !== 'yangshipin-login') {
+        const start = admin.indexOf(`if (key === '${m.helper}')`)
+        assert.ok(start > 0, `${m.id} 的登录助手 ${m.helper} 不在 admin.html 里`)
+        const end = admin.indexOf("if (key === '", start + 10)
+        assert.match(admin.slice(start, end > 0 ? end : undefined), /health\.credentialRejected/, `${m.id} 的登录徽标没读 health.credentialRejected`)
+      }
+    }
+  })
+
   check('模块分类透传给后台，未声明的模块默认归入免账号分类', () => {
     const modules = newManager().getState().modules
     for (const id of ['migu', 'beijing', 'fengshows', 'sichuan', 'yangshipin']) {
@@ -1588,6 +1613,27 @@ await checkAsync('★ B 站：热门榜获取失败且无手填 → 整轮判失
   // 上一轮频道被覆盖成空且不退避。timeoutMs=1 模拟断网：现在必须抛。
   const config = resolveConfig(bili, {})
   await assert.rejects(() => bili.fetch(config, { timeoutMs: 1 }), /失败/)
+})
+
+await checkAsync('B 站：刷新时检查登录态，失效进提醒中心但频道照抓；网络失败不冤枉登录态', async () => {
+  // 乱填、过期的 SESSDATA 实测回 code -101「账号未登录」（2026-10-06）
+  const navReply = body => async (url, options) => {
+    assert.equal(String(url), 'https://api.bilibili.com/x/web-interface/nav')
+    assert.equal(options.headers.Cookie, 'SESSDATA=abc')
+    return typeof body === 'function' ? body() : Response.json(body)
+  }
+  assert.deepEqual(await checkBiliLogin('', { fetchImpl: () => assert.fail('没配登录态不该发请求') }), {})
+  assert.deepEqual(await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply({ code: 0, data: { isLogin: true } }) }), {})
+  assert.deepEqual(await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply({ code: -101, message: '账号未登录', data: { isLogin: false } }) }),
+    { rejected: SESSDATA_REJECTED_NOTICE })
+  assert.match((await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply(() => new Response('', { status: 502 })) })).warning, /检查没有完成：HTTP 502/)
+  assert.match((await checkBiliLogin('SESSDATA=abc', { fetchImpl: navReply(() => { throw new Error('connect refused') }) })).warning, /检查没有完成：connect refused/)
+  assert.match(SESSDATA_REJECTED_NOTICE, /超清/)
+
+  // 模块 fetch 把结论交给 meta.credentialRejected：一间房都没配时也照样报
+  const config = resolveConfig(bili, { sessdata: 'abc', topAreas: '', rooms: '' })
+  const fetched = await bili.fetch(config, { fetchImpl: navReply({ code: -101, data: { isLogin: false } }) })
+  assert.equal(fetched.meta.credentialRejected, SESSDATA_REJECTED_NOTICE)
 })
 
 // ---- 虎牙直播 ----

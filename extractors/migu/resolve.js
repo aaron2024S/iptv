@@ -17,6 +17,7 @@
  * 而来），3 小时也是签名有效期这个平台属性，不是通用的 HTTP 缓存策略。
  */
 import { get302URL, getAndroidURL, getAndroidURL720p, printStreamInfo } from "./androidURL.js"
+import { noteAuth } from "./account.js"
 import { printDebug } from "../../utils/colorOut.js"
 
 // 键是裸 pid。过期条目只是不命中、不回收——这是搬家前的行为，不加 LRU/上限，
@@ -83,6 +84,8 @@ export async function resolve(ref, ctx = {}) {
       resObj = await getAndroidURL720p(pid, qualityOpts)
     } else {
       resObj = await getAndroidURL(userId, token, pid, rateType, qualityOpts)
+      // 账号失效时咪咕照样给流、只是按游客给：记下来让后台提醒（见 account.js）
+      noteAuth(userId, token, config, resObj?.content)
     }
   } catch (error) {
     console.log(error)

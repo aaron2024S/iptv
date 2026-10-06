@@ -36,6 +36,8 @@ export default {
     hint: '支持粘贴裸 access_token、Bearer 值或完整 scgc_userAccountInfo JSON。凭据只保存在服务端配置中，不写入播放列表，也不会发送给媒体 CDN。',
   }],
 
+  credentialCheck: { refresh: true, playback: false, degrade: '9 个电视台照留但播不了（官网没有游客版），活动直播不受影响' },
+
   async fetch(config, ctx = {}) {
     const accessToken = parseCredential(config?.accessToken)
     const warnings = []

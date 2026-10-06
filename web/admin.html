@@ -504,8 +504,7 @@
             align-items: stretch;
         }
 
-        /* 抓取模块按使用门槛分区。分类标题与卡片网格分层，模块再多也能先扫标题、
-           再在小范围内找卡片；不用改变注册表顺序和实际的合并优先级。 */
+        /* 抓取模块按使用门槛分类，顶部按钮一次切一类；不改变注册表顺序和实际的合并优先级。 */
         .source-category-list {
             display: flex;
             flex-direction: column;
@@ -518,20 +517,6 @@
             gap: 8px;
             flex-wrap: wrap;
             margin-bottom: 9px;
-        }
-
-        .source-category-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .source-category-count {
-            padding: 1px 7px;
-            border-radius: 10px;
-            background: #f0f0f0;
-            color: #666;
-            font-size: 11px;
         }
 
         .source-category-desc {
@@ -2829,17 +2814,8 @@
         /* 内容源卡片：卡片本身保持中性，颜色只用于类型和状态 */
         .source-section-head { margin-bottom: 18px; }
         .source-section-hint { max-width: 920px; color: var(--ui-text-secondary); font-size: 13px; line-height: 1.75; }
-        .source-category-list { gap: 36px; }
+        .source-category-list { gap: 0; }
         .source-category-head { gap: 9px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--ui-line-strong); }
-        .source-category-title { color: var(--ui-text); font-size: 20px; font-weight: 750; }
-        .source-category-count {
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: var(--ui-surface-strong);
-            color: var(--ui-text-secondary);
-            font-size: 11px;
-            font-weight: 650;
-        }
         .source-category-desc { color: var(--ui-muted); font-size: 13px; }
 
         /* 抓取模块按开关筛选（issue #164）。比二级标签轻一档：描边小胶囊，
@@ -2874,6 +2850,30 @@
             text-align: center;
         }
         .extractor-filter-btn.active .extractor-filter-count { background: var(--ui-accent); color: #fff; }
+        /* 抓取模块分类按钮（作者 10-06）：一次只显示一类。比开关筛选重一档（圆角矩形、加粗、选中实底），
+           比上面「自定义源 / 内置抓取模块 / 内置源」轻一档 */
+        .extractor-category-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+        .extractor-category-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 8px 16px;
+            border: 1px solid var(--ui-line-strong);
+            border-radius: 12px;
+            background: var(--ui-surface);
+            color: var(--ui-text);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: color .16s ease, background .16s ease, border-color .16s ease;
+        }
+        .extractor-category-btn:hover { color: var(--ui-accent); border-color: var(--ui-accent-line); }
+        .extractor-category-btn.active { color: var(--ui-heading-text); border-color: transparent; background: var(--ui-accent-fill); }
+        .extractor-category-btn.active .extractor-filter-count { background: var(--ui-accent); color: #fff; }
+        .extractor-category-btn .attention-dot { margin-left: 0; }
+        /* 分类说明里要用户特别留意的话：浅黄底、深黄字 */
+        .category-note { padding: 1px 4px; border-radius: 4px; background: var(--ui-warning-soft); color: var(--ui-warning); font-weight: 600; }
         .extractor-filter-empty {
             padding: 16px 18px;
             border: 1px dashed var(--ui-line-strong);
@@ -5027,6 +5027,27 @@
         // 换筛选或重新进这一页才消失，免得卡片从鼠标底下抽走、后面整片补位。
         const extractorFilterHold = new Set();
 
+        // 抓取模块按分类切换（作者 10-06）：几类模块一次只显示一类，免得一路往下滑过别的分类；
+        // 记在本机浏览器里，下次进来还停在上次看的那一类。
+        let extractorCategory = 'account';
+        try {
+            const saved = localStorage.getItem('iptv-extractor-category');
+            if (saved) extractorCategory = saved;
+        } catch (e) {
+            // 存储不可用只会失去「记住分类」，默认看第一类
+        }
+
+        function setExtractorCategory(id, render = true) {
+            extractorCategory = String(id || 'account');
+            extractorFilterHold.clear();
+            try {
+                localStorage.setItem('iptv-extractor-category', extractorCategory);
+            } catch (e) {
+                // 同上，不影响本次切换
+            }
+            if (render) renderExtractors();
+        }
+
         function setExtractorFilter(value) {
             extractorFilter = ['on', 'off'].includes(value) ? value : 'all';
             extractorFilterHold.clear();
@@ -5176,7 +5197,12 @@
             if (kind === 'module' || kind === 'extractors') {
                 await switchTab(1);
                 switchSourceTab(1, false);
-                if (kind === 'module') selectExtractorModule(moduleId);
+                if (kind === 'module') {
+                    // 先切到模块所在的分类，关掉详情后看到的就是它那张卡片
+                    const target = ((extractorsState && extractorsState.modules) || []).find(m => m.id === moduleId);
+                    if (target) setExtractorCategory(target.category || 'standard', false);
+                    selectExtractorModule(moduleId);
+                }
                 return;
             }
             await switchTab(2);
@@ -5219,9 +5245,10 @@
             const categories = [
                 {
                     id: 'account',
-                    title: '🔐 账号与授权',
+                    title: '账号与授权',
                     badge: '账号相关',
-                    description: '部分频道或更高画质需要登录；未配置账号时，仍按各模块说明提供游客或公开内容。',
+                    // 说明里要标黄的部分写成 { mark: '…' }，渲染时转义后包进 <mark>
+                    description: ['部分频道或更高画质', { mark: '需要登录' }, '；未配置账号时，仍按各模块说明提供游客或公开内容。'],
                 },
                 {
                     id: 'live',
@@ -5239,7 +5266,7 @@
                     id: 'overseas',
                     title: '海外',
                     badge: '海外',
-                    description: '面向大陆以外的频道，默认关闭，需要时手动打开。能不能看取决于网络：海外频道由播放器直连，看播放设备；澳门还要部署的机器能连到大陆以外。',
+                    description: ['面向大陆以外的频道，默认关闭，需要时手动打开。', { mark: '能不能看取决于网络：海外频道由播放器直连，看播放设备；澳门等后续其他独立模块还要部署的机器能连到大陆以外。' }],
                 },
             ];
 
@@ -5282,22 +5309,37 @@
                 || extractorFilterHold.has(m.id);
             const shown = modules.filter(visible);
 
-            box.innerHTML = shown.length ? categories.map(category => {
-                const categoryModules = shown.filter(m => (m.category || 'standard') === category.id);
-                if (!categoryModules.length) return '';
-                return `<section class="source-category" aria-labelledby="extractor-category-${escapeHtml(category.id)}">
+            // 分类按钮：数量跟着上面的开关筛选走；某类里有模块抓取失败或凭证失效，按钮上挂红点
+            const categoryOf = m => m.category || 'standard';
+            const present = categories.filter(category => modules.some(m => categoryOf(m) === category.id));
+            const active = present.find(category => category.id === extractorCategory) || present[0];
+            const needsAttention = m => {
+                const h = m.health || {};
+                return m.enabled && (!!h.credentialRejected || h.status === 'failed' || h.status === 'risk');
+            };
+            const categoryBar = present.map(category => {
+                const count = shown.filter(m => categoryOf(m) === category.id).length;
+                const alerting = modules.some(m => categoryOf(m) === category.id && needsAttention(m));
+                const on = category.id === active.id;
+                return `<button type="button" role="tab" class="extractor-category-btn${on ? ' active' : ''}" aria-selected="${on}"
+                                onclick="setExtractorCategory('${escapeHtml(category.id)}')">
+                    ${escapeHtml(category.title)}<span class="extractor-filter-count">${count}</span>${alerting
+                        ? '<span class="attention-dot" role="img" aria-label="有模块需要处理"></span>' : ''}
+                </button>`;
+            }).join('');
+            const activeModules = shown.filter(m => categoryOf(m) === active.id);
+            box.innerHTML = `<div class="extractor-category-bar" role="tablist" aria-label="模块分类">${categoryBar}</div>
+                <section class="source-category" role="tabpanel">
                     <div class="source-category-head">
-                        <div class="source-category-title" id="extractor-category-${escapeHtml(category.id)}">${escapeHtml(category.title)}</div>
-                        <span class="source-category-count">${categoryModules.length} 个</span>
-                        <div class="source-category-desc">${escapeHtml(category.description)}</div>
+                        <div class="source-category-desc">${[].concat(active.description).map(part => typeof part === 'string'
+                            ? escapeHtml(part) : `<mark class="category-note">${escapeHtml(part.mark)}</mark>`).join('')}</div>
                     </div>
-                    <div class="source-grid">
-                        ${categoryModules.map(m => moduleCardHtml(m, category)).join('')}
-                    </div>
+                    ${activeModules.length
+                        ? `<div class="source-grid">${activeModules.map(m => moduleCardHtml(m, active)).join('')}</div>`
+                        : `<div class="extractor-filter-empty">${extractorFilter === 'on'
+                            ? '这一类的模块都关着。切到「已关闭」或「全部」，勾选「启用」即可打开。'
+                            : '这一类没有关闭的模块。'}</div>`}
                 </section>`;
-            }).join('') : `<div class="extractor-filter-empty">${extractorFilter === 'on'
-                ? '所有模块都已关闭。切到「已关闭」或「全部」，勾选「启用」即可打开。'
-                : '没有关闭的模块。'}</div>`;
 
             renderExtractorDetail();
         }

@@ -2402,14 +2402,16 @@
             box-shadow: 0 14px 40px rgba(35, 61, 43, .055), inset 0 1px 0 rgba(255, 255, 255, .9);
         }
         .panel h2 { padding-bottom: 0; border-bottom: 0; color: var(--ui-text); }
-        /* 源管理、设置、关于的页头：和「我的频道」标题行同一种条——靠左一行，
+        /* 源管理、设置、关于的页头：和「我的频道」标题行同一种条，标题居中（作者 10-06）；
            高度、内边距、字号都对齐 .my-playlist-header-row（按钮 40px + 上下 12px） */
         .page-intro {
             display: flex;
             flex-wrap: wrap;
-            align-items: baseline;
+            align-items: center;
             align-content: center;
+            justify-content: center;
             gap: 4px 14px;
+            text-align: center;
             min-height: 64px;
             margin-bottom: 18px;
             padding: 12px 16px;

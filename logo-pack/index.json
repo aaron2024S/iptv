@@ -895,6 +895,42 @@
    "updated": "2026-09-29",
    "width": 96
   },
+  "杭州青少体育": {
+   "file": "杭州青少体育.png",
+   "hash": "4194499ca9",
+   "height": 256,
+   "origin": "hangzhou",
+   "source": "https://image.hoolo.tv/202008145acd1afe9fa08cd99f1e9283e28c59b2.jpg",
+   "updated": "2026-10-06",
+   "width": 256
+  },
+  "杭州生活": {
+   "file": "杭州生活.png",
+   "hash": "9e77b65d49",
+   "height": 114,
+   "origin": "hangzhou",
+   "source": "https://image.hoolo.tv/20200814e0ee32f6048e644370098512df914e05.png",
+   "updated": "2026-10-06",
+   "width": 148
+  },
+  "杭州影视": {
+   "file": "杭州影视.png",
+   "hash": "64328bff04",
+   "height": 80,
+   "origin": "hangzhou",
+   "source": "https://image.hoolo.tv/202008145170e1fff3d269abf9a3945d275eb80e.png",
+   "updated": "2026-10-06",
+   "width": 80
+  },
+  "杭州综合": {
+   "file": "杭州综合.png",
+   "hash": "51bfca3aef",
+   "height": 114,
+   "origin": "hangzhou",
+   "source": "https://image.hoolo.tv/2020081440758eac386ac9bb46ca2a07b16e5582.png",
+   "updated": "2026-10-06",
+   "width": 148
+  },
   "和美乡途轮播台": {
    "file": "和美乡途轮播台.png",
    "hash": "f792e07b79",
@@ -1958,6 +1994,50 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "宁波都市文体": {
+   "file": "宁波都市文体.png",
+   "hash": "775e22ac7d",
+   "height": 128,
+   "kind": "library",
+   "note": "同宁波新闻综合：台徽加黑字「NBTV-3」，铺白底。iptv-org 里写的是旧名「文化娱乐频道」，编号与直播页 NBTV3 对得上。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 NBTV3.cn）",
+   "updated": "2026-10-06",
+   "width": 136
+  },
+  "宁波经济生活": {
+   "file": "宁波经济生活.png",
+   "hash": "14f9a0edb3",
+   "height": 128,
+   "kind": "library",
+   "note": "同宁波新闻综合：台徽加黑字「NBTV-2」，铺白底。iptv-org 里这台还写着旧名「社会生活频道」，官网现名经济生活频道，编号与直播页 NBTV2 对得上。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 NBTV2.cn）",
+   "updated": "2026-10-06",
+   "width": 136
+  },
+  "宁波新闻综合": {
+   "file": "宁波新闻综合.png",
+   "hash": "ea9e5f94b8",
+   "height": 128,
+   "kind": "library",
+   "note": "宁波电视台台徽（蓝红绿飞鸟）加黑字「NBTV-1」，136x128 透明 PNG。宁波广电网首页、直播页、节目单页都没有频道图标，频道资料 JSONP 的 imagePath 为空，页头只有「宁波广电网」站标。黑字在深色界面上看不清，铺白底。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 NBTV1.cn）",
+   "updated": "2026-10-06",
+   "width": 136
+  },
+  "宁波影视剧": {
+   "file": "宁波影视剧.png",
+   "hash": "74dafe86ae",
+   "height": 128,
+   "kind": "library",
+   "note": "同宁波新闻综合：台徽加黑字「NBTV-4」，铺白底。",
+   "origin": "manual",
+   "source": "https://iptv-org.github.io/api/logos.json （iptv-org 数据库频道 NBTV4.cn）",
+   "updated": "2026-10-06",
+   "width": 136
+  },
   "宁德文化旅游": {
    "file": "宁德文化旅游.png",
    "hash": "ec71264092",
@@ -2890,6 +2970,15 @@
    "source": "https://pic.vtibet.cn/cms/vrupload/img/2021/10/15/1634292378543_831_220x160.png",
    "updated": "2026-09-25",
    "width": 220
+  },
+  "西湖明珠": {
+   "file": "西湖明珠.png",
+   "hash": "f2bc0b09ba",
+   "height": 256,
+   "origin": "hangzhou",
+   "source": "https://image.hoolo.tv/2020081443d00dd845ec670adae22d7d120be5d2.png",
+   "updated": "2026-10-06",
+   "width": 256
   },
   "锡林郭勒": {
    "file": "锡林郭勒.png",
@@ -4364,6 +4453,11 @@
   "gztv/gztv-3001": "广州综合",
   "gztv/gztv-3002": "广州新闻",
   "gztv/gztv-3003": "广州南国都市4K",
+  "hangzhou/hangzhou-film": "杭州影视",
+  "hangzhou/hangzhou-general": "杭州综合",
+  "hangzhou/hangzhou-life": "杭州生活",
+  "hangzhou/hangzhou-pearl": "西湖明珠",
+  "hangzhou/hangzhou-youth": "杭州青少体育",
   "hbtv/hbtv-431": "湖北卫视",
   "hbtv/hbtv-432": "湖北经视",
   "hbtv/hbtv-433": "湖北综合",
@@ -4471,6 +4565,10 @@
   "mgtv/mgtv-344": "湖南娱乐",
   "mgtv/mgtv-346": "湖南都市",
   "mgtv/mgtv-484": "湖南电视剧",
+  "ningbo/ningbo-city": "宁波都市文体",
+  "ningbo/ningbo-drama": "宁波影视剧",
+  "ningbo/ningbo-economy": "宁波经济生活",
+  "ningbo/ningbo-news": "宁波新闻综合",
   "ningde/#宁德文化旅游": "宁德文化旅游",
   "ningde/#宁德新闻综合": "宁德新闻综合",
   "ningxia/#宁夏公共": "宁夏公共",

@@ -162,6 +162,7 @@ import gansu from './gansu/index.js'
 import gdtv from './gdtv/index.js'
 import gdsportEvents from './gdsport-events/index.js'
 import gztv from './gztv/index.js'
+import hangzhou from './hangzhou/index.js'
 import gzstv from './gzstv/index.js'
 import gxtv from './gxtv/index.js'
 import hebtv from './hebtv/index.js'
@@ -183,6 +184,7 @@ import lotustv from './lotustv/index.js'
 import meizhouHakka from './meizhou-hakka/index.js'
 import mgtv from './mgtv/index.js'
 import migu from './migu/index.js'
+import ningbo from './ningbo/index.js'
 import ningde from './ningde/index.js'
 import ningxia from './ningxia/index.js'
 import njtv from './njtv/index.js'
@@ -249,6 +251,8 @@ const MODULES = [
   hnntv,
   hntv,
   cztv,
+  hangzhou,
+  ningbo,
   jiaxing,
   jstv,
   wuxi,

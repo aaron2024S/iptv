@@ -2201,7 +2201,6 @@
         .ch-status-legend b { color: #666; font-weight: 500; }
         .ch-status-legend .seg { display: inline-flex; align-items: center; gap: 5px; }
         .ch-status-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .ch-status-legend .ch-status-legend-tip { margin-left: auto; }
 
         /* 顶部内联订阅地址栏（issue #38：免点编辑即可复制） */
         .subscribe-bar {
@@ -2569,7 +2568,7 @@
         /* 订阅地址是标题卡的第二行；标题行自带底色，两行之间不再加分隔线（作者 10-06） */
         .subscribe-bar {
             margin: 0;
-            padding: 12px 16px;
+            padding: 12px 16px 6px;
             gap: 8px 22px;
             border: 0;
             border-radius: 0;
@@ -2603,7 +2602,7 @@
             height: calc(100vh - var(--mp-offset, 180px));
             min-height: 500px;
             margin-top: 0;
-            gap: 12px 20px;
+            gap: 6px 20px;
         }
         .my-playlist-left { width: 242px; }
         .my-playlist-right { width: 226px; }
@@ -2698,41 +2697,90 @@
             background: transparent;
         }
         .my-playlist-detail-header {
-            min-height: 58px;
-            margin-bottom: 13px;
-            padding: 15px 19px;
+            min-height: 0;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            padding: 10px 14px;
             border: 1px solid var(--ui-line);
             border-radius: 14px;
             background: var(--ui-surface);
             box-shadow: none;
         }
-        .my-playlist-detail-title { color: var(--ui-text); font-size: 18px; }
-        /* 按钮一行放不下时（窗口窄、批量模式）整齐换行：行间留缝、靠右对齐。
-           先让按钮换行，分组名不跟着被挤成两行；分组名太长（超过四成宽）才自己折行。
-           1180 以下中间栏本来就窄，分组名和按钮一起让（见下方 @media） */
-        .my-playlist-detail-header { gap: 12px; }
-        .my-playlist-detail-title { flex: 0 0 auto; max-width: 40%; }
+        /* 分组名和配对说明合在左侧，操作区保留两行；窄窗口再上下排列。 */
+        .my-playlist-detail-header { gap: 14px; }
+        .my-playlist-detail-info { display: flex; flex-direction: column; gap: 5px; flex: 1 1 0; min-width: 0; }
+        .announcement-header { align-content: flex-start; }
+        .announcement-header .my-playlist-detail-info { min-height: var(--group-detail-info-height, 0px); }
+        .my-playlist-detail-title { color: var(--ui-text); font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
         .my-playlist-detail-actions {
             display: flex;
+            flex: 0 1 auto;
+            max-width: 56%;
             flex-wrap: wrap;
             justify-content: flex-end;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
-        /* 按钮收窄一点：加了置顶 / 置底后，1366 宽的窗口里仍能排成一行 */
-        .my-playlist-detail-actions button { margin-left: 0; padding-inline: 9px; }
+        .my-playlist-detail-actions button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            min-height: 24px;
+            margin-left: 0;
+            padding: 3px 7px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 10.5px;
+            font-weight: 500;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        .my-playlist-detail-actions .btn-primary { font-weight: 600; }
+        .my-playlist-detail-actions select { min-height: 24px; font-family: inherit; font-size: 10.5px; }
+        /* 分组详情的按钮固定排两行：上行管分组本身，下行管组内频道，左侧小字对齐（issue #165 有人把上移下移看成调频道） */
+        .group-action-grid {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
+            gap: 5px 8px;
+        }
+        .group-action-label {
+            display: flex;
+            align-items: center;
+            min-height: 24px;
+            color: var(--ui-muted);
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        .group-action-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; white-space: nowrap; }
+        .group-action-icon {
+            flex: 0 0 auto;
+            width: 11px;
+            height: 11px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
         .ch-status-legend {
-            min-height: 38px;
-            margin-bottom: 13px;
-            padding: 8px 12px;
-            gap: 15px;
+            min-height: 0;
+            margin: 0;
+            padding: 0;
+            gap: 3px 10px;
             border: 0;
-            border-bottom: 1px solid var(--ui-line);
             border-radius: 0;
             background: transparent;
             color: var(--ui-muted);
+            font-size: 11px;
+            line-height: 1.5;
         }
         .ch-status-legend b { color: var(--ui-text-secondary); }
+        .ch-status-legend .seg { max-width: 100%; gap: 4px; }
+        .ch-status-legend .dot { width: 6px; height: 6px; flex-shrink: 0; }
         .dot.ok { background: #27a777; }
         .dot.no { background: #dc6571; }
         .my-playlist-groups { gap: 18px; padding: 0 4px 4px; }
@@ -3377,7 +3425,9 @@
             .my-playlist-left { width: 216px; }
             .my-playlist-right { width: 202px; }
             .my-playlist-channels { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-            .my-playlist-detail-title { flex: 0 1 auto; max-width: none; }
+            .my-playlist-detail-header { flex-wrap: wrap; gap: 8px; }
+            .my-playlist-detail-info { flex-basis: 100%; }
+            .my-playlist-detail-actions { flex: 1 1 100%; max-width: none; justify-content: flex-start; }
             .external-detail-wrap { grid-template-columns: 1fr 250px; }
         }
         @media (max-width: 900px) {
@@ -3386,7 +3436,7 @@
             .panel { padding: 22px; }
             .tabs { gap: 10px; }
             .tab { padding-inline: 13px; }
-            .my-playlist-container { gap: 14px; }
+            .my-playlist-container { gap: 6px 14px; }
             .my-playlist-left, .my-playlist-right { width: 190px; }
             .system-config-grid { grid-template-columns: 1fr; }
             .external-detail-wrap { grid-template-columns: 1fr; }
@@ -4011,15 +4061,16 @@
                     </div>
                     <div class="my-playlist-middle">
                         <div class="my-playlist-detail-header" id="detailHeader" style="display: none;">
-                            <div class="my-playlist-detail-title" id="detailTitle"></div>
+                            <div class="my-playlist-detail-info">
+                                <div class="my-playlist-detail-title" id="detailTitle"></div>
+                                <div class="ch-status-legend" style="display: none;">
+                                    <b>配对状态</b>
+                                    <span class="seg"><span class="dot ok"></span><span class="dot ok"></span> 左=节目单　右=台标</span>
+                                    <span class="seg"><span class="dot ok"></span> 绿 已匹配</span>
+                                    <span class="seg"><span class="dot no"></span> 红 未匹配（点开频道详情可设别名修正）</span>
+                                </div>
+                            </div>
                             <div class="my-playlist-detail-actions" id="detailActions"></div>
-                        </div>
-                        <div class="ch-status-legend">
-                            <b>配对状态</b>
-                            <span class="seg"><span class="dot ok"></span><span class="dot ok"></span> 左=节目单　右=台标</span>
-                            <span class="seg"><span class="dot ok"></span> 绿 已匹配</span>
-                            <span class="seg"><span class="dot no"></span> 红 未匹配（点开频道详情可设别名修正）</span>
-                            <span class="seg ch-status-legend-tip" title="点击频道名称可查看详情，并一键用 VLC / IINA / PotPlayer 打开播放">点频道名看详情</span>
                         </div>
                         <div class="my-playlist-groups" id="myPlaylistGroups"></div>
                     </div>
@@ -9231,6 +9282,8 @@ if(success){
         // 台标点用真实图片加载结果判定（绿=能加载到 / 红=加载失败或无图），比单看 logoStatus 更准。
         // 含义由上方常驻图例 + 每点 hover 文字说明；详情里仍有完整文字。
         function channelStatusDots(channel) {
+            // 公告和教程是本地短片，不需要节目单/台标配对提示。
+            if (isSystemAnnouncementChannel(channel)) return '';
             const base = window.location.origin + API_PREFIX;
             const src = channel.logo ? String(channel.logo).replace(/\$\{replace\}/g, base) : '';
             const epgOk = !!channel.epgMatched;
@@ -9472,6 +9525,63 @@ if(success){
             }
         }
 
+        function groupDetailActionsMarkup(group, groupIndex) {
+            const isUngrouped = group.name === '未分组';
+            const isCustomGroup = isCustomGroupName(group.name);
+            const isNameSorted = !!(myPlaylistConfig.groupSortMode && myPlaylistConfig.groupSortMode[group.name] === 'name');
+            const atTop = isUngrouped || groupIndex <= groupOrderFloor();
+            const atBottom = isUngrouped || groupIndex === myPlaylistData.length - 1;
+            return `
+                <div class="group-action-grid">
+                    <span class="group-action-label">分组</span>
+                    <div class="group-action-btns">
+                        ${isCustomGroup ? `<button class="btn btn-danger btn-sm" onclick="removeGroup(${groupIndex})">删除分组</button>` : ''}
+                        <button class="btn btn-sm" onclick="renameGroup(${groupIndex})" ${isUngrouped ? 'disabled' : ''}>重命名</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteGroup(${groupIndex})" ${isUngrouped || isCustomGroup ? 'disabled' : ''} title="${isCustomGroup ? '自定义分组无需隐藏：「删除分组」即彻底移除；想隐藏其中的频道请用「批量管理 → 隐藏」' : isUngrouped ? '「未分组」不可隐藏' : '隐藏整个分组，可在右侧「已隐藏」里恢复'}">隐藏分组</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'top')" ${atTop ? 'disabled' : ''} title="把这个分组移到所有分组最前"><svg class="group-action-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2 2h8M6 10V4M3 7l3-3 3 3"/></svg>置顶</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'up')" ${atTop ? 'disabled' : ''} title="把这个分组往前挪一位"><svg class="group-action-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 10V2M3 5l3-3 3 3"/></svg>上移</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'down')" ${atBottom ? 'disabled' : ''} title="把这个分组往后挪一位"><svg class="group-action-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 2v8M3 7l3 3 3-3"/></svg>下移</button>
+                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'bottom')" ${atBottom ? 'disabled' : ''} title="把这个分组移到所有分组最后"><svg class="group-action-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2 10h8M6 2v6M3 5l3 3 3-3"/></svg>置底</button>
+                    </div>
+                    <span class="group-action-label">组内频道</span>
+                    <div class="group-action-btns">
+                        <button class="btn btn-sm" onclick="toggleGroupSort()" title="点击切换：手动拖拽 ⇄ 按名称自动排序（中文按拼音、含数字按数值）">排序：${isNameSorted ? '名称' : '手动'}</button>
+                        <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量管理</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 公告没有配对说明和分组按钮，但标题卡仍按普通分组的实际布局占位，切换时列表不会跳动。
+        function fitAnnouncementHeaderHeight() {
+            const header = document.getElementById('detailHeader');
+            if (!header || !header.classList.contains('announcement-header') || header.style.display === 'none') return;
+            const width = header.getBoundingClientRect().width;
+            if (!width) return;
+            const groupIndex = myPlaylistData.findIndex(group => !isSystemAnnouncementGroup(group) && !isCustomGroupName(group.name) && group.name !== '未分组');
+            const group = myPlaylistData[groupIndex] || { name: '频道分组', channels: [] };
+            const sample = header.cloneNode(true);
+            sample.removeAttribute('id');
+            sample.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+            sample.classList.remove('announcement-header');
+            sample.setAttribute('aria-hidden', 'true');
+            sample.inert = true;
+            Object.assign(sample.style, {
+                position: 'absolute', visibility: 'hidden', pointerEvents: 'none',
+                width: width + 'px', minHeight: '0', height: 'auto', margin: '0', top: '0', left: '0'
+            });
+            sample.querySelector('.my-playlist-detail-title').textContent = `${group.name} (${group.channels.length}个频道)`;
+            sample.querySelector('.ch-status-legend').style.display = '';
+            sample.querySelector('.my-playlist-detail-actions').innerHTML = groupDetailActionsMarkup(group, groupIndex);
+            header.parentElement.appendChild(sample);
+            const height = sample.getBoundingClientRect().height;
+            const infoHeight = sample.querySelector('.my-playlist-detail-info').getBoundingClientRect().height;
+            sample.remove();
+            header.style.minHeight = height + 'px';
+            header.style.setProperty('--group-detail-info-height', infoHeight + 'px');
+        }
+        window.addEventListener('resize', fitAnnouncementHeaderHeight);
+
         function renderGroupDetail() {
             const container = document.getElementById('myPlaylistGroups');
             const header = document.getElementById('detailHeader');
@@ -9479,10 +9589,13 @@ if(success){
             const actions = document.getElementById('detailActions');
             
             if (!container || !header || !title || !actions) return;
+            header.classList.remove('announcement-header');
+            header.style.minHeight = '';
+            header.style.removeProperty('--group-detail-info-height');
 
-            // 搜索结果行不带节目单/台标圆点，图例跟着收起
+            // 搜索结果和空视图不显示配对图例，选中普通分组后再展开。
             const legend = document.querySelector('.my-playlist-middle .ch-status-legend');
-            if (legend) legend.style.display = channelSearchQuery ? 'none' : '';
+            if (legend) legend.style.display = 'none';
 
             if (channelSearchQuery) {
                 // 搜索分支放在这里而不是输入事件里：隐藏、改名、切源等几十处保存后都会重渲染本区域，
@@ -9587,8 +9700,6 @@ if(success){
                 groupIndex = selectedGroupIndex;
                 header.style.display = 'flex';
                 title.textContent = `${group.name} (${group.channels.length}个频道)`;
-                const isUngrouped = group.name === '未分组';
-                const isCustomGroup = isCustomGroupName(group.name);
                 const isNameSorted = !!(myPlaylistConfig.groupSortMode && myPlaylistConfig.groupSortMode[group.name] === 'name');
                 const isProtectedAnnouncement = isSystemAnnouncementGroup(group);
 
@@ -9616,20 +9727,7 @@ if(success){
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">退出批量</button>
                     `;
                 } else {
-                    // 「公告」固定在第一位，别的分组最高只能到它后面
-                    const atTop = isUngrouped || groupIndex <= groupOrderFloor();
-                    const atBottom = isUngrouped || groupIndex === myPlaylistData.length - 1;
-                    actions.innerHTML = `
-                        ${isCustomGroup ? `<button class="btn btn-danger btn-sm" onclick="removeGroup(${groupIndex})">删除分组</button>` : ''}
-                        <button class="btn btn-sm" onclick="renameGroup(${groupIndex})" ${isUngrouped ? 'disabled' : ''}>重命名</button>
-                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'top')" ${atTop ? 'disabled' : ''} title="把这个分组移到所有分组最前">⤒ 置顶</button>
-                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'up')" ${atTop ? 'disabled' : ''}>↑ 上移</button>
-                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'down')" ${atBottom ? 'disabled' : ''}>↓ 下移</button>
-                        <button class="btn btn-sm" onclick="moveGroup(${groupIndex}, 'bottom')" ${atBottom ? 'disabled' : ''} title="把这个分组移到所有分组最后">⤓ 置底</button>
-                        <button class="btn btn-sm" onclick="toggleGroupSort()" title="点击切换：手动拖拽 ⇄ 按名称自动排序（中文按拼音、含数字按数值）">排序：${isNameSorted ? '名称' : '手动'}</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteGroup(${groupIndex})" ${isUngrouped || isCustomGroup ? 'disabled' : ''} title="${isCustomGroup ? '自定义分组无需隐藏：「删除分组」即彻底移除；想隐藏其中的频道请用「批量管理 → 隐藏」' : isUngrouped ? '「未分组」不可隐藏' : '隐藏整个分组，可在右侧「已隐藏」里恢复'}">隐藏分组</button>
-                        <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量管理</button>
-                    `;
+                    actions.innerHTML = groupDetailActionsMarkup(group, groupIndex);
                 }
 
                 const mergedCount = mergedSourceGroupCount(group);
@@ -9671,6 +9769,12 @@ if(success){
                         </div>
                     `}
                 `;
+            }
+
+            if (legend && !isSystemAnnouncementGroup(group)) legend.style.display = '';
+            if (!isViewingDeleted && isSystemAnnouncementGroup(group)) {
+                header.classList.add('announcement-header');
+                fitAnnouncementHeaderHeight();
             }
 
             // 刚编辑过的频道：重渲染后滚动定位 + 启动临时高亮自动消退（issue #50）。

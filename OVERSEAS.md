@@ -109,6 +109,14 @@
 - 台标按台名用内置台标库（9 月手工收的），beIN Sports Xtra 用 Xumo 频道卡，Tennis Channel International 暂无。
 - 起播清晰度：主清单把最低档排第一的，AVPlayer 等会从最低档起播、先糊一阵（实验台网页播放器锁最高档，所以那边清楚）。最高档地址固定的 14 台（加精选列表的 Red Bull TV、CNA、Pet Club TV）10-06 改成直接写最高档，和 NHL FAST、WildEarth 一样，代价是没了自动降档；最高档地址带会话参数的 8 台（World Poker Tour、FUEL TV、MTRSPT1、Terra Mater WILD、Wipeout Xtra、MovieSphere、FIFA+、Qello Concerts）仍是主清单，要一开就清楚得服务端转发时把最高档挪到第一位。
 
+## 澳广视（动态的海外源）
+
+地址要先问官方接口才知道的海外源写不进 m3u 文件，照常做成抓取模块、档位标 `non-cn`。第一个是 `extractors/tdm`「澳门」：澳广视自办的 91–96 六套电视（官网另有转播的 CCTV 综合、CGTN 和立法会直播，不收）。
+
+- 官网播放器先 GET `www.tdm.com.mo/api/v1/common/get-domain` 拿路由，把源地址的 `live3` 换成 `locallive` 再按映射表换一次：澳门本地映射到自己（`live3` / `locallive`），香港、台湾、日本、美国映射到海外 CDN（`live5` / `globallive`）。模块照做，路由缓存 5 分钟，一时取不到沿用上一次的；只放行 `*.tdm.com.mo` 的 https m3u8。
+- 10-06 Globalping：大陆两类家宽探针连官网接口和 `live5` 都是 TCP 超时；`live3` 大陆重置连接、香港和美国超时，只有澳门本地能连。海外 CDN 不看 Referer、UA，地址不带签名，302 直连。洛杉矶出口全链路 6/6。
+- 节目单是官网直播页自用的 JSON 接口，一份是一个播出日（07:00 → 次日凌晨），按上海日期取前一天与当天两份拼。
+
 ## 对设计的含义
 
 - **模块级标记要有三档**：不限 / 仅大陆 / 大陆加香港。只分「大陆、海外」两档会把吉林、黑龙江、无锡、江苏在香港误判成不可用。

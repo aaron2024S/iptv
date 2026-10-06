@@ -20,7 +20,7 @@
  *                                 授权能力，'live' 表示网络直播平台；不声明即
  *                                 'standard'（免账号的普通官方抓取模块）
  *   network               string  必需；在哪种网络下能用：'any' 不限 / 'cn-hk' 大陆和香港 /
- *                                 'cn' 仅大陆 / 'non-cn' 大陆以外（大陆连得上但常卡顿的海外频道）。
+ *                                 'cn' 仅大陆 / 'non-cn' 大陆以外（大陆连不上或常卡顿）。
  *                                 只决定默认开关——用户没手动设过开关的模块，在部署网络里用不了
  *                                 就默认关（规则见 utils/networkRegion.js）。
  *                                 按频道的版权拦截不算，照样 'any'。新模块要先在海外实测
@@ -201,6 +201,7 @@ import xizang from './xizang/index.js'
 import wuxi from './wuxi/index.js'
 import yangzhou from './yangzhou/index.js'
 import yunnan from './yunnan/index.js'
+import tdm from './tdm/index.js'
 import overseas from './overseas/index.js'
 import { NETWORK_TIERS } from '../utils/networkRegion.js'
 
@@ -216,6 +217,7 @@ const MODULES = [
   fengshows,
   hkstv,
   lotustv,
+  tdm,
   asianLive,
   bilibiliLive,
   douyinLive,

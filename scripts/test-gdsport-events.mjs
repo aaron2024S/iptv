@@ -15,6 +15,8 @@ after(() => rmSync(dataDir, { recursive: true, force: true }))
 const { default: gdtv } = await import('../extractors/gdtv/index.js')
 const { getModule, resolverFor } = await import('../extractors/registry.js')
 const { ExtractorManager, emptyHealth } = await import('../utils/extractorManager.js')
+const { consolidateLocalSportsChannels, consolidateLocalKidsChannels, consolidateLocalEducationChannels } = await import('../utils/channelMerger.js')
+const { inlineResolvedManifest } = await import('../utils/appUtils.js')
 
 // 按 2026-10-06 官方目录和直播间详情裁剪；签名常量与分片参数均为离线测试值。
 const stream = 'https://gdsport-live6.itouchtv.cn/live/6ac13766b6538609c35136fd.m3u8'
@@ -71,7 +73,7 @@ test('广东体育电视频道和多场赛事合并到唯一的广东分组，�
   assert.deepEqual(groups.map(x => x.name), ['广东'])
   const events = groups[0].dataList.filter(x => x.sourceId === 'xt:gdsport-events')
   assert.deepEqual(events.map(x => x.name), ['广东体育 · 林丹杯羽毛球公开赛', '广东体育 · 工BA篮球联赛'])
-  assert.ok(events.every(x => x.proxyHls && x.catchup === 'none' && x.groupTitle === '广东'))
+  assert.ok(events.every(x => x.relayHls && !x.proxyHls && x.catchup === 'none' && x.groupTitle === '广东'))
   assert.equal(groups[0].dataList.find(x => x.deferredRef === 'gdtv-47').name, '广东体育')
   const retained = events[1].deferredRef
   state.rows = [state.rows[1], { ...row, status: 2 }]
@@ -127,6 +129,25 @@ test('清单刷新只重取清单：状态按场缓存，详情接口一时失�
 test('赛事标题里的英文引号、逗号不弄坏播放列表属性', () => {
   const event = normalizeEvent({ ...row, title: '"我是小球王"足球邀请赛,决赛\n' })
   assert.equal(event.name, "'我是小球王'足球邀请赛，决赛")
+})
+
+test('只中继清单：分片由播放器直连官方 CDN，全代理版订阅可升级为全代理', async () => {
+  // 官方 CDN 不看来源头、分片不带签名（10-06 实测），不必让视频经本机
+  assert.equal(extractor.relayProxyCompatible, true, '?relay=2 时清单和分片都经本机，resolve 的分片校验给那条路用')
+  const result = await extractor.resolve('gdsport-event-119575', { fetchImpl: mockFetch({ rows: [row] }), now: () => 5_000_000 })
+  const relayed = inlineResolvedManifest(result)
+  assert.match(relayed, /^https:\/\/gdsport-live6\.itouchtv\.cn\/live\/6ac13766b6538609c35136fd-123\.ts\?txspiseq=123$/m)
+})
+
+test('赛事保留在「广东」，同时复制进「体育」；赛事名带少儿、教育的改放对应分组', () => {
+  const event = (id, title) => ({ name: `广东体育 · ${title}`, deferredRef: `gdsport-event-${id}`, sourceId: 'xt:gdsport-events' })
+  let groups = [{ name: '广东', dataList: [event(1, '林丹杯羽毛球公开赛'), event(2, '少儿足球邀请赛'), event(3, '教育系统篮球联赛')] }]
+  groups = consolidateLocalEducationChannels(consolidateLocalKidsChannels(consolidateLocalSportsChannels(groups)))
+  const names = name => (groups.find(group => group.name === name)?.dataList || []).map(channel => channel.deferredRef)
+  assert.deepEqual(names('广东'), ['gdsport-event-1', 'gdsport-event-2', 'gdsport-event-3'], '广东组始终是完整的')
+  assert.deepEqual(names('体育'), ['gdsport-event-1'])
+  assert.deepEqual(names('少儿'), ['gdsport-event-2'])
+  assert.deepEqual(names('教育'), ['gdsport-event-3'])
 })
 
 test('官方 HLS 与 TS 的边界检查拒绝其他源、其他赛事、加密及结束清单', () => {

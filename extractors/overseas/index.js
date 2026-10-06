@@ -7,7 +7,8 @@ export default {
   description: `${CHANNELS.length} 个海外免费直播频道（体育、娱乐时尚、文旅、国际、韩国），并入现有分组。在大陆连得上但常卡顿，部署在香港或海外时默认开启。`,
   network: 'non-cn',
   capabilities: { cache: 'disk', resolve: false, epg: false, catchup: false },
-  catalogVersion: 1,
+  // v2：14 台改成直接写最高档地址（channels.js 头注释）
+  catalogVersion: 2,
   defaultRefreshMinutes: 1440,
   refreshConfigurable: false,
   refreshDescription: '固定频道表；地址不带时效参数，由播放器直连各平台 CDN。',

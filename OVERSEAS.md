@@ -107,6 +107,7 @@
 - 10-06 实测：洛杉矶出口主清单 → 子清单 → 分片 33/33 都通；Globalping 大陆家宽探针取子清单和分片也都通（部分分片回 307 跳到别的 CDN）。
 - 没收的：港台电视 31 只放行香港（香港三类网络 200，大陆、台湾、日本、美国 403），要等「仅香港」档；面包台大陆、海外都 404，源已挂，已从精选列表删除。
 - 台标按台名用内置台标库（9 月手工收的），beIN Sports Xtra 用 Xumo 频道卡，Tennis Channel International 暂无。
+- 起播清晰度：主清单把最低档排第一的，AVPlayer 等会从最低档起播、先糊一阵（实验台网页播放器锁最高档，所以那边清楚）。最高档地址固定的 14 台（加精选列表的 Red Bull TV、CNA、Pet Club TV）10-06 改成直接写最高档，和 NHL FAST、WildEarth 一样，代价是没了自动降档；最高档地址带会话参数的 8 台（World Poker Tour、FUEL TV、MTRSPT1、Terra Mater WILD、Wipeout Xtra、MovieSphere、FIFA+、Qello Concerts）仍是主清单，要一开就清楚得服务端转发时把最高档挪到第一位。
 
 ## 对设计的含义
 

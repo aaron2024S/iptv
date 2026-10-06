@@ -2593,13 +2593,12 @@
         .my-playlist-actions > span { color: var(--ui-heading-muted) !important; }
         .my-playlist-header .btn-primary { color: var(--ui-accent-hover); border-color: var(--ui-accent-fill-line); background: var(--ui-accent-fill); }
         .my-playlist-header .btn-primary:hover { border-color: var(--ui-accent-fill-line); background: var(--ui-accent-fill-hover); }
-        /* 订阅地址是标题卡的第二行，用分隔线代替单独的青色框 */
+        /* 订阅地址是标题卡的第二行；标题行自带底色，两行之间不再加分隔线（作者 10-06） */
         .subscribe-bar {
             margin: 0;
             padding: 12px 16px;
             gap: 8px 22px;
             border: 0;
-            border-top: 1px solid var(--ui-line);
             border-radius: 0;
             background: transparent;
         }
@@ -2652,7 +2651,7 @@
         }
         /* 「频道分组」标题条和右边「我的频道」标题行并排：字号同为 16px 加粗，底边对齐
            （分组栏外框有 1px 边，所以条高 63px = 标题行 64px 减去上边框） */
-        .my-playlist-left .my-playlist-section-title { min-height: 63px; padding: 12px 16px; font-size: 16px; }
+        .my-playlist-left .my-playlist-section-title { min-height: 63px; padding: 12px 16px; border-bottom: 0; font-size: 16px; }
         .my-playlist-right .my-playlist-section-title {
             color: var(--ui-pink);
             border-bottom-color: var(--ui-pink-line);

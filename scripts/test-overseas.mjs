@@ -1,17 +1,23 @@
 #!/usr/bin/env node
 /**
- * 「海外频道」模块（extractors/overseas）：
+ * 「海外频道」模块（extractors/overseas）与它的频道表 IPTV-overseas.m3u：
  *   - 频道表完整：33 台、台名不重复、只进约定的现有分组、地址都是 https 的固定 HLS；
- *   - 档位是「大陆以外」，排在注册表最后（并进现有分组时跟在各台官方频道后面）；
  *   - 不和精选列表 IPTV.m3u 重复收台；
- *   - 台标：除了暂无出处的 Tennis Channel International，要么写了 logo，要么内置台标库按台名有图。
+ *   - 台标：除了暂无出处的 Tennis Channel International，要么写了 tvg-logo，要么内置台标库按台名有图；
+ *   - 模块：档位「大陆以外」、排在注册表最后；先从仓库拉，拉不到用镜像自带的那份；频道排到组尾。
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
-import { getModule, listModules, validateModule } from '../extractors/registry.js'
-import { CHANNELS } from '../extractors/overseas/channels.js'
-import { moveTrailingChannelsLast } from '../utils/channelMerger.js'
+
+// 只用镜像自带的那份，测试不连 GitHub；模块在 import 时读这个变量
+process.env.moverseasPlaylistUrl = ''
+
+const { getModule, listModules, validateModule } = await import('../extractors/registry.js')
+const { loadChannels, PLAYLIST_FILE } = await import('../extractors/overseas/index.js')
+const { parsePlaylistContent } = await import('../utils/externalSources.js')
+const { moveTrailingChannelsLast } = await import('../utils/channelMerger.js')
 
 let passed = 0
 const check = (name, fn) => { fn(); passed++; console.log(`  ✅ ${name}`) }
@@ -20,6 +26,7 @@ const read = path => readFileSync(fileURLToPath(new URL(path, import.meta.url)),
 
 const GROUPS = new Set(['体育', '娱乐时尚', '文旅', '国际', '韩国'])
 const module = getModule('overseas')
+const CHANNELS = parsePlaylistContent(read(`../${PLAYLIST_FILE}`))
 
 console.log('海外频道模块测试')
 
@@ -28,7 +35,7 @@ check('模块定义合法，档位是「大陆以外」，排在注册表最后'
   assert.doesNotThrow(() => validateModule(module))
   assert.equal(module.network, 'non-cn')
   assert.equal(module.capabilities.resolve, false, '固定直链，不需要换签')
-  assert.ok(Number.isInteger(module.catalogVersion))
+  assert.equal(module.defaultRefreshMinutes, 360, '和精选列表同周期从仓库拉')
   assert.equal(listModules().at(-1).id, 'overseas')
 })
 
@@ -45,21 +52,22 @@ check('频道表：33 台、台名不重复、只进约定分组、地址都是 
 })
 
 check('不和精选列表重复收台（在大陆也顺的留在 IPTV.m3u）', () => {
-  const featured = new Set([...read('../IPTV.m3u').matchAll(/^#EXTINF:[^\n]*,(.+)$/gm)].map(m => m[1].trim()))
-  const featuredUrls = new Set(read('../IPTV.m3u').split('\n').filter(line => /^https?:/.test(line)).map(line => line.trim()))
+  const featured = parsePlaylistContent(read('../IPTV.m3u'))
+  const names = new Set(featured.map(channel => channel.name))
+  const urls = new Set(featured.map(channel => channel.url))
   for (const channel of CHANNELS) {
-    assert.ok(!featured.has(channel.name), `${channel.name} 已在精选列表里`)
-    assert.ok(!featuredUrls.has(channel.url), `${channel.name} 的地址已在精选列表里`)
+    assert.ok(!names.has(channel.name), `${channel.name} 已在精选列表里`)
+    assert.ok(!urls.has(channel.url), `${channel.name} 的地址已在精选列表里`)
   }
 })
 
-check('台标：写了 logo 或内置台标库按台名有图（Tennis Channel International 暂无）', () => {
+check('台标：写了 tvg-logo 或内置台标库按台名有图（Tennis Channel International 暂无）', () => {
   const pack = JSON.parse(read('../logo-pack/index.json')).logos
   const missing = CHANNELS.filter(channel => !channel.logo && !pack[channel.name]).map(channel => channel.name)
   assert.deepEqual(missing, ['Tennis Channel International'])
 })
 
-await checkAsync('fetch 按分组输出，频道带地址、不透传回看参数', async () => {
+await checkAsync('fetch 按分组输出，频道排到组尾、不透传回看参数', async () => {
   const { groups, meta } = await module.fetch()
   assert.deepEqual(meta, { skipped: [], warnings: [] })
   assert.deepEqual(groups.map(group => [group.name, group.dataList.length]),
@@ -73,6 +81,28 @@ await checkAsync('fetch 按分组输出，频道带地址、不透传回看参�
   }
   const bein = groups[0].dataList.find(channel => channel.name === 'beIN Sports Xtra')
   assert.match(bein.logo, /^https:\/\/image\.xumo\.com\//)
+})
+
+await checkAsync('先从仓库拉：拉到就用仓库的（推送即生效），拉不到用镜像自带的并提示', async () => {
+  const remote = '#EXTM3U\n#EXTINF:-1 group-title="体育",Test Sports\nhttps://cdn.example/test/playlist.m3u8\n'
+  const server = createServer((req, res) => {
+    if (req.url === `/${PLAYLIST_FILE}`) { res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' }); res.end(remote) } else { res.writeHead(404); res.end() }
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const base = `http://127.0.0.1:${server.address().port}`
+  try {
+    const fromRepo = await loadChannels({ url: `${base}/${PLAYLIST_FILE}` })
+    assert.equal(fromRepo.from, 'remote')
+    assert.deepEqual(fromRepo.channels.map(channel => channel.name), ['Test Sports'])
+    assert.deepEqual(fromRepo.warnings, [])
+
+    const fallback = await loadChannels({ url: `${base}/missing.m3u` })
+    assert.equal(fallback.from, 'bundled')
+    assert.equal(fallback.channels.length, 33)
+    assert.match(fallback.warnings[0], /拉不到，先用镜像自带的/)
+  } finally {
+    server.close()
+  }
 })
 
 check('任何分组里海外频道都排到最后，跟在精选列表之后（不拆开 France 24 各语种）', () => {

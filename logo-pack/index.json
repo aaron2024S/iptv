@@ -1895,6 +1895,15 @@
    "updated": "2026-09-25",
    "width": 256
   },
+  "内蒙古农牧": {
+   "file": "内蒙古农牧.png",
+   "hash": "a4ce91d761",
+   "height": 256,
+   "origin": "nmtv",
+   "source": "https://cdn-bt.nmtv.cn/saas/image/2025-05/ecdf39f2-4dd6-47b6-98e3-c1eac8319cbc.png?sign=1791258721-2ax5cd4z-0-a9e52965dcf10174b649fd741e407c01",
+   "updated": "2026-10-06",
+   "width": 256
+  },
   "内蒙古农牧频道": {
    "file": "内蒙古农牧频道.png",
    "hash": "1dc4203ba8",
@@ -1902,6 +1911,15 @@
    "origin": "nmtv",
    "source": "https://cdn-bt.nmtv.cn/saas/image/2025-05/ecdf39f2-4dd6-47b6-98e3-c1eac8319cbc.png?sign=1790302896-05t32k8c-0-6c9fb3839863d4a894f9d1fac9d47ed6",
    "updated": "2026-09-25",
+   "width": 256
+  },
+  "内蒙古少儿": {
+   "file": "内蒙古少儿.png",
+   "hash": "c9a44c9050",
+   "height": 256,
+   "origin": "nmtv",
+   "source": "https://cdn-bt.nmtv.cn/saas/image/2025-05/b3244a3e-2057-4be5-acb7-48829fedc435.png?sign=1791258721-fvgn65xe-0-fecccc2ff451dfda1accb8b77cc5f08c",
+   "updated": "2026-10-06",
    "width": 256
   },
   "内蒙古少儿频道": {
@@ -2845,6 +2863,15 @@
    "source": "https://cmsres.dianzhenkeji.com/anonymous/2020/9/18/1306760784541519872.png",
    "updated": "2026-09-25",
    "width": 256
+  },
+  "西藏藏语卫视": {
+   "file": "西藏藏语卫视.png",
+   "hash": "6e796cccd9",
+   "height": 160,
+   "origin": "xizang",
+   "source": "https://pic.vtibet.cn/cms/vrupload/img/2021/11/26/1637908504567_224_220x160.jpg",
+   "updated": "2026-10-06",
+   "width": 220
   },
   "西藏卫视": {
    "file": "西藏卫视.png",
@@ -4453,7 +4480,7 @@
   "njtv/#南京十八·生活": "南京十八·生活",
   "njtv/#南京文旅纪录": "南京文旅纪录",
   "njtv/#南京新闻综合": "南京新闻综合",
-  "nmtv/nmtv-agriculture": "内蒙古农牧频道",
+  "nmtv/nmtv-agriculture": "内蒙古农牧",
   "nmtv/nmtv-alxa": "阿拉善",
   "nmtv/nmtv-baotou": "包头",
   "nmtv/nmtv-bayannur": "巴彦淖尔",
@@ -4463,7 +4490,7 @@
   "nmtv/nmtv-hinggan": "兴安盟",
   "nmtv/nmtv-hohhot": "呼和浩特",
   "nmtv/nmtv-hulunbuir": "呼伦贝尔",
-  "nmtv/nmtv-kids": "内蒙古少儿频道",
+  "nmtv/nmtv-kids": "内蒙古少儿",
   "nmtv/nmtv-mongolian-culture": "内蒙古蒙古语文化频道",
   "nmtv/nmtv-mongolian-satellite": "内蒙古蒙古语卫视",
   "nmtv/nmtv-news-general": "内蒙古新闻综合",
@@ -4574,7 +4601,7 @@
   "xinjiang/xjtv-8": "新疆少儿",
   "xizang/xizang-film-culture": "西藏影视文化",
   "xizang/xizang-satellite": "西藏卫视",
-  "xizang/xizang-tibetan": "藏语卫视",
+  "xizang/xizang-tibetan": "西藏藏语卫视",
   "yangshipin/ysp-ahws": "安徽卫视",
   "yangshipin/ysp-bjws": "北京卫视",
   "yangshipin/ysp-cctv1": "CCTV1综合",

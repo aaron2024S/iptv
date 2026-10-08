@@ -7465,6 +7465,16 @@
                             ${channelInfo}
                         </div>
                         <div class="external-field">
+                            <label>User-Agent（可选）</label>
+                            <input type="text" value="${escapeHtml(source.userAgent || '')}" oninput="updateExternalField(${index}, 'userAgent', this.value)" placeholder="留空用默认；按订阅提供方的要求填，例：okhttp/3.15">
+                            <div class="form-hint">${source.localImport ? '本地导入不联网，这里的 UA 只在勾选下方「播放时也带上」后用于播放。' : '有些订阅要特定 UA 才返回列表，填了就用它拉取；改完点「导入并保存」重新拉一次。'}</div>
+                            <label style="margin-top: 6px;">
+                                <input type="checkbox" ${source.playWithUserAgent === true ? 'checked' : ''} onchange="updateExternalField(${index}, 'playWithUserAgent', this.checked)">
+                                播放时也带上这个 UA
+                            </label>
+                            <div class="form-hint">勾选后，本源频道在 m3u 里都带上 <code>#EXTVLCOPT:http-user-agent</code>，需要播放器认这一行（VLC、Kodi 等）；订阅里已自带 UA 的频道保持不变。带请求头的频道 TXT 格式放不下，会从 TXT 订阅里跳过。</div>
+                        </div>
+                        <div class="external-field">
                             <label>默认分组</label>
                             ${renderGroupSelect(index, source.group || '未分组')}
                             <div class="form-hint">订阅里<strong>没自带分组</strong>的频道统一归到这个分组（频道自带分组的保持不变）。保持「未分组」则不归类，可在「关键字自动分组」里按频道名细分。</div>
